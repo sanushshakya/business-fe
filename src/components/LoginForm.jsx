@@ -31,14 +31,35 @@ const LoginForm = () => {
   };
 
   /**
-   * Submits the login form. Currently just logs the email and password to the console.
-   * In a real application, this would typically make an API call with these credentials.
+   * Validates the form fields and submits the login form.
+   * If validation fails, it prevents the default form submission.
    * @param {Event} event - The form submission event.
    */
   const handleSubmit = (event) => {
     event.preventDefault();
+
+    if (!validateEmail(email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    if (password.length < 8) {
+      alert('Password must be at least 8 characters long.');
+      return;
+    }
+
     console.log('Email:', email);
     console.log('Password:', password);
+  };
+
+  /**
+   * Validates an email address using a regular expression.
+   * @param {string} email - The email address to validate.
+   * @returns {boolean} True if the email is valid, false otherwise.
+   */
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
   };
 
   return (
