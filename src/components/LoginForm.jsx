@@ -42,30 +42,30 @@ const LoginForm = () => {
   };
 
   return (
-    <Card className="w-[400px]">
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-2">
-          {/* Email input field */}
-          <Input
-            id="email"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={handleEmailChange}
-            required
-          />
-          {/* Password input field */}
-          <Input
-            id="password"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={handlePasswordChange}
-            required
-          />
-        </div>
+    <Card className="w-[400px] p-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Email input field */}
+        <Input
+          id="email"
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={handleEmailChange}
+          required
+          className="border border-gray-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
+        />
+        {/* Password input field */}
+        <Input
+          id="password"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={handlePasswordChange}
+          required
+          className="border border-gray-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
+        />
         {/* Submit button */}
-        <button type="submit" className="mt-4">
+        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
           Log In
         </button>
       </form>
