@@ -1,5 +1,6 @@
 import React from 'react';
 import MainLayout from './components/MainLayout'; // Import the new MainLayout component
+import LoginForm from './components/LoginForm'; // Import the LoginForm component
 import axiosInstance from './api/axiosInstance'; // Import the exported Axios instance
 
 /**
@@ -55,11 +56,7 @@ const App = () => {
           <p className="mt-4">{error}</p>
         </div>
       ) : (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-          {/* Main content of the application */}
-          <h1 className="text-2xl font-bold">Welcome to the iq-fe App</h1>
-          <p className="mt-4">This is a React application built with Vite.</p>
-        </div>
+        <LoginForm /> {/* Render the LoginForm component */}
       )}
     </MainLayout>
   );
