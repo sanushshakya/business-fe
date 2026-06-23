@@ -19,8 +19,13 @@ const MainLayout = ({ children }) => {
   return (
     <div className="flex h-screen">
       {/* Left Sidebar */}
-      <Sidebar />
-      
+      <Sidebar>
+        {/* Placeholder navigation links */}
+        <a href="#" className="block px-4 py-2 hover:bg-gray-100">Home</a>
+        <a href="#" className="block px-4 py-2 hover:bg-gray-100">About</a>
+        <a href="#" className="block px-4 py-2 hover:bg-gray-100">Contact</a>
+      </Sidebar>
+
       {/* Main Content with a top bar and container for the main content */}
       <Container className="flex flex-col flex-1 w-full">
         <TopBar /> {/* Top Bar Component */}
