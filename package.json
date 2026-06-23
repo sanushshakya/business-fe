@@ -1,0 +1,27 @@
+{
+  "name": "iq-fe",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    // Start the development server with hot-reload
+    "dev": "vite",
+
+    // Build the application for production
+    "build": "vite build",
+
+    // Run tests using Vitest
+    "test": "vitest --coverage",
+    
+    // Format code using Prettier
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "vite": "^4.0.0",
+    "vitest": "^0.17.0",
+    "prettier": "^2.6.5"
+  }
+}
