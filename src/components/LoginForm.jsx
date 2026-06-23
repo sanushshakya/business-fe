@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Card, Input } from '@shadcn/ui';
+import axios from 'axios';
 
 /**
  * LoginForm component to handle user login with email and password.
@@ -35,7 +36,7 @@ const LoginForm = () => {
    * If validation fails, it prevents the default form submission.
    * @param {Event} event - The form submission event.
    */
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!validateEmail(email)) {
@@ -48,8 +49,19 @@ const LoginForm = () => {
       return;
     }
 
-    console.log('Email:', email);
-    console.log('Password:', password);
+    try {
+      const response = await axios.post('/api/login', { email, password });
+      const { token } = response.data;
+
+      // Store the JWT token in local storage or a secure cookie
+      localStorage.setItem('jwtToken', token);
+
+      // Redirect to the home page or dashboard after successful login
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Login failed:', error);
+      alert('Invalid email or password. Please try again.');
+    }
   };
 
   /**
