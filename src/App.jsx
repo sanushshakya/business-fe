@@ -1,4 +1,5 @@
 import React from 'react';
+import MainLayout from './components/MainLayout'; // Import the new MainLayout component
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -29,7 +30,7 @@ const App = () => {
    * Render the application's UI.
    */
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+    <MainLayout> {/* Use the MainLayout component */}
       {error ? (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
           <h1 className="text-red-500 font-bold">Oops! Something went wrong.</h1>
@@ -42,7 +43,7 @@ const App = () => {
           <p className="mt-4">This is a React application built with Vite.</p>
         </div>
       )}
-    </div>
+    </MainLayout>
   );
 };
 
