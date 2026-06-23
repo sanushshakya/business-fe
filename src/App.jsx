@@ -1,5 +1,6 @@
 import React from 'react';
 import MainLayout from './components/MainLayout'; // Import the new MainLayout component
+import axiosInstance from './api/axiosInstance'; // Import the exported Axios instance
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -24,6 +25,23 @@ const App = () => {
     return () => {
       window.removeEventListener('unhandledrejection', handleError);
     };
+  }, []);
+
+  /**
+   * Example function to demonstrate using the exported Axios instance for API calls.
+   */
+  const fetchData = async () => {
+    try {
+      const response = await axiosInstance.get('/api/data');
+      console.log(response.data);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  // Call the fetchData function when the component mounts
+  React.useEffect(() => {
+    fetchData();
   }, []);
 
   /**
