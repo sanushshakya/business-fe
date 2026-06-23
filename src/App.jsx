@@ -29,17 +29,17 @@ const App = () => {
    * Render the application's UI.
    */
   return (
-    <div className="App">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       {error ? (
-        <div>
-          <h1>Oops! Something went wrong.</h1>
-          <p>{error}</p>
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+          <h1 className="text-red-500 font-bold">Oops! Something went wrong.</h1>
+          <p className="mt-4">{error}</p>
         </div>
       ) : (
-        <div>
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
           {/* Main content of the application */}
-          <h1>Welcome to the iq-fe App</h1>
-          <p>This is a React application built with Vite.</p>
+          <h1 className="text-2xl font-bold">Welcome to the iq-fe App</h1>
+          <p className="mt-4">This is a React application built with Vite.</p>
         </div>
       )}
     </div>
