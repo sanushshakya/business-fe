@@ -4,6 +4,7 @@ import React from 'react';
 import { Card, Input } from '@shadcn/ui';
 import axios from 'axios';
 import useAuthStore from '@/store/auth';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
 
 /**
  * LoginForm component to handle user registration with email and password.
@@ -11,6 +12,7 @@ import useAuthStore from '@/store/auth';
  */
 const LoginForm = () => {
   const authStore = useAuthStore();
+  const navigate = useNavigate(); // Hook to access navigation functionality
 
   // State to hold the email input value
   const [email, setEmail] = React.useState('');
@@ -59,8 +61,8 @@ const LoginForm = () => {
       // Store the JWT token in local storage or a secure cookie
       authStore.setAccessToken(token);
 
-      // Redirect to the home page or dashboard after successful registration
-      window.location.href = '/';
+      // Redirect to the home page after successful registration
+      navigate('/'); // Use navigate for redirection
     } catch (error) {
       console.error('Registration failed:', error);
       alert('Registration failed. Please try again.');
@@ -100,9 +102,8 @@ const LoginForm = () => {
           required
           className="border border-gray-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
         />
-        
         {/* Submit button */}
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
           Register
         </button>
       </form>
