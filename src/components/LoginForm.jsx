@@ -3,12 +3,15 @@
 import React from 'react';
 import { Card, Input } from '@shadcn/ui';
 import axios from 'axios';
+import useAuthStore from '@/store/auth';
 
 /**
  * LoginForm component to handle user login with email and password.
  * Uses shadcn/ui's Card and Input components for the form layout.
  */
 const LoginForm = () => {
+  const authStore = useAuthStore();
+
   // State to hold the email input value
   const [email, setEmail] = React.useState('');
 
@@ -54,7 +57,7 @@ const LoginForm = () => {
       const { token } = response.data;
 
       // Store the JWT token in local storage or a secure cookie
-      localStorage.setItem('jwtToken', token);
+      authStore.setAccessToken(token);
 
       // Redirect to the home page or dashboard after successful login
       window.location.href = '/';
@@ -98,7 +101,7 @@ const LoginForm = () => {
           className="border border-gray-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
         />
         {/* Submit button */}
-        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
+        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
           Log In
         </button>
       </form>
