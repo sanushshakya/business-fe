@@ -6,7 +6,7 @@ import axios from 'axios';
 import useAuthStore from '@/store/auth';
 
 /**
- * LoginForm component to handle user login with email and password.
+ * LoginForm component to handle user registration with email and password.
  * Uses shadcn/ui's Card and Input components for the form layout.
  */
 const LoginForm = () => {
@@ -35,7 +35,7 @@ const LoginForm = () => {
   };
 
   /**
-   * Validates the form fields and submits the login form.
+   * Validates the form fields and submits the registration form.
    * If validation fails, it prevents the default form submission.
    * @param {Event} event - The form submission event.
    */
@@ -53,17 +53,17 @@ const LoginForm = () => {
     }
 
     try {
-      const response = await axios.post('/api/login', { email, password });
+      const response = await axios.post('/api/register', { email, password });
       const { token } = response.data;
 
       // Store the JWT token in local storage or a secure cookie
       authStore.setAccessToken(token);
 
-      // Redirect to the home page or dashboard after successful login
+      // Redirect to the home page or dashboard after successful registration
       window.location.href = '/';
     } catch (error) {
-      console.error('Login failed:', error);
-      alert('Invalid email or password. Please try again.');
+      console.error('Registration failed:', error);
+      alert('Registration failed. Please try again.');
     }
   };
 
@@ -100,9 +100,10 @@ const LoginForm = () => {
           required
           className="border border-gray-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
         />
+        
         {/* Submit button */}
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
-          Log In
+        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          Register
         </button>
       </form>
     </Card>
