@@ -2,6 +2,8 @@ import React from 'react';
 import MainLayout from './components/MainLayout'; // Import the new MainLayout component
 import LoginForm from './components/LoginForm'; // Import the LoginForm component
 import axiosInstance from './api/axiosInstance'; // Import the exported Axios instance
+import { useAuthStore } from '../stores/authStore'; // Import Zustand store for managing authentication state
+import PrivateRoute from './components/PrivateRoute'; // Import PrivateRoute wrapper
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -56,7 +58,14 @@ const App = () => {
           <p className="mt-4">{error}</p>
         </div>
       ) : (
-        <LoginForm /> {/* Render the LoginForm component */}
+        <>
+          {/* Use PrivateRoute for protected routes */}
+          <PrivateRoute path="/dashboard" element={<Dashboard />} />
+          <PrivateRoute path="/profile" element={<Profile />} />
+          {/* Other public routes */}
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/" element={<Home />} />
+        </>
       )}
     </MainLayout>
   );
