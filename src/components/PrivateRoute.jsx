@@ -6,6 +6,7 @@ import authService from '../services/authService';
 
 /**
  * PrivateRoute component - A Higher-Order Component (HOC) to check authentication before rendering the wrapped component.
+ * @module components/PrivateRoute
  * @param {Object} props - The properties passed to this component.
  * @param {React.ReactNode} props.children - The child component to render if authenticated.
  * @returns {React.ReactNode} - The wrapped component or redirect to /login if not authenticated.
