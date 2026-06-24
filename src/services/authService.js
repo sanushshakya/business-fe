@@ -55,3 +55,22 @@ export const logout = () => {
     document.cookie = cookie.replace(/^ +/, '').replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
   });
 };
+
+/**
+ * Registers a new user.
+ *
+ * @async
+ * @function register
+ * @param {string} email - The user's email address.
+ * @param {string} password - The user's password.
+ * @param {string} [name] - The user's name (optional).
+ * @returns {Promise<Object>} A promise that resolves with the response from the server or rejects with an error.
+ */
+export const register = async (email, password, name) => {
+  try {
+    const response = await axios.post('/api/auth/register', { email, password, name });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
