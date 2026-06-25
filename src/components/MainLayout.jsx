@@ -24,6 +24,8 @@ const MainLayout = ({ children }) => {
         <a href="#" className="block px-4 py-2 hover:bg-gray-100">Home</a>
         <a href="#" className="block px-4 py-2 hover:bg-gray-100">About</a>
         <a href="#" className="block px-4 py-2 hover:bg-gray-100">Contact</a>
+        {/* Add Inventory link */}
+        <a href="/inventory" className="block px-4 py-2 hover:bg-gray-100">Inventory</a>
       </Sidebar>
 
       {/* Main Content with a top bar and container for the main content */}
