@@ -74,3 +74,23 @@ export const register = async (email, password, name) => {
     throw error;
   }
 };
+
+/**
+ * Fetches inventory data from the API.
+ *
+ * @async
+ * @function fetchInventoryData
+ * @param {number} [page=1] - The current page number for pagination.
+ * @param {number} [pageSize=10] - The number of items per page.
+ * @returns {Promise<Object>} A promise that resolves with the inventory data or rejects with an error.
+ */
+export const fetchInventoryData = async (page = 1, pageSize = 10) => {
+  try {
+    const response = await axios.get('/api/inventory/stock/levels', {
+      params: { page, pageSize },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
