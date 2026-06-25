@@ -83,22 +83,10 @@ const StockReceiptModal = ({ isOpen, onClose }) => {
             />
             {errors.unitCost && <p className="text-red-500 text-xs mt-1">{errors.unitCost.message}</p>}
           </div>
-          <div className="mb-4">
-            <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700">
-              Expiry Date
-            </label>
-            <input
-              id="expiryDate"
-              type="date"
-              {...register('expiryDate', { required: 'Expiry Date is required' })}
-              className="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
-            {errors.expiryDate && <p className="text-red-500 text-xs mt-1">{errors.expiryDate.message}</p>}
-          </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500"
+            className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             {isLoading ? 'Submitting...' : 'Submit'}
           </button>
