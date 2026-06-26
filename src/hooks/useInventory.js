@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from '../utils/axios';
 
 /**
- * Custom hook to fetch inventory data.
+ * Custom hook to fetch inventory data for the LineChart.
  *
  * @returns {Object} - An object containing the loading state, error state, and inventory data.
  */
