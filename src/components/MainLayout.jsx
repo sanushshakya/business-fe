@@ -3,12 +3,13 @@
 /**
  * Main Layout Component
  * This component serves as the main layout for the application,
- * featuring a left sidebar and a top bar.
+ * featuring a left sidebar and a top bar with tabs for Demand and Stock Alerts.
  */
 import React from 'react';
 import Sidebar from './Sidebar'; // Import the Sidebar component
 import TopBar from './TopBar'; // Import the TopBar component
 import { Container } from '@shadcn/ui/dist/components/ui/container';
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@chakra-ui/react';
 
 /**
  * MainLayout Component
@@ -31,7 +32,16 @@ const MainLayout = ({ children }) => {
       {/* Main Content with a top bar and container for the main content */}
       <Container className="flex flex-col flex-1 w-full">
         <TopBar /> {/* Top Bar Component */}
-        {children} {/* Render children components */}
+        <Tabs isFitted variant="enclosed" colorScheme="blue">
+          <TabList>
+            <Tab>Demand Alerts</Tab>
+            <Tab>Stock Alerts</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel>{children}</TabPanel>
+            <TabPanel>{children}</TabPanel>
+          </TabPanels>
+        </Tabs>
       </Container>
     </div>
   );
