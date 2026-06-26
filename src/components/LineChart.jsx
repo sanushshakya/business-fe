@@ -1,5 +1,5 @@
 import React from 'react';
-import { Line } from 'recharts';
+import { LineChart, XAxis, YAxis, CartesianGrid, Line, ReferenceLine } from 'recharts';
 
 /**
  * @module src/components/LineChart.jsx
@@ -24,7 +24,7 @@ const data = [
  *
  * @param {Object} props - Component props
  * @param {Array<Object>} props.data - Array of data points for the line chart
- * @param {number} props.reorderThreshold - Reorder threshold to display as a dashed line
+ * @param {number} props.reorderThreshold - Reorder threshold to display as a dashed red line
  */
 const LineChart = ({ data, reorderThreshold }) => {
   return (
