@@ -1,9 +1,12 @@
 import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; // Import necessary components for routing
 import MainLayout from './components/MainLayout'; // Import the new MainLayout component
 import LoginForm from './components/LoginForm'; // Import the LoginForm component
 import axiosInstance from './api/axiosInstance'; // Import the exported Axios instance
 import { useAuthStore } from '../stores/authStore'; // Import Zustand store for managing authentication state
 import PrivateRoute from './components/PrivateRoute'; // Import PrivateRoute wrapper
+import DemandAlertsPage from './views/DemandAlertsPage'; // Import the Demand Alerts page component
+import StockAlertsPage from './views/StockAlertsPage'; // Import the Stock Alerts page component
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -51,23 +54,30 @@ const App = () => {
    * Render the application's UI.
    */
   return (
-    <MainLayout> {/* Use the MainLayout component */}
-      {error ? (
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-          <h1 className="text-red-500 font-bold">Oops! Something went wrong.</h1>
-          <p className="mt-4">{error}</p>
-        </div>
-      ) : (
-        <>
-          {/* Use PrivateRoute for protected routes */}
-          <PrivateRoute path="/dashboard" element={<Dashboard />} />
-          <PrivateRoute path="/profile" element={<Profile />} />
-          {/* Other public routes */}
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/" element={<Home />} />
-        </>
-      )}
-    </MainLayout>
+    <Router> {/* Use BrowserRouter for routing */}
+      <MainLayout> {/* Use the MainLayout component */}
+        {error ? (
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+            <h1 className="text-red-500 font-bold">Oops! Something went wrong.</h1>
+            <p className="mt-4">{error}</p>
+          </div>
+        ) : (
+          <>
+            {/* Use PrivateRoute for protected routes */}
+            <PrivateRoute path="/dashboard" element={<Dashboard />} />
+            <PrivateRoute path="/profile" element={<Profile />} />
+            {/* Routes for Demand and Stock Alerts pages */}
+            <Routes>
+              <Route path="/demand-alerts" element={<DemandAlertsPage />} />
+              <Route path="/stock-alerts" element={<StockAlertsPage />} />
+            </Routes>
+            {/* Other public routes */}
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/" element={<Home />} />
+          </>
+        )}
+      </MainLayout>
+    </Router>
   );
 };
 
