@@ -34,13 +34,30 @@ const CulturalCalendar = () => {
 
   const groupedEvents = groupEventsByMonth(events);
 
+  // Get the current date and calculate the end date for 3 months forward
+  const currentDate = new Date();
+  const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, currentDate.getDate());
+
+  // Filter events within the next 3 months
+  const futureEvents = Object.keys(groupedEvents).reduce((acc, monthYear) => {
+    groupedEvents[monthYear].forEach(event => {
+      if (event.date >= currentDate && event.date <= endDate) {
+        acc.push(event);
+      }
+    });
+    return acc;
+  }, []);
+
+  // Group filtered events by month
+  const futureGroupedEvents = groupEventsByMonth(futureEvents);
+
   return (
     <List>
-      {Object.keys(groupedEvents).map((monthYear, index) => (
+      {Object.keys(futureGroupedEvents).map((monthYear, index) => (
         <React.Fragment key={index}>
           <h2>{monthYear}</h2>
           <List dense disablePadding>
-            {groupedEvents[monthYear].map((event, eventIndex) => (
+            {futureGroupedEvents[monthYear].map((event, eventIndex) => (
               <ListItem key={eventIndex} button>
                 <ListItemText primary={event.title} secondary={`Date: ${format(event.date, 'dd MMMM yyyy')}`} />
               </ListItem>
