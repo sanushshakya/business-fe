@@ -9,6 +9,7 @@ Welcome to the `iq-fe` project! This is a Vite React application designed for bu
   - [Installation](#installation)
   - [Running the Project](#running-the-project)
 - [Project Structure](#project-structure)
+- [Fetching Event Dates](#fetching-event-dates)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 
@@ -27,6 +28,47 @@ The project is organized as follows:
 - `src/`: Source code directory containing the React components and logic.
 - `public/`: Static assets and public files.
 - `README.md`: This file.
+
+## Fetching Event Dates
+
+To fetch event dates from `/api/demand/calendar/?months=3`, you can use the following endpoint:
+
+### Endpoint
+- **URL**: `/api/demand/calendar/?months=3`
+- **Method**: GET
+- **Description**: Retrieves event dates for the next three months.
+- **Response**:
+  - Status: `200 OK`
+  - Content-Type: `application/json`
+  - Body: Array of event date objects.
+
+Example response:
+```json
+[
+  {
+    "date": "2023-10-01",
+    "events": [
+      {
+        "id": 1,
+        "title": "Event 1"
+      },
+      {
+        "id": 2,
+        "title": "Event 2"
+      }
+    ]
+  },
+  {
+    "date": "2023-10-02",
+    "events": [
+      {
+        "id": 3,
+        "title": "Event 3"
+      }
+    ]
+  }
+]
+```
 
 ## Contributing
 
