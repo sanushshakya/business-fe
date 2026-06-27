@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { format } from 'date-fns';
 import { List, ListItem, ListItemText } from '@mui/material';
 
@@ -9,15 +10,21 @@ import { List, ListItem, ListItemText } from '@mui/material';
  * @returns {ReactElement} The rendered CulturalCalendar component.
  */
 const CulturalCalendar = () => {
-  // Sample data: Replace this with actual fetched data
-  const events = [
-    { date: new Date('2023-10-01'), title: 'Event A' },
-    { date: new Date('2023-10-15'), title: 'Event B' },
-    { date: new Date('2023-11-01'), title: 'Event C' },
-    { date: new Date('2023-12-20'), title: 'Event D' },
-    { date: new Date('2024-01-10'), title: 'Event E' },
-    { date: new Date('2024-02-05'), title: 'Event F' },
-  ];
+  const [events, setEvents] = useState([]);
+
+  // Fetch events from the API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await axios.get('https://api.example.com/events');
+        setEvents(response.data);
+      } catch (error) {
+        console.error('Failed to fetch events:', error);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   // Group events by month
   const groupEventsByMonth = (events) => {
