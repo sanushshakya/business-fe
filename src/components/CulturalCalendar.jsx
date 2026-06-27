@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { List, ListItem, ListItemText } from '@mui/material';
+import EventCard from './EventCard'; // Import the new EventCard component
 
 /**
  * CulturalCalendar component to display a 3-month forward view as a styled list grouped by month.
@@ -65,9 +65,7 @@ const CulturalCalendar = () => {
           <h2>{monthYear}</h2>
           <List dense disablePadding>
             {futureGroupedEvents[monthYear].map((event, eventIndex) => (
-              <ListItem key={eventIndex} button>
-                <ListItemText primary={event.title} secondary={`Date: ${format(event.date, 'dd MMMM yyyy')}`} />
-              </ListItem>
+              <EventCard key={eventIndex} event={event} /> // Use the new EventCard component
             ))}
           </List>
         </React.Fragment>
