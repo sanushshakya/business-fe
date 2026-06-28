@@ -10,6 +10,7 @@ Welcome to the `iq-fe` project! This is a Vite React application designed for bu
   - [Running the Project](#running-the-project)
 - [Project Structure](#project-structure)
 - [Fetching Event Dates](#fetching-event-dates)
+- [Price Changes Component](#price-changes-component)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 
@@ -70,6 +71,15 @@ Example response:
 ]
 ```
 
+## Price Changes Component
+
+The `PriceChangesPage` component is a React component that displays a table of price changes for products. The table includes columns for Product Name, Old Price (£), New Price (£), Change %, Reason badge (Invoice Update / Decay Markdown / Manual), Triggered At, and Status (Auto-Applied / Pending Approval / Approved / Rejected). Additionally, there are action buttons to Approve and Reject the changes, which are visible only in `require_approval` mode.
+
+### Props
+- `data`: An array of objects containing price change data for each product.
+- `onApprove`: A function called when a row is approved.
+- `onReject`: A function called when a row is rejected.
+
 ## Contributing
 
 We welcome contributions from the community! If you have an idea or a fix, please follow these steps:
@@ -89,3 +99,4 @@ We expect all contributors and users to adhere to our [Code of Conduct](CODE_OF_
 ---
 
 This document outlines the guidelines for contributing to this project and maintaining a respectful and productive community.
+--- END ---
