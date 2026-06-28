@@ -4,7 +4,7 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow } from '@/components/ui/table';
 
 /**
- * Feature component for displaying Price Changes in a table.
+ * Feature component for displaying Price Changes in a table with enhanced error handling and validation.
  *
  * @component
  * @returns {JSX.Element} - The rendered Feature component.
@@ -32,37 +32,63 @@ const Feature = () => {
     },
   ];
 
-  return (
-    <div>
-      <h1>Price Changes</h1>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Product Name</TableCell>
-            <TableCell>Old Price (£)</TableCell>
-            <TableCell>New Price (£)</TableCell>
-            <TableCell>Change %</TableCell>
-            <TableCell>Reason</TableCell>
-            <TableCell>Triggered At</TableCell>
-            <TableCell>Status</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {priceChangesData.map((item, index) => (
-            <TableRow key={index}>
-              <TableCell>{item.productName}</TableCell>
-              <TableCell>{item.oldPrice}</TableCell>
-              <TableCell>{item.newPrice}</TableCell>
-              <TableCell>{item.changePercent}</TableCell>
-              <TableCell>{item.reason}</TableCell>
-              <TableCell>{item.triggeredAt}</TableCell>
-              <TableCell>{item.status}</TableCell>
+  // Function to validate and transform data
+  const validateAndTransformData = (data) => {
+    return data.map((item, index) => {
+      if (!item.productName || !item.oldPrice || !item.newPrice || !item.changePercent || !item.reason || !item.triggeredAt || !item.status) {
+        throw new Error(`Missing required field in item at index ${index}`);
+      }
+      return {
+        ...item,
+        oldPrice: `£${parseFloat(item.oldPrice.replace('£', '')).toFixed(2)}`,
+        newPrice: `£${parseFloat(item.newPrice.replace('£', '')).toFixed(2)}`,
+        changePercent: `${parseInt(item.changePercent.replace('%', ''))}%`,
+        triggeredAt: new Date(item.triggeredAt).toLocaleString(),
+      };
+    });
+  };
+
+  try {
+    const transformedData = validateAndTransformData(priceChangesData);
+    return (
+      <div>
+        <h1>Price Changes</h1>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Product Name</TableCell>
+              <TableCell>Old Price (£)</TableCell>
+              <TableCell>New Price (£)</TableCell>
+              <TableCell>Change %</TableCell>
+              <TableCell>Reason</TableCell>
+              <TableCell>Triggered At</TableCell>
+              <TableCell>Status</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
+          </TableHead>
+          <TableBody>
+            {transformedData.map((item, index) => (
+              <TableRow key={index}>
+                <TableCell>{item.productName}</TableCell>
+                <TableCell>{item.oldPrice}</TableCell>
+                <TableCell>{item.newPrice}</TableCell>
+                <TableCell>{item.changePercent}</TableCell>
+                <TableCell>{item.reason}</TableCell>
+                <TableCell>{item.triggeredAt}</TableCell>
+                <TableCell>{item.status}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  } catch (error) {
+    return (
+      <div>
+        <h1>Error</h1>
+        <p>{error.message}</p>
+      </div>
+    );
+  }
 };
 
 export default Feature;
