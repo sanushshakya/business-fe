@@ -7,6 +7,7 @@ import { useAuthStore } from '../stores/authStore'; // Import Zustand store for 
 import PrivateRoute from './components/PrivateRoute'; // Import PrivateRoute wrapper
 import DemandAlertsPage from './views/DemandAlertsPage'; // Import the Demand Alerts page component
 import StockAlertsPage from './views/StockAlertsPage'; // Import the Stock Alerts page component
+import FeatureComponent from './views/FeatureComponent'; // Import the new Price Changes feature component
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -70,10 +71,12 @@ const App = () => {
             <Routes>
               <Route path="/demand-alerts" element={<DemandAlertsPage />} />
               <Route path="/stock-alerts" element={<StockAlertsPage />} />
+              {/* Route for the new Price Changes feature */}
+              <Route path="/price-changes" element={<FeatureComponent />} />
             </Routes>
             {/* Other public routes */}
             <Route path="/login" element={<LoginForm />} />
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home />} /> {/* Add a home route if needed */}
           </>
         )}
       </MainLayout>
