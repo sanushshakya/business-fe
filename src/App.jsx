@@ -8,6 +8,7 @@ import PrivateRoute from './components/PrivateRoute'; // Import PrivateRoute wra
 import DemandAlertsPage from './views/DemandAlertsPage'; // Import the Demand Alerts page component
 import StockAlertsPage from './views/StockAlertsPage'; // Import the Stock Alerts page component
 import FeatureComponent from './views/FeatureComponent'; // Import the new Price Changes feature component
+import offlineDB from './offlineDB'; // Import offlineDB.js to use RxDB for offline database
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -74,9 +75,6 @@ const App = () => {
               {/* Route for the new Price Changes feature */}
               <Route path="/price-changes" element={<FeatureComponent />} />
             </Routes>
-            {/* Other public routes */}
-            <Route path="/login" element={<LoginForm />} />
-            <Route path="/" element={<Home />} /> {/* Add a home route if needed */}
           </>
         )}
       </MainLayout>
