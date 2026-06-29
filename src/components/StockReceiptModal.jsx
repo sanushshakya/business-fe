@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation } from 'react-query';
-import axios from '@/utils/axios';
+import useAddStockReceipt from '@/hooks/useAddStockReceipt';
 
 /**
  * StockReceiptModal component for creating and submitting stock receipts.
@@ -16,14 +15,11 @@ const StockReceiptModal = ({ isOpen, onClose }) => {
   } = useForm();
 
   // Mutation to handle the submission of the stock receipt
-  const { mutate, isLoading } = useMutation(
-    (data) => axios.post('/api/stock-receipts', data),
-    {
-      onSuccess: () => {
-        onClose();
-      },
-    }
-  );
+  const { mutate, isLoading } = useAddStockReceipt({
+    onSuccess: () => {
+      onClose();
+    },
+  });
 
   // Handler for form submission
   const onSubmit = (data) => {
@@ -78,15 +74,15 @@ const StockReceiptModal = ({ isOpen, onClose }) => {
             <input
               id="unitCost"
               type="number"
-              {...register('unitCost', { required: 'Unit Cost is required', min: 0 })}
+              {...register('unitCost', { required: 'Unit Cost is required' })}
               className="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
             {errors.unitCost && <p className="text-red-500 text-xs mt-1">{errors.unitCost.message}</p>}
           </div>
           <button
             type="submit"
+            className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 focus:outline-none"
             disabled={isLoading}
-            className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             {isLoading ? 'Submitting...' : 'Submit'}
           </button>
