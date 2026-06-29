@@ -10,9 +10,9 @@ import indexedDBAdapter from 'rxdb/plugins/indexeddb';
 indexedDBAdapter.addIndexedDBPlugin();
 
 /**
- * Creates an RxDB instance and initializes a sample collection.
+ * Creates an RxDB instance and initializes a sample collection for StockReceipts.
  *
- * @returns {Promise<RxDatabase>} A promise that resolves to the created RxDB instance with a sample collection.
+ * @returns {Promise<RxDatabase>} A promise that resolves to the created RxDB instance with a StockReceipts collection.
  */
 async function initRxDB() {
   try {
@@ -23,20 +23,21 @@ async function initRxDB() {
       multiInstance: false, // Prevent multiple instances of the same database
     });
 
-    // Initialize a sample collection
-    if (!db.inventory) {
+    // Initialize a sample collection for StockReceipts
+    if (!db.stockReceipts) {
       await db.addCollections({
-        inventory: {
+        stockReceipts: {
           schema: {
-            title: 'inventory',
-            description: 'Stores inventory data',
+            title: 'stockReceipts',
+            description: 'Stores stock receipt data',
             type: 'object',
             properties: {
               id: { type: 'string' },
-              name: { type: 'string' },
-              quantity: { type: 'number', minimum: 0 }
+              itemId: { type: 'string' },
+              quantity: { type: 'number', minimum: 0 },
+              date: { type: 'string', format: 'date-time' }
             },
-            required: ['id', 'name', 'quantity']
+            required: ['id', 'itemId', 'quantity', 'date']
           }
         }
       });
