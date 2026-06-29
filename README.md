@@ -1,4 +1,3 @@
----
 # iq-fe
 
 Welcome to the `iq-fe` project! This is a Vite React application designed for building modern web applications.
@@ -11,6 +10,7 @@ Welcome to the `iq-fe` project! This is a Vite React application designed for bu
 - [Project Structure](#project-structure)
 - [Fetching Event Dates](#fetching-event-dates)
 - [Price Changes Component](#price-changes-component)
+- [EventCard Component](#eventcard-component)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 
@@ -80,6 +80,20 @@ The `PriceChangesPage` component is a React component that displays a table of p
 - `onApprove`: A function called when a row is approved.
 - `onReject`: A function called when a row is rejected.
 
+## EventCard Component
+
+The `EventCard` component now fetches its records directly from RxDB instead of fetching them via an API endpoint. This change ensures that the component displays data immediately without any delay caused by network latency.
+
+### Props
+- `eventDate`: An object representing the event date and its associated events.
+  - `date`: A string representing the date in YYYY-MM-DD format.
+  - `events`: An array of objects representing individual events on this date.
+
+### Usage Example
+```jsx
+<EventCard eventDate={eventData} />
+```
+
 ## Contributing
 
 We welcome contributions from the community! If you have an idea or a fix, please follow these steps:
@@ -99,4 +113,5 @@ We expect all contributors and users to adhere to our [Code of Conduct](CODE_OF_
 ---
 
 This document outlines the guidelines for contributing to this project and maintaining a respectful and productive community.
+--- END ---
 --- END ---
