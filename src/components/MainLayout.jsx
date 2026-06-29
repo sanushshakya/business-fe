@@ -1,5 +1,3 @@
-// src/components/MainLayout.jsx
-
 /**
  * Main Layout Component
  * This component serves as the main layout for the application,
@@ -38,8 +36,8 @@ const MainLayout = ({ children }) => {
             <Tab>Stock Alerts</Tab>
           </TabList>
           <TabPanels>
-            <TabPanel>{children}</TabPanel>
-            <TabPanel>{children}</TabPanel>
+            {children[0]} {/* Render the first child for Demand Alerts */}
+            {children[1]} {/* Render the second child for Stock Alerts */}
           </TabPanels>
         </Tabs>
       </Container>
