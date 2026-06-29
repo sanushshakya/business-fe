@@ -2,9 +2,9 @@ import create from 'zustand';
 import axios from '../utils/axios';
 
 /**
- * Zustand store for managing authentication state.
+ * Zustand store for managing authentication and network status state.
  *
- * @returns {Object} The authentication state and actions.
+ * @returns {Object} The authentication and network status state and actions.
  */
 const useAuthStore = create((set) => ({
   /**
@@ -20,6 +20,13 @@ const useAuthStore = create((set) => ({
    * @type {string|null}
    */
   refreshToken: null,
+
+  /**
+   * Network status indicating if the user is online or offline.
+   *
+   * @type {boolean}
+   */
+  isOnline: true,
 
   /**
    * Set the access token.
@@ -64,6 +71,15 @@ const useAuthStore = create((set) => ({
       document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
       return Promise.reject(error);
     }
+  },
+
+  /**
+   * Update the network status.
+   *
+   * @param {boolean} online - The new network status (true for online, false for offline).
+   */
+  setNetworkStatus: (online) => {
+    set({ isOnline: online });
   },
 }));
 
