@@ -39,6 +39,3 @@ const EventCard = ({ eventId }) => {
 };
 
 export default EventCard;
-```
-
-This code snippet defines a React component `EventCard` that displays event details and active DemandAlerts. The component uses the `useInventory` custom hook to fetch inventory data based on the provided `eventId`. It handles loading, error states, and renders the event details and alerts accordingly.
