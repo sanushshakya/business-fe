@@ -11,6 +11,7 @@ Welcome to the `iq-fe` project! This is a Vite React application designed for bu
 - [Fetching Event Dates](#fetching-event-dates)
 - [Price Changes Component](#price-changes-component)
 - [EventCard Component](#eventcard-component)
+- [useNetworkStatus Hook](#usenetworkstatus-hook)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 
@@ -94,24 +95,40 @@ The `EventCard` component now fetches its records directly from RxDB instead of 
 <EventCard eventDate={eventData} />
 ```
 
+## useNetworkStatus Hook
+
+The `useNetworkStatus` hook uses Zustand for state management to track and update the network status of the application. This information is essential for handling offline scenarios gracefully, such as displaying a message to users when they are offline.
+
+### Usage
+```jsx
+import { useNetworkStatus } from './hooks/useNetworkStatus';
+
+function App() {
+  const { isConnected, onOnline, onOffline } = useNetworkStatus();
+
+  useEffect(() => {
+    if (isConnected) {
+      console.log('Application is online');
+    } else {
+      console.log('Application is offline');
+    }
+  }, [isConnected]);
+
+  return (
+    <div>
+      {/* Render your application logic here */}
+    </div>
+  );
+}
+```
+
+### Props
+- `initialConnectionStatus`: Optional. The initial connection status to set when the hook is first called.
+
 ## Contributing
 
 We welcome contributions from the community! If you have an idea or a fix, please follow these steps:
 
 1. **Fork the repository** on GitHub.
-2. **Create your feature branch**: `git checkout -b feature/AmazingFeature`
-3. **Commit your changes**: `git commit -m 'Add some AmazingFeature'`
-4. **Push to the branch**: `git push origin feature/AmazingFeature`
-5. **Open a Pull Request**
-
-Please make sure to update tests as appropriate.
-
-## Code of Conduct
-
-We expect all contributors and users to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
-
----
-
-This document outlines the guidelines for contributing to this project and maintaining a respectful and productive community.
---- END ---
+2. 
 --- END ---
