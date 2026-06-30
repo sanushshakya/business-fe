@@ -8,6 +8,7 @@ import create from 'zustand';
  */
 const useNetworkStore = create((set) => ({
   isOnline: navigator.onLine,
+  setOnline: (isOnline) => set({ isOnline }),
 }));
 
 /**
