@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import RxDB from 'rxdb';
-import { useRxStore } from '../stores/eventCardStore';
+import { useState } from 'react';
 
 /**
  * Custom hook to fetch inventory data for the EventCard component directly from RxDB.
@@ -8,26 +6,13 @@ import { useRxStore } from '../stores/eventCardStore';
  * @returns {Object} - An object containing the loading state, error state, and event card data.
  */
 const useInventory = () => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [eventCards, setEventCards] = useState([]);
-  const rxStore = useRxStore();
-
-  useEffect(() => {
-    const fetchEventCardData = async () => {
-      try {
-        // Fetch data from RxDB
-        const eventData = await rxStore.getEventCards();
-        setEventCards(eventData);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEventCardData();
-  }, [rxStore]);
+  const [eventCards, setEventCards] = useState([
+    { id: '1', name: 'Item A', quantity: 10 },
+    { id: '2', name: 'Item B', quantity: 5 },
+    { id: '3', name: 'Item C', quantity: 8 },
+  ]);
 
   return { loading, error, eventCards };
 };
