@@ -1,12 +1,14 @@
-import { useEffect } from 'react';
-
 /**
  * Custom hook to manage synchronization logic based on network status.
+ *
+ * This hook listens for 'online' and 'offline' events from the window object.
+ * When the network status changes, it triggers a callback function to perform
+ * necessary actions such as syncing data with the server or storing data locally.
  *
  * @returns {void}
  */
 const useSyncManager = () => {
-  const checkNetworkStatus = async () => {
+  const checkNetworkStatus = async (event) => {
     if (navigator.onLine) {
       // Perform actions when the network is online
       console.log('Network is now online');
