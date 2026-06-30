@@ -6,6 +6,7 @@
 import React from 'react';
 import Sidebar from './Sidebar'; // Import the Sidebar component
 import TopBar from './TopBar'; // Import the TopBar component
+import ConnectivityBadge from './ConnectivityBadge'; // Import the ConnectivityBadge component
 import { Container } from '@shadcn/ui/dist/components/ui/container';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@chakra-ui/react';
 
@@ -30,6 +31,7 @@ const MainLayout = ({ children }) => {
       {/* Main Content with a top bar and container for the main content */}
       <Container className="flex flex-col flex-1 w-full">
         <TopBar /> {/* Top Bar Component */}
+        <ConnectivityBadge /> {/* Add ConnectivityBadge to the top bar */}
         <Tabs isFitted variant="enclosed" colorScheme="blue">
           <TabList>
             <Tab>Demand Alerts</Tab>
