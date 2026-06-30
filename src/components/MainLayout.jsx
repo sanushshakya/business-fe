@@ -1,5 +1,5 @@
 /**
- * Main Layout Component
+ * MainLayout Component
  * This component serves as the main layout for the application,
  * featuring a left sidebar and a top bar with tabs for Demand and Stock Alerts.
  */
@@ -9,6 +9,7 @@ import TopBar from './TopBar'; // Import the TopBar component
 import ConnectivityBadge from './ConnectivityBadge'; // Import the ConnectivityBadge component
 import { Container } from '@shadcn/ui/dist/components/ui/container';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@chakra-ui/react';
+import { useNetworkStatus } from '../hooks/useNetworkStatus'; // Import the useNetworkStatus hook
 
 /**
  * MainLayout Component
@@ -16,6 +17,8 @@ import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@chakra-ui/react';
  * @returns {JSX.Element} - The rendered JSX element.
  */
 const MainLayout = ({ children }) => {
+  const networkStatus = useNetworkStatus(); // Consume the connectivity status from useNetworkStatus hook
+
   return (
     <div className="flex h-screen">
       {/* Left Sidebar */}
@@ -31,7 +34,7 @@ const MainLayout = ({ children }) => {
       {/* Main Content with a top bar and container for the main content */}
       <Container className="flex flex-col flex-1 w-full">
         <TopBar /> {/* Top Bar Component */}
-        <ConnectivityBadge /> {/* Add ConnectivityBadge to the top bar */}
+        <ConnectivityBadge status={networkStatus} /> {/* Add ConnectivityBadge to the top bar, passing network status */}
         <Tabs isFitted variant="enclosed" colorScheme="blue">
           <TabList>
             <Tab>Demand Alerts</Tab>
