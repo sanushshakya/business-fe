@@ -60,6 +60,21 @@ const App = () => {
   }, [isOnline, setNetworkStatus]);
 
   /**
+   * Register the Service Worker using Workbox.
+   */
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then((registration) => {
+          console.log('Service Worker registered with scope:', registration.scope);
+        }).catch((error) => {
+          console.error('Service Worker registration failed:', error);
+        });
+      });
+    }
+  }, []);
+
+  /**
    * Render the application's UI.
    */
   return (
@@ -72,21 +87,5 @@ const App = () => {
           </div>
         ) : (
           <>
-            {/* Use PrivateRoute for protected routes */}
-            <PrivateRoute path="/dashboard" element={<Dashboard />} />
-            <PrivateRoute path="/profile" element={<Profile />} />
-            {/* Routes for Demand and Stock Alerts pages */}
-            <Routes>
-              <Route path="/demand-alerts" element={<DemandAlertsPage />} />
-              <Route path="/stock-alerts" element={<StockAlertsPage />} />
-              {/* Add route for the Price Changes feature component */}
-              <Route path="/price-changes" element={<FeatureComponent />} />
-            </Routes>
-          </>
-        )}
-      </MainLayout>
-    </Router>
-  );
-};
-
-export default App;
+            {/* Use PrivateRoute 
+--- END ---
