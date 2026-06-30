@@ -2,41 +2,34 @@
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import workboxPlugin from 'vite-plugin-pwa';
+import { generateSW } from 'workbox-build';
 
-// Import Workbox configuration file
-import workbox from './workbox-config.js';
+/**
+ * Generate the service worker precache manifest.
+ * @returns {Promise<void>}
+ */
+async function generateServiceWorkerManifest() {
+  try {
+    const swBuildConfig = {
+      globDirectory: 'dist',
+      globPatterns: ['**/*.{js,css,html}'],
+      swDest: 'dist/sw.js',
+    };
+
+    await generateSW(swBuildConfig);
+    console.log('Service worker precache manifest generated successfully.');
+  } catch (error) {
+    console.error('Failed to generate service worker precache manifest:', error);
+  }
+}
+
+// Run the manifest generation during build
+if (process.env.NODE_ENV === 'production') {
+  generateServiceWorkerManifest();
+}
 
 export default defineConfig({
   plugins: [
     react(),
-    workboxPlugin(workbox),
   ],
-  build: {
-    rollupOptions: {
-      output: {
-        assetFileNames: ({ name }) => (name.endsWith('.css') ? 'assets/[name].[hash][extname]' : 'assets/[name].[hash][extname]'),
-        chunkFileNames: 'assets/[name].[hash].js',
-        entryFileNames: 'assets/[name].[hash].js',
-      },
-    },
-  },
 });
-```
-
-```javascript
-// workbox-config.js
-
-export default {
-  // Define the directory for the service worker registration script
-  globDirectory: './dist',
-
-  // Define the patterns to precache, include all JS/CSS/HTML build assets
-  globPatterns: [
-    '**/*.{js,css,html}',
-  ],
-
-  // Set the prefix for cached URLs
-  skipWaiting: true,
-  clientsClaim: true,
-};
