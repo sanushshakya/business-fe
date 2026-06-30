@@ -10,6 +10,7 @@ import StockAlertsPage from './views/StockAlertsPage'; // Import the Stock Alert
 import FeatureComponent from './views/FeatureComponent'; // Import the new Price Changes feature component
 import offlineDB from './offlineDB'; // Import offlineDB.js to use RxDB for offline database
 import useNetworkStatus from '../hooks/useInventory'; // Import the useNetworkStatus hook
+import useSyncManager from '../hooks/useSyncManager'; // Import the useSyncManager hook
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -59,6 +60,9 @@ const App = () => {
     setNetworkStatus(isOnline);
   }, [isOnline, setNetworkStatus]);
 
+  // Use the useSyncManager hook to trigger actions when the network status changes from offline to online
+  useSyncManager();
+
   /**
    * Register the Service Worker using Workbox.
    */
@@ -74,18 +78,18 @@ const App = () => {
     }
   }, []);
 
-  /**
-   * Render the application's UI.
-   */
   return (
-    <Router> {/* Use BrowserRouter for routing */}
-      <MainLayout> {/* Use the MainLayout component */}
-        {error ? (
-          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-            <h1 className="text-red-500 font-bold">Oops! Something went wrong.</h1>
-            <p className="mt-4">{error}</p>
-          </div>
-        ) : (
-          <>
-            {/* Use PrivateRoute 
---- END ---
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<LoginForm />} />
+          <Route path="/demand-alerts" element={<PrivateRoute component={DemandAlertsPage} />} />
+          <Route path="/stock-alerts" element={<PrivateRoute component={StockAlertsPage} />} />
+          <Route path="/price-changes" element={<PrivateRoute component={FeatureComponent} />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;
