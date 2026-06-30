@@ -15,7 +15,7 @@ const useNetworkStore = create((set) => ({
  * Custom hook to poll navigator.onLine every 5 seconds and store the status in Zustand.
  * @returns {boolean} - The current online status.
  */
-export default function useNetworkStatus() {
+export default function useNetworkStatus(callback = () => {}) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const setOnlineStatus = useNetworkStore((state) => state.setOnline);
 
@@ -23,6 +23,7 @@ export default function useNetworkStatus() {
     const handleOnlineChange = () => {
       setIsOnline(navigator.onLine);
       setOnlineStatus(navigator.onLine);
+      if (navigator.onLine) callback(); // Call the callback function if online
     };
 
     window.addEventListener('online', handleOnlineChange);
@@ -32,7 +33,7 @@ export default function useNetworkStatus() {
       window.removeEventListener('online', handleOnlineChange);
       window.removeEventListener('offline', handleOnlineChange);
     };
-  }, [setOnlineStatus]);
+  }, [setOnlineStatus, callback]);
 
   useEffect(() => {
     const interval = setInterval(() => {
