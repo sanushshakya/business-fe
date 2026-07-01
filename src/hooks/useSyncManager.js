@@ -1,9 +1,10 @@
 /**
- * Custom hook to manage synchronization logic based on network status.
+ * Custom hook to manage synchronization logic based on network status and batch processing using rxdbBatchService.
  *
  * This hook listens for 'online' and 'offline' events from the window object.
  * When the network status changes, it triggers a callback function to perform
- * necessary actions such as syncing data with the server or storing data locally.
+ * necessary actions such as syncing data with the server or storing data locally,
+ * utilizing the batching service for efficient record processing.
  *
  * @returns {void}
  */
@@ -12,7 +13,13 @@ const useSyncManager = () => {
     if (navigator.onLine) {
       // Perform actions when the network is online
       console.log('Network is now online');
-      // Example: Sync data with the server or perform other necessary actions
+      try {
+        // Batch process records using rxdbBatchService
+        await rxdbBatchService.processBatch();
+        console.log('Records synced and processed successfully');
+      } catch (error) {
+        console.error('Error syncing and processing records:', error);
+      }
     } else {
       // Perform actions when the network is offline
       console.log('Network is now offline');
