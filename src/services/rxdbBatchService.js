@@ -64,3 +64,27 @@ export const sendBatchesOverWebSocket = (socket) => {
     }
   });
 };
+
+/**
+ * Service to update the 'synced' field of RxDB records based on UUID confirmation.
+ *
+ * @param {Array} records - Array of RxDB records to be updated.
+ * @param {Object} syncActions - Object containing actions for updating records.
+ */
+export const updateSyncField = (records, syncActions) => {
+  if (!records || records.length === 0 || !syncActions || !syncActions.updateRecord) return;
+
+  records.forEach(async (record) => {
+    try {
+      // Confirm UUID
+      const isUuidConfirmed = await syncActions.confirmUUID(record.uuid);
+
+      if (isUuidConfirmed) {
+        // Update the record's 'synced' field to true
+        await syncActions.updateRecord(record, { synced: true });
+      }
+    } catch (error) {
+      console.error('Error updating sync field for record with UUID:', record.uuid, error);
+    }
+  });
+};
