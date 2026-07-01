@@ -1,6 +1,6 @@
 /**
  * @module src/services/rxdbBatchService.js
- * Service to handle batching of RxDB records and sending over WebSocket.
+ * Service to handle batching of RxDB records and sending over WebSocket with error handling.
  */
 
 import { Subject } from 'rxjs';
@@ -41,15 +41,26 @@ export const observeBatches = () => {
 };
 
 /**
- * Service to send batches over WebSocket.
+ * Service to send batches over WebSocket with error handling.
  *
  * @param {WebSocket} socket - WebSocket instance to use for sending batches.
  */
 export const sendBatchesOverWebSocket = (socket) => {
-  observeBatches().subscribe((batch) => {
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(batch));
+  observeBatches().subscribe({
+    next(batch) {
+      if (socket.readyState === WebSocket.OPEN) {
+        try {
+          socket.send(JSON.stringify(batch));
+        } catch (error) {
+          console.error('Error sending batch over WebSocket:', error);
+        }
+      }
+    },
+    error(err) {
+      console.error('WebSocket error:', err);
+    },
+    complete() {
+      console.log('Batch sending completed');
     }
   });
 };
---- END ---
