@@ -39,3 +39,17 @@ export const observeBatches = () => {
     }))
   );
 };
+
+/**
+ * Service to send batches over WebSocket.
+ *
+ * @param {WebSocket} socket - WebSocket instance to use for sending batches.
+ */
+export const sendBatchesOverWebSocket = (socket) => {
+  observeBatches().subscribe((batch) => {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(batch));
+    }
+  });
+};
+--- END ---
