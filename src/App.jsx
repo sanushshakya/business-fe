@@ -17,7 +17,6 @@ import useSyncManager from '../hooks/useSyncManager'; // Import the useSyncManag
  * It renders the application's UI and includes basic error handling to improve user experience.
  */
 const App = () => {
-  // State to hold any errors that occur during rendering or fetching data
   const [error, setError] = React.useState(null);
 
   /**
@@ -29,7 +28,6 @@ const App = () => {
       setError(err.message);
     };
 
-    // Adding global error handlers
     window.addEventListener('unhandledrejection', handleError);
 
     return () => {
@@ -37,9 +35,6 @@ const App = () => {
     };
   }, []);
 
-  /**
-   * Example function to demonstrate using the exported Axios instance for API calls.
-   */
   const fetchData = async () => {
     try {
       const response = await axiosInstance.get('/api/data');
@@ -49,43 +44,52 @@ const App = () => {
     }
   };
 
-  // Call the fetchData function when the component mounts
   React.useEffect(() => {
     fetchData();
   }, []);
 
-  // Use the useNetworkStatus hook to update network status in the Zustand store
   const isOnline = useNetworkStatus((state) => state.isOnline);
   React.useEffect(() => {
     setNetworkStatus(isOnline);
   }, [isOnline, setNetworkStatus]);
 
-  // Use the useSyncManager hook to trigger actions when the network status changes from offline to online
   useSyncManager();
 
-  /**
-   * Register the Service Worker using Workbox.
-   */
+  // Establish WebSocket connection
   React.useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then((registration) => {
-          console.log('Service Worker registered with scope:', registration.scope);
-        }).catch((error) => {
-          console.error('Service Worker registration failed:', error);
-        });
-      });
-    }
+    const socket = new WebSocket('ws://example.com/socket');
+
+    socket.onopen = () => {
+      console.log('WebSocket connected');
+    };
+
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    socket.onmessage = (event) => {
+      console.log('Message from server:', event.data);
+      // Handle incoming data as needed
+    };
+
+    socket.onclose = () => {
+      console.log('WebSocket closed');
+    };
+
+    return () => {
+      socket.close();
+    };
   }, []);
 
   return (
     <Router>
       <Routes>
+        {/* Define routes with PrivateRoute to protect certain pages */}
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<LoginForm />} />
-          <Route path="/demand-alerts" element={<PrivateRoute component={DemandAlertsPage} />} />
-          <Route path="/stock-alerts" element={<PrivateRoute component={StockAlertsPage} />} />
-          <Route path="/price-changes" element={<PrivateRoute component={FeatureComponent} />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/demand-alerts" element={<PrivateRoute><DemandAlertsPage /></PrivateRoute>} />
+          <Route path="/stock-alerts" element={<PrivateRoute><StockAlertsPage /></PrivateRoute>} />
+          <Route path="/feature" element={<PrivateRoute><FeatureComponent /></PrivateRoute>} />
         </Route>
       </Routes>
     </Router>
