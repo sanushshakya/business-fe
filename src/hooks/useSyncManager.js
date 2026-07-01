@@ -27,6 +27,22 @@ const useSyncManager = () => {
     }
   };
 
+  const handleSyncConfirmation = async (uuid) => {
+    try {
+      // Assuming getRecord and updateRecord are defined elsewhere in your application
+      const record = await getRecord(uuid);
+      if (record) {
+        record.set('synced', true);
+        await record.save();
+        console.log(`Record with UUID ${uuid} has been marked as synced.`);
+      } else {
+        console.warn(`No record found for UUID ${uuid}.`);
+      }
+    } catch (error) {
+      console.error(`Error updating synced status for UUID ${uuid}:`, error);
+    }
+  };
+
   useEffect(() => {
     window.addEventListener('online', checkNetworkStatus);
     window.addEventListener('offline', checkNetworkStatus);
@@ -38,6 +54,8 @@ const useSyncManager = () => {
   }, []);
 
   // Additional logic to handle synchronization can be added here
+
+  return { handleSyncConfirmation }; // Return the function for use elsewhere if needed
 };
 
 export default useSyncManager;
