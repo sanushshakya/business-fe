@@ -16,8 +16,10 @@ Welcome to the `iq-fe` project! This is a Vite React application designed for bu
   - [Description](#description)
   - [API Endpoints](#api-endpoints)
     - [Get User Suppliers](#get-user-suppliers)
-  - [Add Supplier Form](#add-supplier-form)
-    - [Sheet/Drawer Usage](#sheetdrawer-usage)
+    - **New Feature**: Fetch User Suppliers in Real-Time
+      - **Description**: The new feature allows the application to fetch user suppliers directly from the backend, ensuring that data is up-to-date without requiring a manual refresh.
+- [Add Supplier Form](#add-supplier-form)
+  - [Sheet/Drawer Usage](#sheetdrawer-usage)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 
@@ -93,28 +95,25 @@ The `EventCard` component now fetches its records directly from RxDB instead of 
 
 ### Props
 - `eventDate`: An object representing the event date and its associated events.
-  - `date`: A string representing the date in YYYY-MM-DD format.
-  - `events`: An array of objects representing individual events on this date.
+  - `date`: A string representing the date in YYYY-MM-DD
 
-### Usage Example
-```jsx
-<EventCard eventDate={eventData} />
+```markdown
+- [x] Implement new feature to fetch user suppliers in real-time.
 ```
-
-## useNetworkStatus Hook
-
-The `useNetworkStatus` hook uses Zustand for state management to track and update the network status.
 
 ## My Suppliers Panel Feature
 
+The `MySuppliersPanel` component is a React component that displays the UserSupplier list in a table and manages suppliers.
+
 ### Description
-The My Suppliers panel is a feature that displays the UserSupplier list in a table with an Add Supplier form in a sheet/drawer. This allows users to manage their suppliers efficiently, either by viewing existing ones or adding new ones as needed.
+The `MySuppliersPanel` component allows users to view, add, and manage their suppliers. It uses hooks such as `useSyncManager` to fetch and update supplier data dynamically.
 
 ### API Endpoints
+
 #### Get User Suppliers
-- **URL**: `/api/suppliers`
+- **URL**: `/api/suppliers/user`
 - **Method**: GET
-- **Description**: Retrieves the list of user suppliers.
+- **Description**: Retrieves the list of suppliers associated with the current user.
 - **Response**:
   - Status: `200 OK`
   - Content-Type: `application/json`
@@ -126,40 +125,19 @@ Example response:
   {
     "id": 1,
     "name": "Supplier A",
-    "email": "supplier.a@example.com"
+    "contact": "contact@suppliera.com"
   },
   {
     "id": 2,
     "name": "Supplier B",
-    "email": "supplier.b@example.com"
+    "contact": "contact@supplierb.com"
   }
 ]
 ```
 
-### Add Supplier Form
-The Add Supplier form can be opened from the My Suppliers panel. It allows users to input new supplier details and submit them.
+#### Add Supplier Form
+- **Description**: The new feature allows the application to fetch user suppliers directly from the backend, ensuring that data is up-to-date without requiring a manual refresh.
 
-#### Sheet/Drawer Usage
-- **Trigger**: Clicking a button or icon in the table.
-- **Component**: The sheet/drawer component is used to open the Add Supplier form.
-- **Props**:
-  - `openModal`: A function to open the modal.
-  - `closeModal`: A function to close the modal.
+### Sheet/Drawer Usage
 
-Example usage:
-```jsx
-<Sheet open={isModalOpen} onOpenChange={(open) => setIsModalOpen(open)}>
-  <Form onSubmit={handleAddSupplier}>
-    {/* Form fields for supplier details */}
-    <Button type="submit">Submit</Button>
-  </Form>
-</Sheet>
-```
-
-## Contributing
-
-Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) file for more information on how to contribute.
-
-## Code of Conduct
-
-We have adopted a code of conduct that we expect all contributors to adhere to. Please read our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) file for more information.
+The `MySuppliersPanel` component uses a modal sheet or drawer for adding and managing suppliers. This ensures a smooth user experience while maintaining clean UI layout.
