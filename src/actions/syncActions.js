@@ -20,3 +20,17 @@ export async function updateSyncedField(uuid, syncedValue) {
     throw error;
   }
 }
+
+/**
+ * Sets the syncing state and updates the record count.
+ *
+ * @param {boolean} isSyncing - Indicates whether the sync operation is currently in progress.
+ * @param {number} newRecordCount - The new count of records after the update.
+ * @returns {Promise<void>} - A promise that resolves when the syncing state and record count have been updated.
+ */
+export async function setSyncingStateAndUpdateRecordCount(isSyncing, newRecordCount) {
+  // Assuming there is a global state management solution to update these values
+  // For example, using Zustand or React Context
+  await updateSyncedField('syncingStatus', isSyncing);
+  await updateSyncedField('recordCount', newRecordCount);
+}
