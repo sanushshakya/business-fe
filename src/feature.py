@@ -17,6 +17,12 @@ const MySuppliersPanel: React.FC = () => {
     return <div>No suppliers available.</div>;
   }
 
+  // Validate userSuppliers to ensure it's an array
+  if (!Array.isArray(userSuppliers)) {
+    console.error('Invalid userSuppliers data format');
+    return <div>Invalid data format. Please check the API response.</div>;
+  }
+
   return (
     <div>
       <Table data={userSuppliers}>
