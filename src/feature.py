@@ -14,37 +14,35 @@ const MySuppliersPanel: React.FC = () => {
 
   // Handle edge case when userSuppliers is undefined or null
   if (!userSuppliers) {
-    return <div>No suppliers available.</div>;
-  }
-
-  // Validate userSuppliers to ensure it's an array
-  if (!Array.isArray(userSuppliers)) {
-    console.error('Invalid userSuppliers data format');
-    return <div>Invalid data format. Please check the API response.</div>;
+    return <div>No suppliers available</div>;
   }
 
   return (
     <div>
       <Table data={userSuppliers}>
-        {/* Define the columns of the table */}
-        <Table.Column title="Name" accessor="name" />
-        <Table.Column title="Email" accessor="email" />
-        <Table.Column title="Phone" accessor="phone" />
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {userSuppliers.map((supplier) => (
+            <tr key={supplier.id}>
+              <td>{supplier.name}</td>
+              <td>{supplier.email}</td>
+              <td>
+                <Button onClick={() => openModal(supplier)}>Edit</Button>
+                <Button onClick={() => closeModal()}>Cancel</Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </Table>
 
-      {/* Add Supplier form in a sheet/drawer */}
-      <Modal open={openModal} onClose={closeModal}>
-        <Modal.Header>Add New Supplier</Modal.Header>
-        <Modal.Body>
-          {/* Form fields for adding a new supplier */}
-          <input type="text" placeholder="Name" required />
-          <input type="email" placeholder="Email" required />
-          <input type="tel" placeholder="Phone" required />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary">Add Supplier</Button>
-          <Button variant="outline" onClick={closeModal}>Cancel</Button>
-        </Modal.Footer>
+      <Modal open={true} onOpenChange={(open) => open ? null : closeModal()}>
+        {/* Modal content will be managed by useSyncManager */}
       </Modal>
     </div>
   );
