@@ -6,7 +6,7 @@ import useSyncManager from '../hooks/useSyncManager';
 
 /**
  * MySuppliersPanel component to display the UserSupplier list in a table and manage suppliers.
- * 
+ *
  * @returns {React.FC} - The MySuppliersPanel component
  */
 const MySuppliersPanel: React.FC = () => {
@@ -17,9 +17,18 @@ const MySuppliersPanel: React.FC = () => {
     return <div>No suppliers available</div>;
   }
 
+  // Validate each supplier object for expected properties
+  const validatedSuppliers = userSuppliers.map((supplier) => {
+    if (!supplier.id || !supplier.name || !supplier.email) {
+      console.error('Invalid supplier data:', supplier);
+      return null;
+    }
+    return supplier;
+  }).filter(Boolean); // Filter out any suppliers that failed validation
+
   return (
     <div>
-      <Table data={userSuppliers}>
+      <Table data={validatedSuppliers}>
         <thead>
           <tr>
             <th>Name</th>
@@ -28,7 +37,7 @@ const MySuppliersPanel: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {userSuppliers.map((supplier) => (
+          {validatedSuppliers.map((supplier) => (
             <tr key={supplier.id}>
               <td>{supplier.name}</td>
               <td>{supplier.email}</td>
