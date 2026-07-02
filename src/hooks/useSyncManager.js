@@ -9,6 +9,9 @@
  * @returns {void}
  */
 const useSyncManager = () => {
+  const [syncingStatus, setSyncingStatus] = useState(false);
+  const [syncCount, setSyncCount] = useState(0);
+
   const checkNetworkStatus = async (event) => {
     if (navigator.onLine) {
       // Perform actions when the network is online
@@ -16,6 +19,8 @@ const useSyncManager = () => {
       try {
         // Batch process records using rxdbBatchService
         await rxdbBatchService.processBatch();
+        setSyncCount(prevCount => prevCount + 1);
+        setSyncingStatus(false);
         console.log('Records synced and processed successfully');
       } catch (error) {
         console.error('Error syncing and processing records:', error);
@@ -23,6 +28,7 @@ const useSyncManager = () => {
     } else {
       // Perform actions when the network is offline
       console.log('Network is now offline');
+      setSyncingStatus(true);
       // Example: Store data locally or perform other necessary actions
     }
   };
@@ -55,7 +61,7 @@ const useSyncManager = () => {
 
   // Additional logic to handle synchronization can be added here
 
-  return { handleSyncConfirmation }; // Return the function for use elsewhere if needed
+  return { syncingStatus, syncCount, handleSyncConfirmation }; // Return the function for use elsewhere if needed
 };
 
 export default useSyncManager;
