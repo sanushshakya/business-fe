@@ -12,6 +12,12 @@ Welcome to the `iq-fe` project! This is a Vite React application designed for bu
 - [Price Changes Component](#price-changes-component)
 - [EventCard Component](#eventcard-component)
 - [useNetworkStatus Hook](#usenetworkstatus-hook)
+- [My Suppliers Panel Feature](#my-suppliers-panel-feature)
+  - [Description](#description)
+  - [API Endpoints](#api-endpoints)
+    - [Get User Suppliers](#get-user-suppliers)
+  - [Add Supplier Form](#add-supplier-form)
+    - [Sheet/Drawer Usage](#sheetdrawer-usage)
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 
@@ -97,38 +103,63 @@ The `EventCard` component now fetches its records directly from RxDB instead of 
 
 ## useNetworkStatus Hook
 
-The `useNetworkStatus` hook uses Zustand for state management to track and update the network status of the application. This information is essential for handling offline scenarios gracefully, such as displaying a message to users when they are offline.
+The `useNetworkStatus` hook uses Zustand for state management to track and update the network status.
 
-### Usage
-```jsx
-import { useNetworkStatus } from './hooks/useNetworkStatus';
+## My Suppliers Panel Feature
 
-function App() {
-  const { isConnected, onOnline, onOffline } = useNetworkStatus();
+### Description
+The My Suppliers panel is a feature that displays the UserSupplier list in a table with an Add Supplier form in a sheet/drawer. This allows users to manage their suppliers efficiently, either by viewing existing ones or adding new ones as needed.
 
-  useEffect(() => {
-    if (isConnected) {
-      console.log('Application is online');
-    } else {
-      console.log('Application is offline');
-    }
-  }, [isConnected]);
+### API Endpoints
+#### Get User Suppliers
+- **URL**: `/api/suppliers`
+- **Method**: GET
+- **Description**: Retrieves the list of user suppliers.
+- **Response**:
+  - Status: `200 OK`
+  - Content-Type: `application/json`
+  - Body: Array of supplier objects.
 
-  return (
-    <div>
-      {/* Render your application logic here */}
-    </div>
-  );
-}
+Example response:
+```json
+[
+  {
+    "id": 1,
+    "name": "Supplier A",
+    "email": "supplier.a@example.com"
+  },
+  {
+    "id": 2,
+    "name": "Supplier B",
+    "email": "supplier.b@example.com"
+  }
+]
 ```
 
-### Props
-- `initialConnectionStatus`: Optional. The initial connection status to set when the hook is first called.
+### Add Supplier Form
+The Add Supplier form can be opened from the My Suppliers panel. It allows users to input new supplier details and submit them.
+
+#### Sheet/Drawer Usage
+- **Trigger**: Clicking a button or icon in the table.
+- **Component**: The sheet/drawer component is used to open the Add Supplier form.
+- **Props**:
+  - `openModal`: A function to open the modal.
+  - `closeModal`: A function to close the modal.
+
+Example usage:
+```jsx
+<Sheet open={isModalOpen} onOpenChange={(open) => setIsModalOpen(open)}>
+  <Form onSubmit={handleAddSupplier}>
+    {/* Form fields for supplier details */}
+    <Button type="submit">Submit</Button>
+  </Form>
+</Sheet>
+```
 
 ## Contributing
 
-We welcome contributions from the community! If you have an idea or a fix, please follow these steps:
+Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) file for more information on how to contribute.
 
-1. **Fork the repository** on GitHub.
-2. 
---- END ---
+## Code of Conduct
+
+We have adopted a code of conduct that we expect all contributors to adhere to. Please read our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) file for more information.
