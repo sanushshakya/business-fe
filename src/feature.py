@@ -12,6 +12,11 @@ import useSyncManager from '../hooks/useSyncManager';
 const MySuppliersPanel: React.FC = () => {
   const { userSuppliers, openModal, closeModal } = useSyncManager();
 
+  // Handle edge case when userSuppliers is undefined or null
+  if (!userSuppliers) {
+    return <div>No suppliers available.</div>;
+  }
+
   return (
     <div>
       <Table data={userSuppliers}>
@@ -26,9 +31,9 @@ const MySuppliersPanel: React.FC = () => {
         <Modal.Header>Add New Supplier</Modal.Header>
         <Modal.Body>
           {/* Form fields for adding a new supplier */}
-          <input type="text" placeholder="Name" />
-          <input type="email" placeholder="Email" />
-          <input type="tel" placeholder="Phone" />
+          <input type="text" placeholder="Name" required />
+          <input type="email" placeholder="Email" required />
+          <input type="tel" placeholder="Phone" required />
         </Modal.Body>
         <Modal.Footer>
           <Button variant="primary">Add Supplier</Button>
