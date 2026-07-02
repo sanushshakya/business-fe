@@ -11,6 +11,8 @@ import FeatureComponent from './views/FeatureComponent'; // Import the new Price
 import offlineDB from './offlineDB'; // Import offlineDB.js to use RxDB for offline database
 import useNetworkStatus from '../hooks/useInventory'; // Import the useNetworkStatus hook
 import useSyncManager from '../hooks/useSyncManager'; // Import the useSyncManager hook
+import FreightAlertsPanel from './components/FreightAlertsPanel'; // Import FreightAlertsPanel component
+import SupplierCarousel from './components/SupplierCarousel'; // Import SupplierCarousel component
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -86,10 +88,12 @@ const App = () => {
       <Routes>
         {/* Define routes with PrivateRoute to protect certain pages */}
         <Route path="/" element={<MainLayout />}>
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/demand-alerts" element={<PrivateRoute><DemandAlertsPage /></PrivateRoute>} />
-          <Route path="/stock-alerts" element={<PrivateRoute><StockAlertsPage /></PrivateRoute>} />
-          <Route path="/feature" element={<PrivateRoute><FeatureComponent /></PrivateRoute>} />
+          <Route index element={<LoginForm />} />
+          <Route path="/demand-alerts" element={<DemandAlertsPage />} />
+          <Route path="/stock-alerts" element={<StockAlertsPage />} />
+          <Route path="/feature" element={<FeatureComponent />} />
+          <Route path="/disruption-alerts" element={<FreightAlertsPanel />} />
+          <Route path="/supplier-carousel" element={<SupplierCarousel />} />
         </Route>
       </Routes>
     </Router>
