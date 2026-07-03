@@ -1,5 +1,3 @@
-// src/components/Feature.jsx
-
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { selectTotalStockValue, selectGrossMarginPercentage, selectActiveAlertsCount, selectWasteSavedBy } from '../stores/dashboardStore';
@@ -14,6 +12,20 @@ const Feature = () => {
   const grossMarginPercentage = useSelector(selectGrossMarginPercentage);
   const activeAlertsCount = useSelector(selectActiveAlertsCount);
   const wasteSavedBy = useSelector(selectWasteSavedBy);
+
+  // Validate the data to ensure it's in the expected format
+  if (typeof totalStockValue !== 'number' || typeof grossMarginPercentage !== 'number' || !Number.isInteger(activeAlertsCount) || typeof wasteSavedBy !== 'number') {
+    console.error('Invalid data received from Redux store');
+    return <div>Error loading data</div>;
+  }
+
+  // Handle edge cases where data might be undefined or null
+  if (isNaN(totalStockValue) || isNaN(grossMarginPercentage) || isNaN(wasteSavedBy)) {
+    console.warn('Data is not a valid number');
+    totalStockValue = 0;
+    grossMarginPercentage = 0;
+    wasteSavedBy = 0;
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
