@@ -1,59 +1,37 @@
-/* Feature.module.css */
+/* src/components/Feature.module.css */
 
-.feature-container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+/* Container for the KPI cards */
+.kpi-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
 }
 
-.table-wrapper {
-  overflow-x: auto;
+/* Individual KPI card styling */
+.kpi-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
-.shadcn-table {
-  width: 100%;
-  border-collapse: collapse;
+/* Title style for KPI cards */
+.kpi-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #333;
 }
 
-.shadcn-th,
-.shadcn-td {
-  border: 1px solid #ccc;
-  padding: 1rem;
+/* Value style for KPI cards */
+.kpi-value {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: #007aff;
 }
 
-.shadcn-th {
-  background-color: #f5f5f5;
-}
-
-.reason-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
+/* Description style for KPI cards */
+.kpi-description {
   font-size: 0.875rem;
-  border-radius: 4px;
-}
-
-.invoice-update,
-.decay-markdown,
-.manual {
-  background-color: #007aff;
-  color: white;
-}
-
-.pending-approval {
-  background-color: #ffc107;
-}
-
-.auto-applied,
-.approved {
-  background-color: #28a745;
-}
-
-.rejected {
-  background-color: #dc3545;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
+  color: #666;
 }
