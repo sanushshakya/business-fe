@@ -86,15 +86,18 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Define routes with PrivateRoute to protect certain pages */}
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<LoginForm />} />
-          <Route path="/demand-alerts" element={<DemandAlertsPage />} />
-          <Route path="/stock-alerts" element={<StockAlertsPage />} />
-          <Route path="/feature" element={<FeatureComponent />} />
-          <Route path="/disruption-alerts" element={<FreightAlertsPanel />} />
-          <Route path="/supplier-carousel" element={<SupplierCarousel />} />
-        </Route>
+        <Route path="/" element={<LoginForm />} />
+        <Route path="/dashboard" element={
+          <PrivateRoute>
+            <MainLayout>
+              <FeatureComponent /> {/* Add the new Feature component */}
+              <DemandAlertsPage />
+              <StockAlertsPage />
+              <FreightAlertsPanel />
+              <SupplierCarousel />
+            </MainLayout>
+          </PrivateRoute>
+        } />
       </Routes>
     </Router>
   );
