@@ -113,38 +113,29 @@ Example response:
 
 ## Price Changes Component
 
-The `PriceChangesPage` component is a React component that displays a table of price changes for products. The table includes columns for Product Name, Old Price (£), New Price (£), Change %, Reason badge (Invoice Update / Decay Markdown / Manual), Triggered At, and Status (Auto-Applied / Pending Approval / Approved / Rejected). Additionally, there are action buttons to Approve and Reject the changes, which are visible only in `require_approval` mode.
-
-### Props
-- `data`: An array of objects containing price change data for each product.
-- `onApprove`: A function called when a row is approved.
-- `onReject`: A function called when a row is rejected.
+The `PriceChangesPage` component is a React component that displays a table of price changes for products. The table includes columns for Product Name, Old Price (£), New Price (£), Change %, Reason badge (Invoice Update / Decay Markdown / Manual), Triggered At, and Status (Auto-Applied / Pending Approval / Approved / Rejected). Additional information on the component's functionality can be found in the [source code](src/components/PriceChangesPage.js).
 
 ## EventCard Component
 
-The `EventCard` component now fetches its records directly from RxDB instead of fetching them via an API endpoint. This change ensures that data is fetched locally and reduces the number of network requests, improving performance and responsiveness.
+The `EventCard` component is a React component that displays event details. It fetches data directly from the backend using a custom hook to manage network status and batch updates.
 
-### Props
-- `event`: An object containing event data.
-- `onEdit`: A function called when the event needs to be edited.
+## useNetworkStatus Hook
+
+The `useNetworkStatus` hook is a custom hook that manages the application's network status. It provides functions to check if the device is online or offline and updates the state accordingly.
 
 ## My Suppliers Panel Feature
 
-The `MySuppliersPanel` component displays a table of user suppliers and includes a modal for adding new suppliers. The component uses the `useSyncManager` hook to manage the list of user suppliers and sync them with the backend in real-time.
-
 ### Description
-The `MySuppliersPanel` component is designed to help users manage their suppliers efficiently by providing a centralized view of all suppliers and allowing easy addition of new ones.
+The `MySuppliersPanel` component displays the list of user suppliers in a table and allows users to manage them.
 
 ### API Endpoints
-
-#### Get User Suppliers
-- **Description**: Retrieves the list of user suppliers.
-- **Endpoint**: `/api/suppliers`
-- **Method**: GET
-- **Response**:
-  - Status: `200 OK`
-  - Content-Type: `application/json`
-  - Body: Array of supplier objects.
+- **Get User Suppliers**: `/api/suppliers/`
+  - **Method**: GET
+  - **Description**: Retrieves a list of user suppliers.
+  - **Response**:
+    - Status: `200 OK`
+    - Content-Type: `application/json`
+    - Body: Array of supplier objects.
 
 Example response:
 ```json
@@ -152,27 +143,25 @@ Example response:
   {
     "id": 1,
     "name": "Supplier A",
-    "contact": "supplier_a@example.com"
+    "contact": "supplier.a@example.com"
   },
   {
     "id": 2,
     "name": "Supplier B",
-    "contact": "supplier_b@example.com"
+    "contact": "supplier.b@example.com"
   }
 ]
 ```
 
+- **New Feature**: Fetch User Suppliers in Real-Time
+  - The new feature allows the application to fetch user suppliers directly from the backend, ensuring that data is up-to-date without requiring a manual refresh.
+
 ## Add Supplier Form
 
-The `AddSupplierForm` component allows users to add new suppliers by filling out a form. The form includes fields for the supplier's name and contact information.
-
-### Sheet/Drawer Usage
-The form can be opened using a sheet or drawer, providing a convenient way to manage suppliers without leaving the current page.
+The `AddSupplierForm` component is a React component that allows users to add new suppliers. It uses a sheet or drawer for form input and submission.
 
 ## Contributing
-
-We welcome contributions from the community! If you have an idea for a new feature, please open an issue first to discuss it before submitting a pull request. For more details on how to contribute, see the [CONTRIBUTING](CONTRIBUTING.md) file.
+We welcome contributions to this project! If you have any suggestions, bug reports, or feature requests, please open an issue on the [GitHub repository](https://github.com/your-repo/iq-fe).
 
 ## Code of Conduct
-
-Please familiarize yourself with our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure that all interactions within the project are respectful and professional.
+Please refer to our [Code of Conduct](CODE_OF_CONDUCT.md) for guidelines on contributing and maintaining a respectful environment.
