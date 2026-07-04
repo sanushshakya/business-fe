@@ -1,6 +1,6 @@
 /**
  * @module src/actions/syncActions.js
- * Actions related to syncing records in RxDB based on UUID confirmation.
+ * Actions related to syncing records in RxDB based on UUID confirmation and fetching alerts data.
  */
 
 import { updateRecord } from '../offlineDB'; // Assuming offlineDB.js exports the updateRecord function
@@ -33,4 +33,24 @@ export async function setSyncingStateAndUpdateRecordCount(isSyncing, newRecordCo
   // For example, using Zustand or React Context
   await updateSyncedField('syncingStatus', isSyncing);
   await updateSyncedField('recordCount', newRecordCount);
+}
+
+/**
+ * Fetches the most recent demand, stock, and freight alerts.
+ *
+ * @returns {Promise<Object[]>} - A promise that resolves to an array of alert objects containing the most recent demand, stock, and freight alerts.
+ */
+export async function fetchRecentAlerts() {
+  try {
+    // Assuming there is an API endpoint to fetch alerts data
+    const response = await fetch('/api/alerts/recent');
+    if (!response.ok) {
+      throw new Error('Failed to fetch alerts data');
+    }
+    const alertsData = await response.json();
+    return alertsData;
+  } catch (error) {
+    console.error('Error fetching recent alerts:', error);
+    throw error;
+  }
 }
