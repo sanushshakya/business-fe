@@ -13,6 +13,7 @@ import useNetworkStatus from '../hooks/useInventory'; // Import the useNetworkSt
 import useSyncManager from '../hooks/useSyncManager'; // Import the useSyncManager hook
 import FreightAlertsPanel from './components/FreightAlertsPanel'; // Import FreightAlertsPanel component
 import SupplierCarousel from './components/SupplierCarousel'; // Import SupplierCarousel component
+import { useStore } from 'zustand';
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -83,21 +84,29 @@ const App = () => {
     };
   }, []);
 
+  const authStore = useAuthStore((state) => state);
+
+  React.useEffect(() => {
+    if (authStore.isAuthenticated) {
+      // Perform actions when authenticated
+      console.log('User is authenticated');
+    } else {
+      // Perform actions when not authenticated
+      console.log('User is not authenticated');
+    }
+  }, [authStore.isAuthenticated]);
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LoginForm />} />
-        <Route path="/dashboard" element={
-          <PrivateRoute>
-            <MainLayout>
-              <FeatureComponent /> {/* Add the new Feature component */}
-              <DemandAlertsPage />
-              <StockAlertsPage />
-              <FreightAlertsPanel />
-              <SupplierCarousel />
-            </MainLayout>
-          </PrivateRoute>
-        } />
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<LoginForm />} />
+          <Route path="dashboard" element={<PrivateRoute component={DemandAlertsPage} />} />
+          <Route path="stock-alerts" element={<PrivateRoute component={StockAlertsPage} />} />
+          <Route path="feature" element={<FeatureComponent />} />
+          <Route path="freight-alerts" element={<FreightAlertsPanel />} />
+          <Route path="suppliers" element={<SupplierCarousel />} />
+        </Route>
       </Routes>
     </Router>
   );
