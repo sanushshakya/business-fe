@@ -54,3 +54,19 @@ export async function fetchRecentAlerts() {
     throw error;
   }
 }
+
+/**
+ * Handles the completion of onboarding and saves company profile details.
+ *
+ * @param {Object} companyProfile - The company profile details to be saved.
+ * @returns {Promise<void>} - A promise that resolves when the company profile has been updated.
+ */
+export async function handleOnboardingCompletion(companyProfile) {
+  try {
+    await updateRecord('companyProfiles', companyProfile.uuid, companyProfile);
+    console.log('Company profile updated successfully');
+  } catch (error) {
+    console.error('Error updating company profile:', error);
+    throw error;
+  }
+}
