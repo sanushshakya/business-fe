@@ -85,11 +85,13 @@ const WasteReductionReport: React.FC = () => {
       new Date() - new Date(log.date) <= 30 * 24 * 60 * 60 * 1000 // last 30 days
     );
 
+    const totalStockValueSaved = filteredData.reduce((total, log) => total + (log.value || 0), 0);
+
     return (
       <Card>
         <CardContent>
           <Typography variant="h6">Waste Reduction Report</Typography>
-          {/* Render the actual content of the waste reduction report here */}
+          <Typography>Total Stock Value Saved from Markdowns: ${totalStockValueSaved.toFixed(2)}</Typography>
           {filteredData.length > 0 ? (
             filteredData.map(log => (
               <div key={log.id}>
@@ -99,7 +101,7 @@ const WasteReductionReport: React.FC = () => {
               </div>
             ))
           ) : (
-            <Typography>No decay markdown entries in the last 30 days.</Typography>
+            <Typography>No markdowns found in the last 30 days.</Typography>
           )}
         </CardContent>
       </Card>
