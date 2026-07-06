@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar } from 'recharts';
 import { Card, CardContent, Typography, CircularProgress } from '@mui/material';
 import useNetworkStatus from '../hooks/useNetworkStatus';
 
@@ -92,17 +93,14 @@ const WasteReductionReport: React.FC = () => {
         <CardContent>
           <Typography variant="h6">Waste Reduction Report</Typography>
           <Typography>Total Stock Value Saved from Markdowns: ${totalStockValueSaved.toFixed(2)}</Typography>
-          {filteredData.length > 0 ? (
-            filteredData.map(log => (
-              <div key={log.id}>
-                <Typography>{log.date}</Typography>
-                <Typography>{log.reason}</Typography>
-                <Typography>{log.value}</Typography>
-              </div>
-            ))
-          ) : (
-            <Typography>No markdowns found in the last 30 days.</Typography>
-          )}
+          <BarChart width={500} height={300} data={filteredData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="category" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar name="Markdown Value" dataKey="value" fill="#8884d8" />
+          </BarChart>
         </CardContent>
       </Card>
     );
