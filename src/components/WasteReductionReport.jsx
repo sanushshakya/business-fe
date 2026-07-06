@@ -80,12 +80,27 @@ const WasteReductionReport: React.FC = () => {
       );
     }
 
+    const filteredData = reportData.priceChangeLogs.filter(log => 
+      log.reason === 'decay_markdown' &&
+      new Date() - new Date(log.date) <= 30 * 24 * 60 * 60 * 1000 // last 30 days
+    );
+
     return (
       <Card>
         <CardContent>
           <Typography variant="h6">Waste Reduction Report</Typography>
           {/* Render the actual content of the waste reduction report here */}
-          <Typography>{reportData.summary}</Typography>
+          {filteredData.length > 0 ? (
+            filteredData.map(log => (
+              <div key={log.id}>
+                <Typography>{log.date}</Typography>
+                <Typography>{log.reason}</Typography>
+                <Typography>{log.value}</Typography>
+              </div>
+            ))
+          ) : (
+            <Typography>No decay markdown entries in the last 30 days.</Typography>
+          )}
         </CardContent>
       </Card>
     );
