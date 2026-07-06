@@ -1,15 +1,18 @@
 import React from 'react';
-import { BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar } from 'recharts';
-import { Card, CardContent, Typography, CircularProgress } from '@mui/material';
-import useNetworkStatus from '../hooks/useNetworkStatus';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
 
 /**
- * WasteReductionReport component to display the Waste Reduction Report page.
+ * WasteReductionReport component to display the Waste Reduction Report page with a data table for individual markdown events.
  *
  * @returns {React.FC} - The WasteReductionReport component
  */
 const WasteReductionReport: React.FC = () => {
-  const { isOnline } = useNetworkStatus();
   const [reportData, setReportData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -20,10 +23,6 @@ const WasteReductionReport: React.FC = () => {
    */
   const fetchReportData = async () => {
     try {
-      if (!isOnline) {
-        throw new Error('No internet connection');
-      }
-
       const response = await fetch('/api/reports/waste-reduction/');
       if (!response.ok) {
         throw new Error(`Failed to fetch waste reduction report: ${response.statusText}`);
@@ -38,46 +37,50 @@ const WasteReductionReport: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isOnline) {
-      fetchReportData();
-    }
-  }, [isOnline]);
+    fetchReportData();
+  }, []);
 
   /**
-   * Handles the rendering of the waste reduction report based on network status and data availability.
+   * Handles the rendering of the waste reduction report based on data availability.
    *
    * @returns {JSX.Element} - JSX element representing the rendered content.
    */
   const renderContent = () => {
-    if (!isOnline) {
-      return (
-        <Card>
-          <CardContent>
-            <Typography variant="h6">Offline Mode</Typography>
-            <Typography>Please check your internet connection to view the waste reduction report.</Typography>
-          </CardContent>
-        </Card>
-      );
-    }
-
     if (isLoading) {
       return (
-        <Card>
-          <CardContent>
-            <CircularProgress />
-          </CardContent>
-        </Card>
+        <Paper>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Loading...</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {/* Loading state */}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       );
     }
 
     if (!reportData) {
       return (
-        <Card>
-          <CardContent>
-            <Typography variant="h6">No Data Available</Typography>
-            <Typography>There is no data available to display for the waste reduction report.</Typography>
-          </CardContent>
-        </Card>
+        <Paper>
+          <TableContainer component={Paper}>
+            <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
+              <TableHead>
+                <TableRow>
+                  <TableCell>No Data Available</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {/* No data available */}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       );
     }
 
@@ -86,27 +89,37 @@ const WasteReductionReport: React.FC = () => {
       new Date() - new Date(log.date) <= 30 * 24 * 60 * 60 * 1000 // last 30 days
     );
 
-    const totalStockValueSaved = filteredData.reduce((total, log) => total + (log.value || 0), 0);
-
     return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6">Waste Reduction Report</Typography>
-          <Typography>Total Stock Value Saved from Markdowns: ${totalStockValueSaved.toFixed(2)}</Typography>
-          <BarChart width={500} height={300} data={filteredData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="category" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar name="Markdown Value" dataKey="value" fill="#8884d8" />
-          </BarChart>
-        </CardContent>
-      </Card>
+      <Paper>
+        <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                <TableCell>Product Name</TableCell>
+                <TableCell>Value Saved</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredData.map((log, index) => (
+                <TableRow key={index}>
+                  <TableCell>{new Date(log.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{log.productName}</TableCell>
+                  <TableCell>${(log.value || 0).toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
     );
   };
 
-  return renderContent();
+  return (
+    <div>
+      {renderContent()}
+    </div>
+  );
 };
 
 export default WasteReductionReport;
