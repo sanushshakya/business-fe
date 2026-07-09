@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs, TabPane, Form, Input, Button, Upload, message } from 'antd';
+import { Tabs, TabPane, Form, Input, Button, Upload, message, notification } from 'antd';
 
 const { Dragger } = Upload;
 
@@ -25,10 +25,28 @@ const Feature: React.FC = () => {
     setActiveKey(key);
   };
 
+  /**
+   * Handles form submission for Company tab.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form event object
+   */
+  const handleSubmitCompany = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      // Simulate form submission logic here
+      message.success('Form submitted successfully!');
+    } catch (error) {
+      notification.error({
+        message: 'Error',
+        description: 'There was an error submitting the form.',
+      });
+    }
+  };
+
   return (
     <Tabs defaultActiveKey={TAB_COMPANY} onChange={handleTabChange}>
       <TabPane tab="Company" key={TAB_COMPANY}>
-        <Form layout="vertical">
+        <Form layout="vertical" onFinish={handleSubmitCompany}>
           <Form.Item label="Name">
             <Input />
           </Form.Item>
