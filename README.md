@@ -20,6 +20,11 @@ Welcome to the `iq-fe` project! This is a Vite React application designed for bu
       - **Description**: The new feature allows the application to fetch user suppliers directly from the backend, ensuring that data is up-to-date without requiring a manual refresh.
 - [Add Supplier Form](#add-supplier-form)
   - [Sheet/Drawer Usage](#sheetdrawer-usage)
+- [Settings Page](#settings-page)
+  - **Tabs**:
+    - **Company**: Edit name, registration number, address, logo upload
+    - **Branches**: List all branches with edit/add/deactivate actions
+    - **Integrations**: Show Shopify connection status with Connect / Disconnect button and WooCommerce placeholder
 - [Contributing](#contributing)
 - [Code of Conduct](#code-of-conduct)
 
@@ -113,55 +118,4 @@ Example response:
 
 ## Price Changes Component
 
-The `PriceChangesPage` component is a React component that displays a table of price changes for products. The table includes columns for Product Name, Old Price (£), New Price (£), Change %, Reason badge (Invoice Update / Decay Markdown / Manual), Triggered At, and Status (Auto-Applied / Pending Approval / Approved / Rejected). Additional information on the component's functionality can be found in the [source code](src/components/PriceChangesPage.js).
-
-## EventCard Component
-
-The `EventCard` component is a React component that displays event details. It fetches data directly from the backend using a custom hook to manage network status and batch updates.
-
-## useNetworkStatus Hook
-
-The `useNetworkStatus` hook is a custom hook that manages the application's network status. It provides functions to check if the device is online or offline and updates the state accordingly.
-
-## My Suppliers Panel Feature
-
-### Description
-The `MySuppliersPanel` component displays the list of user suppliers in a table and allows users to manage them.
-
-### API Endpoints
-- **Get User Suppliers**: `/api/suppliers/`
-  - **Method**: GET
-  - **Description**: Retrieves a list of user suppliers.
-  - **Response**:
-    - Status: `200 OK`
-    - Content-Type: `application/json`
-    - Body: Array of supplier objects.
-
-Example response:
-```json
-[
-  {
-    "id": 1,
-    "name": "Supplier A",
-    "contact": "supplier.a@example.com"
-  },
-  {
-    "id": 2,
-    "name": "Supplier B",
-    "contact": "supplier.b@example.com"
-  }
-]
-```
-
-- **New Feature**: Fetch User Suppliers in Real-Time
-  - The new feature allows the application to fetch user suppliers directly from the backend, ensuring that data is up-to-date without requiring a manual refresh.
-
-## Add Supplier Form
-
-The `AddSupplierForm` component is a React component that allows users to add new suppliers. It uses a sheet or drawer for form input and submission.
-
-## Contributing
-We welcome contributions to this project! If you have any suggestions, bug reports, or feature requests, please open an issue on the [GitHub repository](https://github.com/your-repo/iq-fe).
-
-## Code of Conduct
-Please refer to our [Code of Conduct](CODE_OF_CONDUCT.md) for guidelines on contributing and maintaining a respectful environment.
+The `PriceChangesPage` component is a React component that displays a table of price changes for products. The table includes columns for Product Name, Old Price (£), New Price (£), Change %, Reason badge (Invoice Update / Decay Markdown / Manual), Triggered At, and Status (Auto-Applied / Pending Approval / Approved / Rejected). Ad
