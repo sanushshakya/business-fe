@@ -1,37 +1,80 @@
 /* src/components/Feature.module.css */
 
-/* Container for the KPI cards */
-.kpi-container {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+/* Styles for the Feature component */
+.feature-container {
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
 }
 
-/* Individual KPI card styling */
-.kpi-card {
-  background-color: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-align: center;
+.tab-content {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-/* Title style for KPI cards */
-.kpi-title {
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-  color: #333;
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  cursor: pointer;
 }
 
-/* Value style for KPI cards */
-.kpi-value {
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
-  color: #007aff;
+.tab-header.active {
+  background-color: #e3e6eb;
 }
 
-/* Description style for KPI cards */
-.kpi-description {
-  font-size: 0.875rem;
-  color: #666;
+.tab-body {
+  display: none;
+  overflow-y: auto;
+  max-height: calc(100vh - 250px);
+}
+
+.tab-body.show {
+  display: block;
+}
+
+/* Styles for the Company tab */
+.company-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.company-input {
+  margin-bottom: 1rem;
+}
+
+.company-logo-upload {
+  margin-top: 1rem;
+}
+
+/* Styles for the Branches tab */
+.branch-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.branch-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #ccc;
+}
+
+.branch-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Styles for the Integrations tab */
+.integration-status {
+  margin-top: 1rem;
+}
+
+.integration-button {
+  margin-top: 1rem;
 }
