@@ -1,58 +1,67 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
-import { selectTotalStockValue, selectGrossMarginPercentage, selectActiveAlertsCount, selectWasteSavedBy } from '../stores/dashboardStore';
+import { Tabs, TabPane, Form, Input, Button, Upload, message } from 'antd';
+
+const { Dragger } = Upload;
+
+// Define constants for the tab keys
+const TAB_COMPANY = 'company';
+const TAB_BRANCHES = 'branches';
+const TAB_INTEGRATIONS = 'integrations';
 
 /**
- * Feature component to render the main Dashboard page with four KPI cards.
+ * Feature component to display a Settings page with three tabs: Company, Branches, and Integrations.
  *
  * @returns {React.FC} - The Feature component
  */
-const Feature = () => {
-  const totalStockValue = useSelector(selectTotalStockValue);
-  const grossMarginPercentage = useSelector(selectGrossMarginPercentage);
-  const activeAlertsCount = useSelector(selectActiveAlertsCount);
-  const wasteSavedBy = useSelector(selectWasteSavedBy);
+const Feature: React.FC = () => {
+  const [activeKey, setActiveKey] = React.useState(TAB_COMPANY);
 
-  // Validate the data to ensure it's in the expected format
-  if (typeof totalStockValue !== 'number' || typeof grossMarginPercentage !== 'number' || !Number.isInteger(activeAlertsCount) || typeof wasteSavedBy !== 'number') {
-    console.error('Invalid data received from Redux store');
-    return <div>Error loading data</div>;
-  }
-
-  // Handle edge cases where data might be undefined or null
-  if (isNaN(totalStockValue) || isNaN(grossMarginPercentage) || isNaN(wasteSavedBy)) {
-    console.warn('Data is not a valid number');
-    totalStockValue = 0;
-    grossMarginPercentage = 0;
-    wasteSavedBy = 0;
-  }
+  /**
+   * Handles tab change event.
+   *
+   * @param {string} key - The key of the active tab
+   */
+  const handleTabChange = (key: string) => {
+    setActiveKey(key);
+  };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {/* KPI Card - Total Stock Value */}
-      <div className="bg-white rounded-lg shadow overflow-hidden p-4">
-        <h3 className="text-xl font-bold mb-2">Total Stock Value</h3>
-        <p className="text-2xl font-semibold">${totalStockValue}</p>
-      </div>
-
-      {/* KPI Card - Gross Margin Percentage */}
-      <div className="bg-white rounded-lg shadow overflow-hidden p-4">
-        <h3 className="text-xl font-bold mb-2">Gross Margin %</h3>
-        <p className="text-2xl font-semibold">{grossMarginPercentage}%</p>
-      </div>
-
-      {/* KPI Card - Active Alerts Count */}
-      <div className="bg-white rounded-lg shadow overflow-hidden p-4">
-        <h3 className="text-xl font-bold mb-2">Active Alerts Count</h3>
-        <p className="text-2xl font-semibold">{activeAlertsCount}</p>
-      </div>
-
-      {/* KPI Card - Waste Saved by */}
-      <div className="bg-white rounded-lg shadow overflow-hidden p-4">
-        <h3 className="text-xl font-bold mb-2">Waste Saved by</h3>
-        <p className="text-2xl font-semibold">${wasteSavedBy}</p>
-      </div>
-    </div>
+    <Tabs defaultActiveKey={TAB_COMPANY} onChange={handleTabChange}>
+      <TabPane tab="Company" key={TAB_COMPANY}>
+        <Form layout="vertical">
+          <Form.Item label="Name">
+            <Input />
+          </Form.Item>
+          <Form.Item label="Registration Number">
+            <Input />
+          </Form.Item>
+          <Form.Item label="Address">
+            <Input.TextArea rows={4} />
+          </Form.Item>
+          <Form.Item label="Logo Upload">
+            <Dragger name="logo" action="/upload/logo">
+              <p className="ant-upload-drag-icon">
+                <inbox-outlined></inbox-outlined>
+              </p>
+              <p className="ant-upload-text">Click or drag file to this area to upload</p>
+              <p className="ant-upload-hint">
+                Support for a single or bulk upload. Strictly prohibit from uploading company data or other band files
+              </p>
+            </Dragger>
+          </Form.Item>
+        </Form>
+      </TabPane>
+      <TabPane tab="Branches" key={TAB_BRANCHES}>
+        {/* Branch list and actions will be implemented here */}
+      </TabPane>
+      <TabPane tab="Integrations" key={TAB_INTEGRATIONS}>
+        <h4>Shopify Connection</h4>
+        {/* Shopify connection status and Connect/Disconnect button will be implemented here */}
+        <br />
+        <h4>WooCommerce</h4>
+        {/* WooCommerce placeholder for future integration */}
+      </TabPane>
+    </Tabs>
   );
 };
 
