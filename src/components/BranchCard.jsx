@@ -17,6 +17,7 @@ const BranchCard = ({ name, address, tills, staff, isActive }) => {
     <Card className="w-full">
       <div className="flex justify-between items-center">
         <Text size="lg">{name}</Text>
+        {/* Display active/inactive badge based on branch status */}
         <Badge variant={isActive ? 'success' : 'destructive'}>{isActive ? 'Active' : 'Inactive'}</Badge>
       </div>
       <hr />
