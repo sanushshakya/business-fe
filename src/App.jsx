@@ -15,6 +15,7 @@ import FreightAlertsPanel from './components/FreightAlertsPanel'; // Import Frei
 import SupplierCarousel from './components/SupplierCarousel'; // Import SupplierCarousel component
 import { useStore } from 'zustand';
 import SettingsPage from './views/SettingsPage'; // Import the new SettingsPage component
+import BranchList from './views/BranchList'; // Import the BranchList component
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -73,8 +74,5 @@ const App = () => {
 
     socket.onmessage = (event) => {
       console.log('Message from server:', event.data);
-      // Handle incoming data as needed
-    };
-
-    socket.onclose = () => {
-      console.log(
+     
+--- END ---
