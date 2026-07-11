@@ -1,4 +1,4 @@
-# src/feature.py
+// src/feature.py
 
 import React from 'react';
 import { Table, Modal, Button } from 'shadcn/ui';
@@ -11,6 +11,12 @@ import useSyncManager from '../hooks/useSyncManager';
  */
 const MySuppliersPanel: React.FC = () => {
   const { userSuppliers, openModal, closeModal } = useSyncManager();
+
+  // Validate that userSuppliers is an array to avoid potential errors in the table rendering
+  if (!Array.isArray(userSuppliers)) {
+    console.error('userSuppliers should be an array but received:', userSuppliers);
+    return null;
+  }
 
   return (
     <div>
