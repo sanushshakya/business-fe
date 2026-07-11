@@ -1,8 +1,8 @@
 import React from 'react';
-import { Card, Text, Badge } from '@shadcn/ui';
+import { Card, Text, Badge, List, ListItem, Button } from '@shadcn/ui';
 
 /**
- * BranchCard component to display a single branch as a card.
+ * BranchCard component to display a single branch as a card with an expandable Till list.
  *
  * @param {Object} props - The properties for the BranchCard component.
  * @param {string} props.name - The name of the branch.
@@ -12,7 +12,9 @@ import { Card, Text, Badge } from '@shadcn/ui';
  * @param {boolean} props.isActive - Whether the branch is active or not.
  * @returns {React.FC} - The BranchCard component
  */
-const BranchCard = ({ name, address, tills, staff, isActive }) => {
+const BranchCard = ({ name, address, tills, staff, isActive, tillData }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
   return (
     <Card className="w-full">
       <div className="flex justify-between items-center">
@@ -25,9 +27,33 @@ const BranchCard = ({ name, address, tills, staff, isActive }) => {
         <p><strong>Address:</strong> {address}</p>
         <p><strong>Tills:</strong> {tills}</p>
         <p><strong>Staff:</strong> {staff}</p>
+        {/* Add expand button */}
+        <Button onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? 'Collapse Tills' : 'Expand Tills'}</Button>
       </div>
+      {/* Conditionally render the Till list */}
+      {isExpanded && (
+        <List>
+          {tillData.map((till, index) => (
+            <ListItem key={index}>
+              <span>{till.name} - Status: {till.isActive ? 'Active' : 'Inactive'}</span>
+              {/* Add deactivate button for each till */}
+              <Button onClick={() => deactivateTill(till.id)}>Deactivate</Button>
+            </ListItem>
+          ))}
+        </List>
+      )}
     </Card>
   );
+
+  /**
+   * Function to handle deactivating a till.
+   *
+   * @param {string} tillId - The ID of the till to deactivate.
+   */
+  const deactivateTill = (tillId) => {
+    // Logic to deactivate the till
+    console.log(`Deactivating till with ID: ${tillId}`);
+  };
 };
 
 export default BranchCard;
