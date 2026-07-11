@@ -1,27 +1,57 @@
 import pytest
-from src.actions.syncActions import fetch_user_suppliers
-from src.models.SupplierModel import SupplierModel
-from src.services.authService import get_auth_token
+from src.models.Till import Till
+from src.actions.AddTillAction import add_till_action
 
-
-def test_fetch_user_suppliers(mocker):
+def test_add_till_action():
     """
-    Test the fetch_user_suppliers function to ensure it correctly retrieves user suppliers.
-
-    This test uses a mock to simulate the authentication token retrieval process.
+    Test the add_till_action function to ensure it correctly adds a new till.
+    
+    This test checks that the action creates a new Till object with the correct attributes.
     """
+    # Arrange
+    new_till_data = {
+        "name": "Test Till",
+        "location": "Test Location"
+    }
+    
+    # Act
+    result = add_till_action(new_till_data)
+    
+    # Assert
+    assert isinstance(result, Till)
+    assert result.name == new_till_data["name"]
+    assert result.location == new_till_data["location"]
 
-    # Mock the authentication token retrieval to avoid actual network requests
-    mock_get_auth_token = mocker.patch.object(get_auth_token, 'side_effect', lambda: "mocked-auth-token")
+def test_add_till_action_with_missing_data():
+    """
+    Test the add_till_action function with missing data to ensure it handles errors.
+    
+    This test checks that the action raises a ValueError when required data is missing.
+    """
+    # Arrange
+    incomplete_data = {
+        "name": "Test Till"
+    }
+    
+    # Act & Assert
+    with pytest.raises(ValueError):
+        add_till_action(incomplete_data)
 
-    # Call the fetch_user_suppliers function
-    suppliers = fetch_user_suppliers()
+def test_add_till_action_with_invalid_location():
+    """
+    Test the add_till_action function with an invalid location to ensure it handles errors.
+    
+    This test checks that the action raises a ValueError when an invalid location is provided.
+    """
+    # Arrange
+    invalid_location_data = {
+        "name": "Test Till",
+        "location": ""
+    }
+    
+    # Act & Assert
+    with pytest.raises(ValueError):
+        add_till_action(invalid_location_data)
+```
 
-    # Verify that the authentication token was retrieved correctly
-    assert mock_get_auth_token.called_once
-
-    # Verify that the fetched suppliers are instances of SupplierModel
-    for supplier in suppliers:
-        assert isinstance(supplier, SupplierModel)
-
-    # Additional assertions can be added to test other aspects of the function's behavior
+This file contains unit tests for the `add_till_action` function in a hypothetical system that manages tills. The tests cover normal operation, handling of missing data, and handling of invalid data. Each test includes a docstring explaining the purpose and expected behavior, ensuring clarity and maintainability.
