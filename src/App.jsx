@@ -16,6 +16,7 @@ import SupplierCarousel from './components/SupplierCarousel'; // Import Supplier
 import { useStore } from 'zustand';
 import SettingsPage from './views/SettingsPage'; // Import the new SettingsPage component
 import BranchList from './views/BranchList'; // Import the BranchList component
+import BranchForm from './components/BranchForm'; // Import the BranchForm component
 
 /**
  * The main App component that serves as the entry point of the application.
@@ -73,6 +74,49 @@ const App = () => {
     };
 
     socket.onmessage = (event) => {
-      console.log('Message from server:', event.data);
-     
---- END ---
+      console.log('Message from server ', event.data);
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  return (
+    <Router>
+      <MainLayout>
+        <Routes>
+          <Route path="/login" element={<LoginForm />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <>
+                  <DemandAlertsPage />
+                  <StockAlertsPage />
+                  <FeatureComponent />
+                  <FreightAlertsPanel />
+                  <SupplierCarousel />
+                  <SettingsPage />
+                  <BranchList />
+                </>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/branch-form"
+            element={
+              <PrivateRoute>
+                <Modal open={true} onClose={() => {}}>
+                  <BranchForm />
+                </Modal>
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </MainLayout>
+    </Router>
+  );
+};
+
+export default App;
