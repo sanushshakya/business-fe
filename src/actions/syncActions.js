@@ -70,3 +70,19 @@ export async function handleOnboardingCompletion(companyProfile) {
     throw error;
   }
 }
+
+/**
+ * Updates the last_seen_at field for a Till model on every WebSocket connection.
+ *
+ * @param {string} tillId - The unique identifier of the Till to be updated.
+ * @returns {Promise<void>} - A promise that resolves when the 'last_seen_at' field has been updated.
+ */
+export async function updateTillLastSeenAt(tillId) {
+  try {
+    const timestamp = new Date();
+    await updateRecord('tills', tillId, { last_seen_at: timestamp });
+  } catch (error) {
+    console.error('Error updating Till last seen at:', error);
+    throw error;
+  }
+}
