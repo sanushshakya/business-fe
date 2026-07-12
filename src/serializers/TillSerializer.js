@@ -18,7 +18,8 @@ export default class TillSerializer extends Serializer {
         'name',
         'isActive',
         'createdAt',
-        'updatedAt'
+        'updatedAt',
+        'last_seen_at' // Include the last_seen_at field
       ],
       links: (document) => ({
         self: `/api/tills/${document.id}`
