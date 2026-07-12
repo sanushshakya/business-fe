@@ -41,11 +41,15 @@ const UserTable = ({ users }) => {
     {
       header: 'Status',
       accessorKey: 'status',
-      cell: ({ row }) => (
-        <span className={`badge badge-${row.original.status}`}>
-          {row.original.status}
-        </span>
-      ),
+      cell: ({ row }) => {
+        // Determine the status of the user
+        const status = row.original.isActive ? 'active' : 'pending invite';
+        return (
+          <span className={`badge badge-${status}`}>
+            {status}
+          </span>
+        );
+      },
     },
   ];
 
