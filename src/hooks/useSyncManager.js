@@ -49,6 +49,22 @@ const useSyncManager = () => {
     }
   };
 
+  const updateLastSeenAt = async () => {
+    try {
+      // Assuming getCurrentTill is defined elsewhere in your application
+      const till = await getCurrentTill();
+      if (till) {
+        till.set('last_seen_at', new Date());
+        await till.save();
+        console.log(`last_seen_at updated for Till with ID ${till.id}`);
+      } else {
+        console.warn('No Till found to update last_seen_at.');
+      }
+    } catch (error) {
+      console.error(`Error updating last_seen_at for Till:`, error);
+    }
+  };
+
   useEffect(() => {
     window.addEventListener('online', checkNetworkStatus);
     window.addEventListener('offline', checkNetworkStatus);
@@ -56,6 +72,19 @@ const useSyncManager = () => {
     return () => {
       window.removeEventListener('online', checkNetworkStatus);
       window.removeEventListener('offline', checkNetworkStatus);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Update last_seen_at every time the WebSocket connection is established
+    const handleWebSocketConnection = () => {
+      updateLastSeenAt();
+    };
+
+    WebSocketService.on('connect', handleWebSocketConnection);
+
+    return () => {
+      WebSocketService.off('connect', handleWebSocketConnection);
     };
   }, []);
 
