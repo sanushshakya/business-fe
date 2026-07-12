@@ -37,6 +37,11 @@ const UserTable = ({ users }) => {
     {
       header: 'Last Login',
       accessorKey: 'lastLogin',
+      cell: ({ row }) => (
+        <time dateTime={row.original.lastLogin}>
+          {new Date(row.original.lastLogin).toLocaleString()}
+        </time>
+      ),
     },
     {
       header: 'Status',
