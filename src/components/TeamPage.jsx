@@ -16,6 +16,10 @@ const TeamPage: React.FC = () => {
   const userList = useSelector(state => state.userList);
   const isNetworkOnline = useNetworkStatus();
 
+  // Check if the current user has the appropriate role to access this page
+  const currentUserRole = useSelector(state => state.currentUser.role);
+  const hasAccess = ['admin', 'owner'].includes(currentUserRole);
+
   /**
    * Fetches the user list from the API when the component mounts or network status changes.
    *
@@ -42,6 +46,15 @@ const TeamPage: React.FC = () => {
       ),
     });
   };
+
+  if (!hasAccess) {
+    return (
+      <div>
+        <h1>Access Denied</h1>
+        <p>You do not have permission to view this page.</p>
+      </div>
+    );
+  }
 
   return (
     <Table>
