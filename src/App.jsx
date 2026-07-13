@@ -73,8 +73,8 @@ const App = () => {
       console.error('WebSocket error:', error);
     };
 
-    socket.onmessage = (event) => {
-      console.log('Message from server ', event.data);
+    socket.onclose = () => {
+      console.log('WebSocket disconnected');
     };
 
     return () => {
@@ -86,33 +86,43 @@ const App = () => {
     <Router>
       <MainLayout>
         <Routes>
-          <Route path="/login" element={<LoginForm />} />
+          <Route path="/" element={<LoginForm />} />
           <Route
             path="/dashboard"
             element={
               <PrivateRoute>
-                <>
-                  <DemandAlertsPage />
-                  <StockAlertsPage />
-                  <FeatureComponent />
-                  <FreightAlertsPanel />
-                  <SupplierCarousel />
-                  <SettingsPage />
-                  <BranchList />
-                </>
+                <DemandAlertsPage />
               </PrivateRoute>
             }
           />
           <Route
-            path="/branch-form"
+            path="/stock-alerts"
             element={
               <PrivateRoute>
-                <Modal open={true} onClose={() => {}}>
-                  <BranchForm />
-                </Modal>
+                <StockAlertsPage />
               </PrivateRoute>
             }
           />
+          <Route
+            path="/feature"
+            element={
+              <PrivateRoute>
+                <FeatureComponent />
+              </PrivateRoute>
+            }
+          />
+          {/* Add the route for the new MySuppliersPanel component */}
+          <Route
+            path="/suppliers"
+            element={
+              <PrivateRoute>
+                <MySuppliersPanel />
+              </PrivateRoute>
+            }
+          />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/branches" element={<BranchList />} />
+          <Route path="/branches/new" element={<BranchForm />} />
         </Routes>
       </MainLayout>
     </Router>
