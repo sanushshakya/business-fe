@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 
 /**
- * Custom hook to fetch user data from the backend API.
+ * Custom hook to fetch user data and manage new user data from the backend API.
  *
- * @returns {Object} - An object containing users and isLoading status.
+ * @returns {Object} - An object containing users, isLoading status, and a function to add a new user.
  */
 const useTeamData = () => {
   const [users, setUsers] = useState([]);
@@ -27,7 +27,21 @@ const useTeamData = () => {
     fetchUserData();
   }, []);
 
-  return { users, isLoading };
+  /**
+   * Adds a new user to the state.
+   *
+   * @param {Object} newUser - The new user data to be added.
+   */
+  const addUser = async (newUser) => {
+    try {
+      await axios.post('/api/users', newUser);
+      setUsers([...users, newUser]);
+    } catch (error) {
+      console.error('Failed to add new user:', error);
+    }
+  };
+
+  return { users, isLoading, addUser };
 };
 
 export default useTeamData;
