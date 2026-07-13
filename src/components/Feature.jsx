@@ -18,8 +18,13 @@ const Feature: React.FC = () => {
    * @param {string} inviteId - The ID of the invitation to resend.
    */
   const handleResend = (inviteId) => {
-    // Logic to resend the invitation
+    if (!inviteId) {
+      openModal('Error', 'Invalid invitation ID');
+      return;
+    }
+
     openModal('Resending...');
+    // Logic to resend the invitation
     // Simulate sending logic
     setTimeout(() => {
       closeModal();
@@ -32,8 +37,13 @@ const Feature: React.FC = () => {
    * @param {string} inviteId - The ID of the invitation to cancel.
    */
   const handleCancel = (inviteId) => {
-    // Logic to cancel the invitation
+    if (!inviteId) {
+      openModal('Error', 'Invalid invitation ID');
+      return;
+    }
+
     openModal('Cancelling...');
+    // Logic to cancel the invitation
     // Simulate cancellation logic
     setTimeout(() => {
       closeModal();
