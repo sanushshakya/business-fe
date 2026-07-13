@@ -1,80 +1,30 @@
 /* src/components/Feature.module.css */
 
 /* Styles for the Feature component */
-.feature-container {
-  display: flex;
-  flex-direction: column;
-  padding: 2rem;
+.feature-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.tab-content {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.feature-th,
+.feature-td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 
-.tab-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #f3f4f6;
+.feature-th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.resend-action,
+.cancel-action {
   cursor: pointer;
+  color: blue;
 }
 
-.tab-header.active {
-  background-color: #e3e6eb;
-}
-
-.tab-body {
-  display: none;
-  overflow-y: auto;
-  max-height: calc(100vh - 250px);
-}
-
-.tab-body.show {
-  display: block;
-}
-
-/* Styles for the Company tab */
-.company-form {
-  display: flex;
-  flex-direction: column;
-}
-
-.company-input {
-  margin-bottom: 1rem;
-}
-
-.company-logo-upload {
-  margin-top: 1rem;
-}
-
-/* Styles for the Branches tab */
-.branch-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.branch-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid #ccc;
-}
-
-.branch-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* Styles for the Integrations tab */
-.integration-status {
-  margin-top: 1rem;
-}
-
-.integration-button {
-  margin-top: 1rem;
+.resend-action:hover,
+.cancel-action:hover {
+  text-decoration: underline;
 }
