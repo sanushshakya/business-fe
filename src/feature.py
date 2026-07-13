@@ -24,8 +24,34 @@ const MySuppliersPanel: React.FC = () => {
         {/* Table columns and rows */}
       </Table>
 
+      {/* Add Invite User button */}
+      <Button onClick={() => openModal('inviteUser')}>Invite User</Button>
+
       <Modal open={openModal} onClose={closeModal}>
         {/* Modal content for supplier management */}
+        {openModal === 'inviteUser' && (
+          <div>
+            <h2>Invite User</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const email = e.target.elements.email.value;
+              const role = e.target.elements.role.value;
+              const branch = e.target.elements.branch.value;
+              // Handle form submission logic here
+            }}>
+              <label htmlFor="email">Email:</label>
+              <input type="email" id="email" name="email" required />
+              <br />
+              <label htmlFor="role">Role:</label>
+              <input type="text" id="role" name="role" required />
+              <br />
+              <label htmlFor="branch">Branch:</label>
+              <input type="text" id="branch" name="branch" required />
+              <br />
+              <button type="submit">Invite</button>
+            </form>
+          </div>
+        )}
       </Modal>
     </div>
   );
