@@ -1,85 +1,74 @@
 import React from 'react';
-import { Tabs, TabPane, Form, Input, Button, Upload, message, notification } from 'antd';
-
-const { Dragger } = Upload;
-
-// Define constants for the tab keys
-const TAB_COMPANY = 'company';
-const TAB_BRANCHES = 'branches';
-const TAB_INTEGRATIONS = 'integrations';
+import { Table, Modal, Button } from 'shadcn/ui';
+import { useSelector } from 'react-redux';
+import useSyncManager from '../hooks/useSyncManager';
 
 /**
- * Feature component to display a Settings page with three tabs: Company, Branches, and Integrations.
+ * Feature component to display pending invitations in a separate table with actions.
  *
  * @returns {React.FC} - The Feature component
  */
 const Feature: React.FC = () => {
-  const [activeKey, setActiveKey] = React.useState(TAB_COMPANY);
+  const invites = useSelector((state) => state.invites.pending);
+  const { openModal, closeModal } = useSyncManager();
 
   /**
-   * Handles tab change event.
+   * Handles the resend action for an invitation.
    *
-   * @param {string} key - The key of the active tab
+   * @param {string} inviteId - The ID of the invitation to resend.
    */
-  const handleTabChange = (key: string) => {
-    setActiveKey(key);
+  const handleResend = (inviteId) => {
+    // Logic to resend the invitation
+    openModal('Resending...');
+    // Simulate sending logic
+    setTimeout(() => {
+      closeModal();
+    }, 1000);
   };
 
   /**
-   * Handles form submission for Company tab.
+   * Handles the cancel action for an invitation.
    *
-   * @param {React.FormEvent<HTMLFormElement>} e - The form event object
+   * @param {string} inviteId - The ID of the invitation to cancel.
    */
-  const handleSubmitCompany = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      // Simulate form submission logic here
-      message.success('Form submitted successfully!');
-    } catch (error) {
-      notification.error({
-        message: 'Error',
-        description: 'There was an error submitting the form.',
-      });
-    }
+  const handleCancel = (inviteId) => {
+    // Logic to cancel the invitation
+    openModal('Cancelling...');
+    // Simulate cancellation logic
+    setTimeout(() => {
+      closeModal();
+    }, 1000);
   };
 
   return (
-    <Tabs defaultActiveKey={TAB_COMPANY} onChange={handleTabChange}>
-      <TabPane tab="Company" key={TAB_COMPANY}>
-        <Form layout="vertical" onFinish={handleSubmitCompany}>
-          <Form.Item label="Name">
-            <Input />
-          </Form.Item>
-          <Form.Item label="Registration Number">
-            <Input />
-          </Form.Item>
-          <Form.Item label="Address">
-            <Input.TextArea rows={4} />
-          </Form.Item>
-          <Form.Item label="Logo Upload">
-            <Dragger name="logo" action="/upload/logo">
-              <p className="ant-upload-drag-icon">
-                <inbox-outlined></inbox-outlined>
-              </p>
-              <p className="ant-upload-text">Click or drag file to this area to upload</p>
-              <p className="ant-upload-hint">
-                Support for a single or bulk upload. Strictly prohibit from uploading company data or other band files
-              </p>
-            </Dragger>
-          </Form.Item>
-        </Form>
-      </TabPane>
-      <TabPane tab="Branches" key={TAB_BRANCHES}>
-        {/* Branch list and actions will be implemented here */}
-      </TabPane>
-      <TabPane tab="Integrations" key={TAB_INTEGRATIONS}>
-        <h4>Shopify Connection</h4>
-        {/* Shopify connection status and Connect/Disconnect button will be implemented here */}
-        <br />
-        <h4>WooCommerce</h4>
-        {/* WooCommerce placeholder for future integration */}
-      </TabPane>
-    </Tabs>
+    <div>
+      <h2>Pending Invitations</h2>
+      {invites.length > 0 ? (
+        <Table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invites.map((invite) => (
+              <tr key={invite.id}>
+                <td>{invite.email}</td>
+                <td>{invite.role}</td>
+                <td>
+                  <Button onClick={() => handleResend(invite.id)}>Resend</Button>
+                  <Button onClick={() => handleCancel(invite.id)}>Cancel</Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : (
+        <p>No pending invitations.</p>
+      )}
+    </div>
   );
 };
 
