@@ -69,5 +69,34 @@ const App = () => {
       console.log('WebSocket connected');
     };
 
-    socket.onerror = 
---- END ---
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    socket.onmessage = (event) => {
+      console.log('Message from server:', event.data);
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<PrivateRoute component={DemandAlertsPage} />} />
+          <Route path="stock-alerts" element={<PrivateRoute component={StockAlertsPage} />} />
+          <Route path="feature" element={<PrivateRoute component={FeatureComponent} />} />
+          <Route path="settings" element={<PrivateRoute component={SettingsPage} />} />
+          <Route path="branches" element={<PrivateRoute component={BranchList} />} />
+          <Route path="branch/new" element={<PrivateRoute component={BranchForm} />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;
