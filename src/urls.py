@@ -9,4 +9,5 @@ urlpatterns = [
     path('api/tenants/company/onboarding-complete/', OnboardingCompleteView.as_view(), name='onboarding-complete'),  # New route for Waste Reduction Report
     path('api/auth/verify-email/', VerifyEmailView.as_view(), name='verify-email'),  # New route for email verification
     path('invite-user/', InviteUserFormView.as_view(), name='invite-user-form'),  # New route to handle the Invite User form submission
+    path('alerts/demand/<int:id>/', AlertsDemandDetailView.as_view(), name='demand-alert-detail'),  # New URL pattern for demand alert detail view
 ]
