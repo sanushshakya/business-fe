@@ -1,0 +1,27 @@
+/* src/assets/styles/table.css */
+
+/* Style for tables to be horizontally scrollable on mobile with a sticky first column */
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Sticky first column */
+.sticky-first-column th:first-child,
+.sticky-first-column td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: white; /* Ensure the sticky header does not overlap with table body */
+}
