@@ -1,5 +1,5 @@
-/* 
- * App.css - Global styles for the application.
+/*
+ * App.css - Global styles for the application with mobile breakpoint handling and sidebar collapse on screens below 768px.
  */
 
 body {
@@ -16,68 +16,57 @@ body {
 }
 
 .event-card {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: transform 0.3s ease;
-}
+  @apply bg-white rounded-8 shadow-md flex flex-col overflow-hidden transition-transform duration-300;
 
-.event-card:hover {
-  transform: translateY(-5px);
-}
+  &:hover {
+    transform: translateY(-5px);
+  }
 
-.event-card h2 {
-  margin: 0;
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
-}
+  h2 {
+    @apply m-0 p-20 border-b border-gray-200 font-bold;
+  }
 
-.event-card p {
-  margin: 0;
-  padding: 16px;
-}
+  p {
+    @apply m-0 p-16;
+  }
 
-.event-card footer {
-  background-color: #f8f9fa;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-}
+  footer {
+    @apply bg-gray-100 border-t border-gray-200 flex items-center justify-between px-16 py-12;
 
-.event-card footer .date {
-  color: #6c757d;
+    .date {
+      @apply text-gray-500;
+    }
+  }
 }
 
 .kpi-card {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: transform 0.3s ease;
-  width: 30%;
-  margin: 0 2% 20px 2%;
+  @apply bg-white rounded-8 shadow-md flex flex-col overflow-hidden transition-transform duration-300 w-full md:w-1/4 mb-20 mx-2;
+
+  &:hover {
+    transform: translateY(-5px);
+  }
+
+  h2 {
+    @apply m-0 p-20 border-b border-gray-200 text-lg;
+  }
+
+  p {
+    @apply m-0 p-16 text-base;
+  }
 }
 
-.kpi-card:hover {
-  transform: translateY(-5px);
-}
+/* Mobile breakpoint styles */
+@media (max-width: 768px) {
+  .kpi-card {
+    width: 100%;
+    margin: 0.5rem 0;
+  }
 
-.kpi-card h2 {
-  margin: 0;
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
-  font-size: 24px;
-}
+  .sidebar {
+    display: none; /* Collapsed sidebar on mobile */
+  }
 
-.kpi-card p {
-  margin: 0;
-  padding: 16px;
-  font-size: 18px;
+  .bottom-nav {
+    display: flex; /* Bottom navigation bar on mobile */
+  }
 }
