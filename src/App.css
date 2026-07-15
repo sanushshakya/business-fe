@@ -70,3 +70,24 @@ body {
     display: flex; /* Bottom navigation bar on mobile */
   }
 }
+
+/* Custom table styling for mobile usability */
+.table-container {
+  overflow-x: auto;
+}
+
+.sticky-table {
+  width: fit-content;
+}
+
+.sticky-header th:first-child,
+.sticky-body td:first-child {
+  position: sticky;
+  left: 0;
+  background-color: white;
+}
+```
+
+Explanation:
+- Added `.table-container` class to enable horizontal scrolling for tables on mobile devices.
+- Added `.sticky-table`, `.sticky-header`, and `.sticky-body` classes to create a sticky first column effect in tables.
