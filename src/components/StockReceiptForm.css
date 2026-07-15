@@ -1,0 +1,69 @@
+/* StockReceiptForm.css */
+
+/**
+ * Styles for the Stock Receipt form to ensure optimal usability on a 390px iPhone viewport.
+ *
+ * Media queries are used to adjust the layout and styling of the form based on the screen size.
+ */
+
+/* Default styles for larger screens */
+.StockReceiptForm {
+    padding: 2rem;
+    font-size: 16px;
+}
+
+.StockReceiptForm .form-group {
+    margin-bottom: 1rem;
+}
+
+.StockReceiptForm label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.StockReceiptForm input,
+.StockReceiptForm textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.StockReceiptForm button {
+    padding: 0.75rem 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.StockReceiptForm button:hover {
+    background-color: #0056b3;
+}
+
+/* Media query for screens with a maximum width of 390px */
+@media (max-width: 390px) {
+    .StockReceiptForm {
+        padding: 1rem;
+        font-size: 14px;
+    }
+
+    .StockReceiptForm .form-group {
+        margin-bottom: 0.75rem;
+    }
+
+    .StockReceiptForm label {
+        font-size: 13px;
+    }
+
+    .StockReceiptForm input,
+    .StockReceiptForm textarea {
+        padding: 0.5rem;
+    }
+
+    .StockReceiptForm button {
+        padding: 0.5rem 0.75rem;
+        font-size: 13px;
+    }
+}
