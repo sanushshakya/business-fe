@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Table, Modal, Button } from 'shadcn/ui';
+import ScrollableTable from './ScrollableTable'; // Import the new ScrollableTable component
 import useSyncManager from '../hooks/useSyncManager';
 
 /**
@@ -20,9 +21,10 @@ const MySuppliersPanel: React.FC = () => {
 
   return (
     <div>
-      <Table data={userSuppliers}>
+      {/* Use ScrollableTable to wrap the Table component for horizontal scrolling */}
+      <ScrollableTable data={userSuppliers}>
         {/* Table columns and rows */}
-      </Table>
+      </ScrollableTable>
 
       {/* Add Invite User button */}
       <Button onClick={() => openModal('inviteUser')}>Invite User</Button>
