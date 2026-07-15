@@ -51,11 +51,11 @@ const Feature: React.FC = () => {
   };
 
   return (
-    <div>
-      <h2>Pending Invitations</h2>
+    <div className="flex flex-col">
+      <h2 className="text-2xl font-bold mb-4">Pending Invitations</h2>
       {invites.length > 0 ? (
-        <Table>
-          <thead>
+        <Table className="sm:table-auto md:table-auto w-full">
+          <thead className="bg-gray-100">
             <tr>
               <th>Email</th>
               <th>Role</th>
@@ -64,10 +64,10 @@ const Feature: React.FC = () => {
           </thead>
           <tbody>
             {invites.map((invite) => (
-              <tr key={invite.id}>
+              <tr key={invite.id} className="hover:bg-gray-200">
                 <td>{invite.email}</td>
                 <td>{invite.role}</td>
-                <td>
+                <td className="flex space-x-4">
                   <Button onClick={() => handleResend(invite.id)}>Resend</Button>
                   <Button onClick={() => handleCancel(invite.id)}>Cancel</Button>
                 </td>
@@ -76,7 +76,7 @@ const Feature: React.FC = () => {
           </tbody>
         </Table>
       ) : (
-        <p>No pending invitations.</p>
+        <p className="text-gray-500">No pending invitations.</p>
       )}
     </div>
   );
