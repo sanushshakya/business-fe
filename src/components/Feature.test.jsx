@@ -81,4 +81,28 @@ describe('Feature Component', () => {
       action: 'cancel',
     });
   });
+
+  it('scrolls horizontally and sticky first column on mobile devices', async () => {
+    // Define the data to be returned by the mock function
+    const users = [
+      { id: 1, email: 'user1@example.com' },
+      { id: 2, email: 'user2@example.com' },
+    ];
+    // Call the mock function with the defined data
+    mockUseTeamData.mockReturnValue({ users });
+    render(<Feature />);
+    // Simulate a mobile device by changing the viewport width
+    const resizeWindow = () => {
+      window.innerWidth = 480;
+      window.dispatchEvent(new Event('resize'));
+    };
+    resizeWindow();
+    // Check if the table scrolls horizontally and first column is sticky
+    await waitFor(() => {
+      const table = screen.getByRole('table');
+      expect(table).toHaveClass('overflow-x-auto');
+      const firstColumnHeader = screen.getAllByRole('columnheader')[0];
+      expect(firstColumnHeader).toHaveClass('sticky left-0 z-10 bg-white');
+    });
+  });
 });
