@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Input, Button } from 'shadcn/ui';
+import { Form, Input, Button, Skeleton } from 'shadcn/ui';
 
 /**
  * CompanyProfileForm component for capturing company profile details (name, registration number, address).
@@ -28,6 +28,7 @@ const CompanyProfileForm: React.FC = () => {
   return (
     <Form onSubmit={handleSubmit}>
       <div className="space-y-4">
+        <Skeleton className="h-10 w-full" />
         <Input
           type="text"
           placeholder="Company Name"
@@ -35,6 +36,7 @@ const CompanyProfileForm: React.FC = () => {
           onChange={(e) => setCompanyName(e.target.value)}
           required
         />
+        <Skeleton className="h-10 w-full" />
         <Input
           type="text"
           placeholder="Registration Number"
@@ -42,6 +44,7 @@ const CompanyProfileForm: React.FC = () => {
           onChange={(e) => setRegistrationNumber(e.target.value)}
           required
         />
+        <Skeleton className="h-10 w-full" />
         <Input
           type="text"
           placeholder="Address"
