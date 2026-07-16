@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Text, Badge, List, ListItem, Button } from '@shadcn/ui';
+import { Card, Text, Badge, List, ListItem, Skeleton } from '@shadcn/ui';
 
 /**
  * BranchCard component to display a single branch as a card with an expandable Till list.
@@ -18,15 +18,15 @@ const BranchCard = ({ name, address, tills, staff, isActive, tillData }) => {
   return (
     <Card className="w-full">
       <div className="flex justify-between items-center">
-        <Text size="lg">{name}</Text>
+        <Skeleton Text size="lg" count={1} />
         {/* Display active/inactive badge based on branch status */}
         <Badge variant={isActive ? 'success' : 'destructive'}>{isActive ? 'Active' : 'Inactive'}</Badge>
       </div>
       <hr />
       <div className="mt-4 space-y-2">
-        <p><strong>Address:</strong> {address}</p>
-        <p><strong>Tills:</strong> {tills}</p>
-        <p><strong>Staff:</strong> {staff}</p>
+        <Skeleton count={1} />
+        <Skeleton count={1} />
+        <Skeleton count={1} />
         {/* Add expand button */}
         <Button onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? 'Collapse Tills' : 'Expand Tills'}</Button>
       </div>
@@ -35,7 +35,7 @@ const BranchCard = ({ name, address, tills, staff, isActive, tillData }) => {
         <List>
           {tillData.map((till, index) => (
             <ListItem key={index}>
-              <span>{till.name} - Status: {till.isActive ? 'Active' : 'Inactive'}</span>
+              <Skeleton count={1} />
               {/* Add deactivate button for each till */}
               <Button onClick={() => deactivateTill(till.id)}>Deactivate</Button>
             </ListItem>
