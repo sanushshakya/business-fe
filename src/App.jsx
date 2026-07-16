@@ -9,6 +9,7 @@ import DemandAlertsPage from './views/DemandAlertsPage'; // Import the Demand Al
 import StockAlertsPage from './views/StockAlertsPage'; // Import the Stock Alerts page component
 import FeatureComponent from './views/FeatureComponent'; // Import the new Price Changes feature component
 import offlineDB from './offlineDB'; // Import offlineDB.js to use RxDB for offline database
+import { Skeleton } from '@shadcn/ui';
 import useNetworkStatus from '../hooks/useInventory'; // Import the useNetworkStatus hook
 import useSyncManager from '../hooks/useSyncManager'; // Import the useSyncManager hook
 import FreightAlertsPanel from './components/FreightAlertsPanel'; // Import FreightAlertsPanel component
@@ -69,34 +70,4 @@ const App = () => {
       console.log('WebSocket connected');
     };
 
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    socket.onmessage = (event) => {
-      console.log('Message from server:', event.data);
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, []);
-
-  return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<LoginForm />} />
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<PrivateRoute component={DemandAlertsPage} />} />
-          <Route path="stock-alerts" element={<PrivateRoute component={StockAlertsPage} />} />
-          <Route path="feature" element={<PrivateRoute component={FeatureComponent} />} />
-          <Route path="settings" element={<PrivateRoute component={SettingsPage} />} />
-          <Route path="branches" element={<PrivateRoute component={BranchList} />} />
-          <Route path="branch/new" element={<PrivateRoute component={BranchForm} />} />
-        </Route>
-      </Routes>
-    </Router>
-  );
-};
-
-export default App;
+    socket.onerror =
