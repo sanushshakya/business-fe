@@ -20,6 +20,31 @@ import BranchList from './views/BranchList'; // Import the BranchList component
 import BranchForm from './components/BranchForm'; // Import the BranchForm component
 
 /**
+ * ErrorBoundary component to catch and handle errors globally.
+ */
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <h1>Something went wrong. Please try reloading the page.</h1>;
+    }
+    return this.props.children; 
+  }
+}
+
+/**
  * The main App component that serves as the entry point of the application.
  * It renders the application's UI and includes basic error handling to improve user experience.
  */
@@ -67,7 +92,32 @@ const App = () => {
     const socket = new WebSocket('ws://example.com/socket');
 
     socket.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connection established');
     };
 
-    socket.onerror =
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  return (
+    <Router>
+      <ErrorBoundary>
+        <MainLayout>
+          <Routes>
+            {/* Define routes for different pages */}
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/demand-alerts" element={<DemandAlertsPage />} />
+            <Route path="/stock-alerts" element={<StockAlertsPage />} />
+            <Route path="/feature-component" element={<FeatureComponent />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/branches" element={<BranchList />} />
+            <Route path="/branch-form" element={<BranchForm />} />
+          </Routes>
+        </MainLayout>
+      </ErrorBoundary>
+    </Router>
+  );
+};
+
+export default App;
