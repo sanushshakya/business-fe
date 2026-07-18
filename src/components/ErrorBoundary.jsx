@@ -3,7 +3,7 @@
 import React, { Component } from 'react';
 
 /**
- * ErrorBoundary component to catch and handle errors globally within the application.
+ * ErrorBoundary component to catch and handle errors globally within the application using a structured format.
  */
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -23,13 +23,13 @@ class ErrorBoundary extends Component {
 
   /**
    * Method called when an error is thrown in a descendant component.
-   * Logs the error to the console for debugging purposes.
+   * Logs the error to a custom formatter for structured logging.
    * @param {Object} error - The error object.
    * @param {Object} errorInfo - Additional information about the error.
    */
   componentDidCatch(error, errorInfo) {
-    // You can also log the error to an error reporting service
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Log the error using a custom formatter
+    logErrorWithFormat(error, errorInfo);
   }
 
   /**
@@ -45,6 +45,21 @@ class ErrorBoundary extends Component {
     // Render the children components normally if no errors have occurred
     return this.props.children; 
   }
+}
+
+/**
+ * Custom function to log errors with a structured format.
+ * @param {Object} error - The error object.
+ * @param {Object} errorInfo - Additional information about the error.
+ */
+function logErrorWithFormat(error, errorInfo) {
+  const errorLog = {
+    timestamp: new Date(),
+    error,
+    errorInfo,
+  };
+  
+  console.error(JSON.stringify(errorLog, null, 2));
 }
 
 export default ErrorBoundary;
