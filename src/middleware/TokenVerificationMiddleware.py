@@ -1,5 +1,3 @@
-// src/middleware/TokenVerificationMiddleware.js
-
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 
@@ -14,11 +12,15 @@ const TokenVerificationMiddleware = (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1];
 
   if (!token) {
+    const error = new Error('No token provided');
+    error.status = 403;
     return res.status(403).json({ message: 'No token provided' });
   }
 
   jwt.verify(token, config.jwtSecret, (err, decoded) => {
     if (err) {
+      const error = new Error('Failed to authenticate token');
+      error.status = 401;
       return res.status(401).json({ message: 'Failed to authenticate token' });
     }
 
