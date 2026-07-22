@@ -88,9 +88,5 @@ const useSyncManager = () => {
     };
   }, []);
 
-  // Additional logic to handle synchronization can be added here
-
-  return { syncingStatus, syncCount, handleSyncConfirmation }; // Return the function for use elsewhere if needed
+  return { syncingStatus, syncCount };
 };
-
-export default useSyncManager;
