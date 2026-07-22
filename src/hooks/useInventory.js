@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '@shadcn/ui';
 
 /**
  * Custom hook to fetch inventory data for the EventCard component directly from RxDB.
