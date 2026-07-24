@@ -3,7 +3,10 @@
 module.exports = {
   // Define the purge option to remove unused styles in production builds
   purge: ['./src/**/*.js', './src/**/*.jsx', './src/**/*.ts', './src/**/*.tsx'],
-  darkMode: false, // or 'media' or 'class'
+  
+  // Enable dark mode based on user preference or media query
+  darkMode: 'media',
+  
   theme: {
     extend: {
       screens: {
@@ -29,8 +32,10 @@ module.exports = {
       },
     },
   },
+  
   variants: {
     extend: {},
   },
+  
   plugins: [],
 }
