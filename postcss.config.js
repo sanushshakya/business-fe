@@ -1,3 +1,9 @@
+/**
+ * PostCSS configuration file to define the necessary plugins for processing CSS.
+ *
+ * @module postcss.config.js
+ */
+
 module.exports = {
   // Define the plugins array to hold all necessary PostCSS plugins
   plugins: [
