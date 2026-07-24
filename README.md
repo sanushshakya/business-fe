@@ -135,55 +135,11 @@ const App = () => {
     </div>
   );
 };
-
-export default App;
 ```
 
-### Invite User Component
+### Version Updates
 
-The `InviteUser` component allows users to send pending invitations with the ability to resend and cancel.
+- **PriceChangesPage Component**: Updated to use the latest `useInventory` hook for better data fetching efficiency.
+- **MySuppliersPanel Feature**: Added support for batch synchronization based on network status.
 
-- **Usage**:
-```jsx
-import React from 'react';
-import InviteUser from './src/components/InviteUser';
-
-const App = () => {
-  return (
-    <div>
-      <h1>Invite User</h1>
-      <InviteUser />
-    </div>
-  );
-};
-
-export default App;
-```
-
-### useSyncManager Hook
-
-The `useSyncManager` hook manages synchronization logic based on network status and batch size.
-
-- **Usage**:
-```jsx
-import React from 'react';
-import { useSyncManager } from './src/hooks/useSyncManager';
-
-const App = () => {
-  const { userSuppliers, openModal, closeModal } = useSyncManager();
-
-  return (
-    <div>
-      <h1>My Suppliers</h1>
-      <Table>
-        {/* Render table rows */}
-      </Table>
-      <Button onClick={openModal}>Invite User</Button>
-      <Modal onClose={closeModal}>
-        {/* Modal content for inviting a user */}
-      </Modal>
-    </div>
-  );
-};
-
-export default App;
+These updates ensure that the application remains up-to-date with the latest backend features and optimizations.
