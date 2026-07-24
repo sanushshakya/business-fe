@@ -18,8 +18,7 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "rxdb": "^13.0.0", // Added dependency for RxDB
-    "rxjs": "^7.5.4"   // Added dependency for RxJS
+    "rxjs": "^7.5.4"   // Updated dependency for RxJS
   },
   "devDependencies": {
     "vite": "^4.0.0",
