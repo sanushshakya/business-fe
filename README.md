@@ -135,11 +135,6 @@ const App = () => {
     </div>
   );
 };
+
+export default App;
 ```
-
-### Version Updates
-
-- **PriceChangesPage Component**: Updated to use the latest `useInventory` hook for better data fetching efficiency.
-- **MySuppliersPanel Feature**: Added support for batch synchronization based on network status.
-
-These updates ensure that the application remains up-to-date with the latest backend features and optimizations.
