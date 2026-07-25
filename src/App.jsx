@@ -67,55 +67,22 @@ const App = () => {
     };
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const response = await axiosInstance.get('/api/data');
-      console.log(response.data);
-    } catch (error) {
-      setError(error.message);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchData();
-  }, []);
-
-  const isOnline = useNetworkStatus((state) => state.isOnline);
-  React.useEffect(() => {
-    setNetworkStatus(isOnline);
-  }, [isOnline, setNetworkStatus]);
-
-  useSyncManager();
-
-  // Establish WebSocket connection
-  React.useEffect(() => {
-    const socket = new WebSocket('ws://example.com/socket');
-
-    socket.onopen = () => {
-      console.log('WebSocket connection established');
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, []);
+  // Import and render the FeatureComponent
+  const Feature = <FeatureComponent />;
 
   return (
     <Router>
-      <ErrorBoundary>
-        <MainLayout>
-          <Routes>
-            {/* Define routes for different pages */}
-            <Route path="/login" element={<LoginForm />} />
-            <Route path="/demand-alerts" element={<DemandAlertsPage />} />
-            <Route path="/stock-alerts" element={<StockAlertsPage />} />
-            <Route path="/feature-component" element={<FeatureComponent />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/branches" element={<BranchList />} />
-            <Route path="/branch-form" element={<BranchForm />} />
-          </Routes>
-        </MainLayout>
-      </ErrorBoundary>
+      <Routes>
+        {/* Define routes for different pages */}
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/dashboard" element={<MainLayout />}>
+          <Route index element={<DemandAlertsPage />} />
+          <Route path="stock-alerts" element={<StockAlertsPage />} />
+          <Route path="feature" element={Feature} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="branches" element={<BranchList />} />
+        </Route>
+      </Routes>
     </Router>
   );
 };
