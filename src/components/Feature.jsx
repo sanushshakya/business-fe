@@ -1,83 +1,45 @@
 import React from 'react';
-import { Table, Modal, Button } from 'shadcn/ui';
-import { useSelector } from 'react-redux';
-import useSyncManager from '../hooks/useSyncManager';
 
 /**
- * Feature component to display pending invitations in a separate table with actions.
+ * Feature component for checking and updating React img tags and Tailwind CSS.
  *
- * @returns {React.FC} - The Feature component
+ * @component
  */
-const Feature: React.FC = () => {
-  const invites = useSelector((state) => state.invites.pending);
-  const { openModal, closeModal } = useSyncManager();
-
+const Feature = () => {
   /**
-   * Handles the resend action for an invitation.
+   * Function to check and update React img tags and Tailwind CSS.
    *
-   * @param {string} inviteId - The ID of the invitation to resend.
+   * This function iterates over all the React img tags in the application and updates them with Tailwind CSS classes for styling.
    */
-  const handleResend = (inviteId) => {
-    if (!inviteId) {
-      openModal('Error', 'Invalid invitation ID');
-      return;
-    }
+  const checkAndUpdateImgTags = () => {
+    // Select all img tags within the component
+    const imgTags = document.querySelectorAll('img');
 
-    openModal('Resending...');
-    // Logic to resend the invitation
-    // Simulate sending logic
-    setTimeout(() => {
-      closeModal();
-    }, 1000);
+    // Iterate over each img tag
+    imgTags.forEach(imgTag => {
+      // Check if the img tag has a src attribute
+      if (imgTag.hasAttribute('src')) {
+        // Get the current src value of the img tag
+        const srcValue = imgTag.getAttribute('src');
+
+        // Add Tailwind CSS classes for styling the img tag
+        imgTag.classList.add('rounded-md', 'shadow-lg');
+
+        // Optionally, update the src value with a new URL if needed
+        // imgTag.setAttribute('src', 'new-url');
+      }
+    });
   };
 
-  /**
-   * Handles the cancel action for an invitation.
-   *
-   * @param {string} inviteId - The ID of the invitation to cancel.
-   */
-  const handleCancel = (inviteId) => {
-    if (!inviteId) {
-      openModal('Error', 'Invalid invitation ID');
-      return;
-    }
-
-    openModal('Cancelling...');
-    // Logic to cancel the invitation
-    // Simulate cancellation logic
-    setTimeout(() => {
-      closeModal();
-    }, 1000);
-  };
+  // Call the function to check and update img tags when the component mounts
+  React.useEffect(() => {
+    checkAndUpdateImgTags();
+  }, []);
 
   return (
-    <div className="flex flex-col">
-      <h2 className="text-2xl font-bold mb-4">Pending Invitations</h2>
-      {invites.length > 0 ? (
-        <Table className="sm:table-auto md:table-auto w-full">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invites.map((invite) => (
-              <tr key={invite.id} className="hover:bg-gray-200">
-                <td>{invite.email}</td>
-                <td>{invite.role}</td>
-                <td className="flex space-x-4">
-                  <Button onClick={() => handleResend(invite.id)}>Resend</Button>
-                  <Button onClick={() => handleCancel(invite.id)}>Cancel</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <p className="text-gray-500">No pending invitations.</p>
-      )}
+    <div>
+      <h1>Feature Component</h1>
+      <p>This component is designed to check and update React img tags with Tailwind CSS classes.</p>
     </div>
   );
 };
