@@ -7,8 +7,8 @@ export default class CompanyBranch {
   /**
    * Creates an instance of CompanyBranch.
    *
-   * @param {string} name - The name of the company branch.
-   * @param {string} address - The address of the company branch.
+   * @param {string} name - The name of the company branch. Must be between 3 and 100 characters long.
+   * @param {string} address - The address of the company branch. Must not be empty.
    */
   constructor(name, address) {
     this.name = name;
@@ -27,9 +27,12 @@ export default class CompanyBranch {
   /**
    * Set the name of the company branch.
    *
-   * @param {string} name - The new name for the company branch.
+   * @param {string} name - The new name for the company branch. Must be between 3 and 100 characters long.
    */
   setName(name) {
+    if (typeof name !== 'string' || name.length < 3 || name.length > 100) {
+      throw new Error('Name must be a string between 3 and 100 characters long.');
+    }
     this.name = name;
   }
 
@@ -45,9 +48,12 @@ export default class CompanyBranch {
   /**
    * Set the address of the company branch.
    *
-   * @param {string} address - The new address for the company branch.
+   * @param {string} address - The new address for the company branch. Must not be empty.
    */
   setAddress(address) {
+    if (typeof address !== 'string' || address.trim().length === 0) {
+      throw new Error('Address must not be empty.');
+    }
     this.address = address;
   }
 }
