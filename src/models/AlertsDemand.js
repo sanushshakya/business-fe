@@ -3,19 +3,21 @@
  * @module src/models/AlertsDemand
  */
 
+import { nanoid } from 'nanoid'; // Importing a unique ID generator
+
 export default class AlertsDemand {
   /**
    * Creates an instance of AlertsDemand.
-   * @param {number} id - The unique identifier for the alert demand.
+   * @param {string} id - The unique identifier for the alert demand (using nanoid if not provided).
    * @param {string} title - The title of the alert demand.
    * @param {string} description - The description of the alert demand.
    * @param {boolean} isDismissed - Indicates whether the alert demand has been dismissed.
    */
-  constructor(id, title, description, isDismissed) {
+  constructor(id = nanoid(), title, description, isDismissed = false) {
     this.id = id;
     this.title = title;
     this.description = description;
-    this.isDismissed = isDismissed || false;
+    this.isDismissed = isDismissed;
   }
 
   /**
