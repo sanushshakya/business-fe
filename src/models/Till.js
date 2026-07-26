@@ -14,7 +14,7 @@ class Till {
   constructor(data) {
     this.id = data.id;
     this.branchId = data.branchId;
-    this.isActive = data.isActive || true;
+    this.isActive = data.isActive || true; // Ensure isActive defaults to true if not provided
     this.lastSeenAt = data.lastSeenAt || new Date(); // Initialize to current time if not provided
   }
 
