@@ -1,7 +1,7 @@
 // src/components/InviteUserForm.jsx
 
 import React, { useState } from 'react';
-import { Button, Form, Input } from 'shadcn/ui';
+import { Button, Form, Input } from '@/components/ui';
 
 /**
  * InviteUserForm component to open a form for inviting users with email, role, and branch information.

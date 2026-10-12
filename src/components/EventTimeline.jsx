@@ -1,7 +1,7 @@
 // src/components/EventTimeline.jsx
 
 import React from 'react';
-import { Timeline, TimelineItem, Skeleton } from 'shadcn/ui';
+import { Timeline, TimelineItem, Skeleton } from '@/components/ui';
 
 /**
  * EventTimeline component to display an upcoming cultural events timeline for the next 60 days.

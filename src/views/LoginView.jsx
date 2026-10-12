@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Stepper, Step, StepLabel, Box } from '@shadcn/ui';
+import { Stepper, Step, StepLabel, Box } from '@/components/ui';
 import { useAuthStore } from '../stores/authStore';
 
 /**

@@ -1,7 +1,7 @@
 // src/components/BranchList.jsx
 
 import React from 'react';
-import { Card, Badge, Button } from 'shadcn/ui';
+import { Card, Badge, Button } from '@/components/ui';
 
 /**
  * BranchList component to display a list of branches as cards and include a button for adding new branches.

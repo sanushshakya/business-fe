@@ -1,83 +1,54 @@
 // src/utils/axios.js
 
 import axios from 'axios';
+import useAuthStore from '../stores/authStore';
 
-/**
- * Creates an Axios instance with a base URL from environment variables and JWT interceptor.
- *
- * @returns {AxiosInstance} - The configured Axios instance.
- */
-const createAxiosInstance = () => {
-  // Create an Axios instance
-  const instance = axios.create({
-    baseURL: process.env.REACT_APP_API_URL,
-    timeout: 10000, // Set a default timeout for requests
-  });
+const baseURL = import.meta.env?.VITE_API_URL ?? '';
 
-  /**
-   * Interceptor to attach the JWT access token to the request headers.
-   */
-  instance.interceptors.request.use(
-    (config) => {
-      const accessToken = localStorage.getItem('access_token');
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-      }
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
+const instance = axios.create({ baseURL, timeout: 10000 });
 
-  /**
-   * Interceptor to handle 401 responses by refreshing the token and retrying the request.
-   */
-  instance.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
+// Refresh tokens are single use, so concurrent 401s must share one refresh request.
+let refreshPromise = null;
 
-      // Check if the request is already being retried
-      if (originalRequest._retry) {
-        return Promise.reject(error);
-      }
-
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-          throw new Error('No refresh token found.');
-        }
-
-        // Refresh the access token using a custom endpoint (e.g., /api/auth/refresh)
-        const response = await axios.post(
-          process.env.REACT_APP_API_URL + '/api/auth/refresh',
-          { refreshToken },
-          {
-            headers: {
-              Authorization: `Bearer ${refreshToken}`,
-            },
-          }
-        );
-
-        // Update the access token in local storage
-        localStorage.setItem('access_token', response.data.accessToken);
-
-        // Retry the original request with the new access token
-        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
-        return instance(originalRequest);
-      } catch (refreshError) {
-        // Handle refresh error, e.g., redirect to login page or show error message
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
-    }
-  );
-
-  return instance;
+const refreshTokens = () => {
+  if (!refreshPromise) {
+    const { refreshToken, setTokens } = useAuthStore.getState();
+    if (!refreshToken) return Promise.reject(new Error('No refresh token'));
+    refreshPromise = axios
+      .post(`${baseURL}/auth/token/refresh/`, { refresh_token: refreshToken })
+      .then((response) => {
+        setTokens(response.data);
+        return response.data.access_token;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
 };
 
-// Export the configured Axios instance
-export default createAxiosInstance();
+instance.interceptors.request.use((config) => {
+  const { accessToken } = useAuthStore.getState();
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  return config;
+});
+
+instance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status !== 401 || !original || original._retry) return Promise.reject(error);
+    original._retry = true;
+
+    try {
+      const accessToken = await refreshTokens();
+      original.headers.Authorization = `Bearer ${accessToken}`;
+      return instance(original);
+    } catch (refreshError) {
+      useAuthStore.getState().clearTokens();
+      return Promise.reject(refreshError);
+    }
+  }
+);
+
+export default instance;

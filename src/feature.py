@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Modal, Button } from 'shadcn/ui';
+import { Table, Modal, Button } from '@/components/ui';
 import ScrollableTable from './ScrollableTable'; // Import the new ScrollableTable component
 import useSyncManager from '../hooks/useSyncManager';
 

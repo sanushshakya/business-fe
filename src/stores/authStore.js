@@ -1,86 +1,43 @@
-import create from 'zustand';
-import axios from '../utils/axios';
+import { create } from 'zustand';
+
+const STORAGE_KEY = 'auth_tokens';
+
+const loadTokens = () => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return { accessToken: stored?.accessToken ?? null, refreshToken: stored?.refreshToken ?? null };
+  } catch {
+    return { accessToken: null, refreshToken: null };
+  }
+};
+
+const saveTokens = (tokens) => {
+  try {
+    if (tokens) localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage can be unavailable (private mode); the session then lasts until reload.
+  }
+};
 
 /**
- * Zustand store for managing authentication and network status state.
+ * Zustand store holding the JWT pair returned by the backend's `/auth/login/` and `/auth/token/refresh/`.
  *
- * @returns {Object} The authentication and network status state and actions.
+ * Refresh tokens are single use, so the newest pair must always be stored via `setTokens`.
  */
 const useAuthStore = create((set) => ({
-  /**
-   * JWT access token, stored in memory.
-   *
-   * @type {string|null}
-   */
-  accessToken: null,
+  ...loadTokens(),
 
-  /**
-   * JWT refresh token, stored in an httpOnly cookie.
-   *
-   * @type {string|null}
-   */
-  refreshToken: null,
-
-  /**
-   * Network status indicating if the user is online or offline.
-   *
-   * @type {boolean}
-   */
-  isOnline: true,
-
-  /**
-   * Set the access token.
-   *
-   * @param {string} token - The new access token.
-   */
-  setAccessToken: (token) => {
-    set({ accessToken: token });
+  setTokens: ({ access_token: accessToken, refresh_token: refreshToken }) => {
+    saveTokens({ accessToken, refreshToken });
+    set({ accessToken, refreshToken });
   },
 
-  /**
-   * Set the refresh token.
-   *
-   * @param {string} token - The new refresh token.
-   */
-  setRefreshToken: (token) => {
-    document.cookie = `refreshToken=${token}; path=/; SameSite=Strict`;
-    set({ refreshToken: token });
-  },
-
-  /**
-   * Remove both the access and refresh tokens.
-   */
   clearTokens: () => {
+    saveTokens(null);
     set({ accessToken: null, refreshToken: null });
-    document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-  },
-
-  /**
-   * Fetch a new access token using the refresh token.
-   *
-   * @returns {Promise} A promise that resolves when the new token is fetched.
-   */
-  refreshToken: async () => {
-    try {
-      const response = await axios.post('/api/auth/refresh-token');
-      const newAccessToken = response.data.accessToken;
-      set({ accessToken: newAccessToken });
-      return Promise.resolve(newAccessToken);
-    } catch (error) {
-      set({ accessToken: null, refreshToken: null });
-      document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-      return Promise.reject(error);
-    }
-  },
-
-  /**
-   * Update the network status.
-   *
-   * @param {boolean} online - The new network status (true for online, false for offline).
-   */
-  setNetworkStatus: (online) => {
-    set({ isOnline: online });
   },
 }));
 
 export default useAuthStore;
+export { useAuthStore };

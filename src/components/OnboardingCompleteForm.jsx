@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Form, Input, Select } from 'shadcn/ui';
+import { Button, Form, Input, Select } from '@/components/ui';
 import useTeamData from '../hooks/useTeamData';
 
 /**

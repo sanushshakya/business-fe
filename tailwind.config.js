@@ -1,8 +1,8 @@
 // tailwind.config.js
 
 module.exports = {
-  // Define the purge option to remove unused styles in production builds
-  purge: ['./src/**/*.js', './src/**/*.jsx', './src/**/*.ts', './src/**/*.tsx'],
+  // Files scanned for class names; unused styles are removed from production builds
+  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
   
   // Enable dark mode based on user preference or media query
   darkMode: 'media',
@@ -31,10 +31,6 @@ module.exports = {
         '3/4': '75%',
       },
     },
-  },
-  
-  variants: {
-    extend: {},
   },
   
   plugins: [],

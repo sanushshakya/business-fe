@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Input, Button, Skeleton } from 'shadcn/ui';
+import { Form, Input, Button, Skeleton } from '@/components/ui';
 
 /**
  * CompanyProfileForm component for capturing company profile details (name, registration number, address).

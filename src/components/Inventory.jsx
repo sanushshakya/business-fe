@@ -1,7 +1,7 @@
 // src/components/Inventory.jsx
 
 import React, { useEffect, useState } from 'react';
-import { Table, Tbody, Td, Th, Thead, Tr } from '@shadcn/ui';
+import { Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import axios from '@/utils/axios';
 import useAuthStore from '@/stores/authStore';
 

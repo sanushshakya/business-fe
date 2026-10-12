@@ -1,35 +1,42 @@
 // vite.config.mjs
 
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { generateSW } from 'workbox-build';
 
+const API_TARGET = process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000';
+const API_PREFIXES = ['auth', 'tenants', 'inventory', 'demand', 'calendar', 'logistics', 'pricing', 'sync', 'common'];
+
 /**
- * Generate the service worker precache manifest.
- * @returns {Promise<void>}
+ * Generates the service worker once the bundle has been written to dist/.
  */
-async function generateServiceWorkerManifest() {
-  try {
-    const swBuildConfig = {
+const serviceWorkerPlugin = () => ({
+  name: 'generate-service-worker',
+  apply: 'build',
+  async closeBundle() {
+    await generateSW({
       globDirectory: 'dist',
       globPatterns: ['**/*.{js,css,html}'],
       swDest: 'dist/sw.js',
-    };
-
-    await generateSW(swBuildConfig);
-    console.log('Service worker precache manifest generated successfully.');
-  } catch (error) {
-    console.error('Failed to generate service worker precache manifest:', error);
-  }
-}
-
-// Run the manifest generation during build
-if (process.env.NODE_ENV === 'production') {
-  generateServiceWorkerManifest();
-}
+    });
+  },
+});
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
+  plugins: [react(), serviceWorkerPlugin()],
+  resolve: {
+    alias: { '@': path.resolve(__dirname, 'src') },
+  },
+  server: {
+    // The backend has no CORS configuration, so the dev server proxies API calls to it.
+    proxy: Object.fromEntries(
+      API_PREFIXES.map((prefix) => [`/${prefix}/`, { target: API_TARGET, changeOrigin: true }])
+    ),
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/**/*.test.{js,jsx}'],
+  },
 });

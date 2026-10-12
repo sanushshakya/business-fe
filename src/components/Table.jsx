@@ -1,7 +1,7 @@
 // src/components/Table.jsx
 
 import React, { useEffect, useState } from 'react';
-import { Table, Tbody, Td, Th, Thead, Tr } from '@shadcn/ui';
+import { Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { usePaginatedData } from './usePaginatedData'; // Custom hook for handling pagination and data fetching
 import axios from '../utils/axios';
 

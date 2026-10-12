@@ -1,7 +1,7 @@
 // src/components/UserTable.jsx
 
 import React from 'react';
-import Table from 'shadcn/ui/table';
+import Table from '@/components/ui/table';
 
 /**
  * UserTable component to display user data with specified columns in a table.

@@ -1,33 +1,45 @@
 import React from 'react';
-import EmptyStateComponent from '../components/EmptyStateComponent'; // Import the empty state component
-import InventoryList from '../components/InventoryList'; // Import the inventory list component
-import useInventory from '../hooks/useInventory'; // Import the custom hook to fetch inventory data
+import { Badge, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
+import QueryState from '../components/QueryState';
+import useApiList from '../hooks/useApiList';
 
-/**
- * @module src/pages/InventoryListPage.jsx
- * @description The Inventory List Page component.
- */
 const InventoryListPage = () => {
-  const { products, isLoading, isError } = useInventory(); // Fetch inventory data using the custom hook
-
-  /**
-   * @function renderContent
-   * @description Renders the content based on the availability of inventory items.
-   * @returns {JSX.Element} - The JSX element representing the rendered content.
-   */
-  const renderContent = () => {
-    if (isLoading) return <p>Loading...</p>; // Display loading message if data is being fetched
-    if (isError) return <p>Error fetching inventory.</p>; // Display error message if fetching fails
-    if (!products || products.length === 0) return <EmptyStateComponent />; // Render empty state component if no products are found
-
-    return <InventoryList products={products} />; // Render the inventory list component with fetched data
-  };
+  const products = useApiList('/inventory/products/');
 
   return (
-    <div>
-      <h1>Inventory List</h1>
-      {renderContent()} {/* Call the renderContent function to determine what to display */}
-    </div>
+    <section>
+      <h2 className="mb-4 text-xl font-semibold">Inventory</h2>
+      <QueryState query={products} emptyMessage="No products yet.">
+        {(items) => (
+          <Table>
+            <Thead>
+              <Tr>
+                <Th>Product</Th>
+                <Th>Price</Th>
+                <Th>In stock</Th>
+                <Th>Status</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {items.map((product) => (
+                <Tr key={product.id}>
+                  <Td>{product.name}</Td>
+                  <Td>£{Number(product.price).toFixed(2)}</Td>
+                  <Td>{product.stock_quantity}</Td>
+                  <Td>
+                    {product.stock_quantity <= product.reorder_threshold ? (
+                      <Badge color="yellow">Reorder</Badge>
+                    ) : (
+                      <Badge color="green">OK</Badge>
+                    )}
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        )}
+      </QueryState>
+    </section>
   );
 };
 

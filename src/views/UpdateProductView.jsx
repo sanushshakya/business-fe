@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input } from 'shadcn/ui';
+import { Button, Input } from '@/components/ui';
 
 /**
  * UpdateProductView component to allow updating product details via a form.

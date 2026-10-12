@@ -4,7 +4,7 @@ import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getUserList } from '../actions/syncActions';
 import useNetworkStatus from '../hooks/useNetworkStatus';
-import { Table, Modal, Button } from 'shadcn/ui';
+import { Table, Modal, Button } from '@/components/ui';
 
 /**
  * TeamPage component to display the team list with specified columns.

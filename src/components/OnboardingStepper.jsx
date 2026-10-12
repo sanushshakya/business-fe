@@ -1,6 +1,6 @@
 // src/components/OnboardingStepper.jsx
 import React from 'react';
-import { Stepper, Step, StepLabel } from '@shadcn/ui';
+import { Stepper, Step, StepLabel } from '@/components/ui';
 
 /**
  * OnboardingStepper component for guiding users through the onboarding process.

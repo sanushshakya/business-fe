@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAsyncDebounce } from 'use-async-debounce';
-import { Select, Option } from '@shadcn/ui';
+import { Select, Option } from '@/components/ui';
 
 /**
  * ProductSelect component for searching and selecting products.

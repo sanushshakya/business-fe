@@ -1,55 +1,39 @@
 import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react';
-import { Provider } from 'zustand';
-import create from 'zustand';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { beforeEach, describe, expect, it } from 'vitest';
+import PrivateRoute from '../PrivateRoute';
+import useAuthStore from '../../stores/authStore';
 
-// Mock the authService
-jest.mock('../services/authService');
+const renderAt = (path) =>
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/login" element={<div>Login page</div>} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <div>Secret</div>
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </MemoryRouter>
+  );
 
-const mockAuthService = {
-  isAuthenticated: jest.fn(),
-};
-
-const useAuthStoreMock = create((set) => ({
-  ...mockAuthService,
-}));
-
-// PrivateRoute component
-export const PrivateRoute = ({ children }) => {
-  const isAuthenticated = useAuthStore(use => use.isAuthenticated);
-
-  if (!isAuthenticated) {
-    return <div to="/login">Redirecting to /login...</div>;
-  }
-
-  return <>{children}</>;
-};
-
-// Test the PrivateRoute component
 describe('PrivateRoute', () => {
-  it('redirects unauthenticated users to /login', () => {
-    useAuthStoreMock.getState().isAuthenticated.mockReturnValue(false);
-    render(
-      <Provider createStore={useAuthStoreMock}>
-        <PrivateRoute>
-          <div>Protected Content</div>
-        </PrivateRoute>
-      </Provider>
-    );
+  beforeEach(() => useAuthStore.getState().clearTokens());
 
-    expect(screen.getByText('Redirecting to /login...')).toBeInTheDocument();
+  it('redirects signed-out users to /login', () => {
+    renderAt('/dashboard');
+    expect(screen.getByText('Login page')).toBeTruthy();
+    expect(screen.queryByText('Secret')).toBeNull();
   });
 
-  it('displays protected content for authenticated users', () => {
-    useAuthStoreMock.getState().isAuthenticated.mockReturnValue(true);
-    render(
-      <Provider createStore={useAuthStoreMock}>
-        <PrivateRoute>
-          <div>Protected Content</div>
-        </PrivateRoute>
-      </Provider>
-    );
-
-    expect(screen.getByText('Protected Content')).toBeInTheDocument();
+  it('renders children once a token pair is stored', () => {
+    useAuthStore.getState().setTokens({ access_token: 'a', refresh_token: 'r' });
+    renderAt('/dashboard');
+    expect(screen.getByText('Secret')).toBeTruthy();
   });
 });

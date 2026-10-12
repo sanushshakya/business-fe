@@ -1,7 +1,7 @@
 // src/views/CompanyBranchView.js
 
 import React from 'react';
-import { Button, Table } from 'shadcn/ui';
+import { Button, Table } from '@/components/ui';
 import useSyncManager from '../hooks/useSyncManager';
 
 /**

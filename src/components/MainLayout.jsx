@@ -1,51 +1,57 @@
 /**
- * MainLayout Component
- * This component serves as the main layout for the application,
- * featuring a left sidebar and a top bar with tabs for Demand and Stock Alerts.
+ * MainLayout: sidebar navigation (bottom bar on small screens), top bar and the routed page.
  */
 import React from 'react';
-import Sidebar from './Sidebar'; // Import the Sidebar component
-import TopBar from './TopBar'; // Import the TopBar component
-import ConnectivityBadge from './ConnectivityBadge'; // Import the ConnectivityBadge component
-import { Container } from '@shadcn/ui/dist/components/ui/container';
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@chakra-ui/react';
-import { useNetworkStatus } from '../hooks/useNetworkStatus'; // Import the useNetworkStatus hook
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import ConnectivityBadge from './ConnectivityBadge';
+import { Button } from '@/components/ui';
+import { logout } from '../services/authService';
 
-/**
- * MainLayout Component
- * @param {Object} props - The component props.
- * @returns {JSX.Element} - The rendered JSX element.
- */
-const MainLayout = ({ children }) => {
-  const networkStatus = useNetworkStatus(); // Consume the connectivity status from useNetworkStatus hook
+const NAV_ITEMS = [
+  { to: '/dashboard', label: 'Stock Alerts', end: true },
+  { to: '/dashboard/inventory', label: 'Inventory' },
+  { to: '/dashboard/events', label: 'Events' },
+];
+
+const linkClass = ({ isActive }) =>
+  `block rounded-md px-3 py-2 text-sm font-medium ${
+    isActive ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
+  }`;
+
+const MainLayout = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
-    <div className="flex h-screen">
-      {/* Left Sidebar */}
-      <Sidebar>
-        {/* Placeholder navigation links */}
-        <a href="#" className="block px-4 py-2 hover:bg-gray-100">Home</a>
-        <a href="#" className="block px-4 py-2 hover:bg-gray-100">About</a>
-        <a href="#" className="block px-4 py-2 hover:bg-gray-100">Contact</a>
-        {/* Add Inventory link */}
-        <a href="/inventory" className="block px-4 py-2 hover:bg-gray-100">Inventory</a>
-      </Sidebar>
+    <div className="flex min-h-screen flex-col bg-gray-50 md:flex-row">
+      <nav className="order-last border-t border-gray-200 bg-white p-2 md:order-none md:w-56 md:border-r md:border-t-0 md:p-4">
+        <h1 className="mb-4 hidden text-lg font-bold text-primary md:block">Supply Chain IQ</h1>
+        <ul className="flex gap-1 md:block md:space-y-1">
+          {NAV_ITEMS.map((item) => (
+            <li key={item.to} className="flex-1 md:flex-none">
+              <NavLink to={item.to} end={item.end} className={linkClass}>
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
-      {/* Main Content with a top bar and container for the main content */}
-      <Container className="flex flex-col flex-1 w-full">
-        <TopBar /> {/* Top Bar Component */}
-        <ConnectivityBadge status={networkStatus} /> {/* Add ConnectivityBadge to the top bar, passing network status */}
-        <Tabs isFitted variant="enclosed" colorScheme="blue">
-          <TabList>
-            <Tab>Demand Alerts</Tab>
-            <Tab>Stock Alerts</Tab>
-          </TabList>
-          <TabPanels>
-            {children[0]} {/* Render the first child for Demand Alerts */}
-            {children[1]} {/* Render the second child for Stock Alerts */}
-          </TabPanels>
-        </Tabs>
-      </Container>
+      <div className="flex flex-1 flex-col">
+        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+          <ConnectivityBadge />
+          <Button variant="secondary" onClick={handleLogout}>
+            Log out
+          </Button>
+        </header>
+        <main className="flex-1 p-4">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };

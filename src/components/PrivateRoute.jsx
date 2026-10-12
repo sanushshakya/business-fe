@@ -1,29 +1,17 @@
 // src/components/PrivateRoute.jsx
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import authService from '../services/authService';
+import { Navigate, useLocation } from 'react-router-dom';
+import useAuthStore from '../stores/authStore';
 
 /**
- * PrivateRoute component - A Higher-Order Component (HOC) to check authentication before rendering the wrapped component.
- * @module components/PrivateRoute
- * @param {Object} props - The properties passed to this component.
- * @param {React.ReactNode} props.children - The child component to render if authenticated.
- * @returns {React.ReactNode} - The wrapped component or redirect to /login if not authenticated.
+ * Renders `children` for signed-in users and redirects to /login otherwise.
  */
 const PrivateRoute = ({ children }) => {
-  const navigate = useNavigate();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const location = useLocation();
 
-  // Check if the user is authenticated
-  const isAuthenticated = authService.isAuthenticated();
-
-  // If not authenticated, redirect to login page
-  if (!isAuthenticated) {
-    navigate('/login', { replace: true });
-    return null;
-  }
-
-  // Render the wrapped component if authenticated
+  if (!accessToken) return <Navigate to="/login" replace state={{ from: location }} />;
   return children;
 };
 

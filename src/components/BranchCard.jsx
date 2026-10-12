@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Text, Badge, List, ListItem, Skeleton } from '@shadcn/ui';
+import { Card, Text, Badge, List, ListItem, Skeleton } from '@/components/ui';
 
 /**
  * BranchCard component to display a single branch as a card with an expandable Till list.
