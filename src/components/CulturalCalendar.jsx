@@ -1,75 +1,36 @@
 import React from 'react';
-import axios from 'axios';
-import { format } from 'date-fns';
-import EventDates from './EventDates'; // Import the new EventDates component
+import { format, parseISO } from 'date-fns';
 
 /**
- * CulturalCalendar component to display a 3-month forward view as a styled list grouped by month.
+ * Events grouped under "Month Year" headings, in date order.
  *
- * @component
- * @returns {ReactElement} The rendered CulturalCalendar component.
+ * @param {{id: number|string, name: string, start_date: string}[]} events
  */
-const CulturalCalendar = () => {
-  const [events, setEvents] = useState([]);
+const CulturalCalendar = ({ events = [] }) => {
+  const sorted = [...events].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const groups = new Map();
+  for (const event of sorted) {
+    const month = format(parseISO(event.start_date), 'MMMM yyyy');
+    if (!groups.has(month)) groups.set(month, []);
+    groups.get(month).push(event);
+  }
 
-  // Fetch events from the API
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await axios.get('https://api.example.com/events');
-        setEvents(response.data);
-      } catch (error) {
-        console.error('Failed to fetch events:', error);
-      }
-    };
-
-    fetchEvents();
-  }, []);
-
-  // Group events by month
-  const groupEventsByMonth = (events) => {
-    const groupedEvents = {};
-    events.forEach(event => {
-      const monthYear = format(event.date, 'MMMM yyyy');
-      if (!groupedEvents[monthYear]) {
-        groupedEvents[monthYear] = [];
-      }
-      groupedEvents[monthYear].push(event);
-    });
-    return groupedEvents;
-  };
-
-  const groupedEvents = groupEventsByMonth(events);
-
-  // Get the current date and calculate the end date for 3 months forward
-  const currentDate = new Date();
-  const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, currentDate.getDate());
-
-  // Filter events within the next 3 months
-  const futureEvents = Object.keys(groupedEvents).reduce((acc, monthYear) => {
-    groupedEvents[monthYear].forEach(event => {
-      if (event.date >= currentDate && event.date <= endDate) {
-        acc.push(event);
-      }
-    });
-    return acc;
-  }, []);
-
-  // Group filtered events by month
-  const futureGroupedEvents = groupEventsByMonth(futureEvents);
+  if (groups.size === 0) return <p className="text-sm text-gray-500">No upcoming events.</p>;
 
   return (
-    <div>
-      <EventDates dates={futureEvents} /> {/* Use the new EventDates component */}
-      {Object.keys(futureGroupedEvents).map((monthYear, index) => (
-        <React.Fragment key={index}>
-          <h2>{monthYear}</h2>
-          <ul style={{ listStyleType: 'none', padding: 0 }}>
-            {futureGroupedEvents[monthYear].map((event, eventIndex) => (
-              <li key={eventIndex}>{event.title}</li> // Display event titles
+    <div className="space-y-4">
+      {[...groups].map(([month, items]) => (
+        <section key={month}>
+          <h2 className="mb-2 text-lg font-semibold">{month}</h2>
+          <ul className="space-y-1">
+            {items.map((event) => (
+              <li key={event.id} className="flex gap-3 text-sm text-gray-700">
+                <time dateTime={event.start_date}>{format(parseISO(event.start_date), 'd MMM')}</time>
+                <span>{event.name}</span>
+              </li>
             ))}
           </ul>
-        </React.Fragment>
+        </section>
       ))}
     </div>
   );

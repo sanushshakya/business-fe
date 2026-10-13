@@ -1,90 +1,93 @@
-/**
- * @module src/services/rxdbBatchService.js
- * Service to handle batching of RxDB records and sending over WebSocket with error handling.
- */
+// src/services/rxdbBatchService.js
 
 import { Subject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 
-const BATCH_SIZE = 10;
+export const BATCH_SIZE = 10;
 
-// Subject to push batch data
 const batchSubject = new Subject();
+let pending = [];
 
 /**
- * Batches RxDB records and emits them via the batchSubject.
- *
- * @param {Array} records - Array of RxDB records to be batched.
+ * Splits records into batches of BATCH_SIZE, emits them on the batch stream and queues them
+ * until `processBatch` drains the queue.
  */
 export const batchRecords = (records) => {
   if (!records || records.length === 0) return;
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
+    pending.push(batch);
     batchSubject.next(batch);
   }
 };
 
-/**
- * Observable to listen for batches of RxDB records.
- *
- * @returns {Observable} - Observable emitting batches of RxDB records.
- */
-export const observeBatches = () => {
-  return batchSubject.pipe(
+/** Observable of `{timestamp, data}` for every non-empty batch. */
+export const observeBatches = () =>
+  batchSubject.pipe(
     filter((batch) => batch.length > 0),
-    map((batch) => ({
-      timestamp: new Date(),
-      data: batch,
-    }))
+    map((batch) => ({ timestamp: new Date(), data: batch }))
   );
-};
 
 /**
- * Service to send batches over WebSocket with error handling.
- *
- * @param {WebSocket} socket - WebSocket instance to use for sending batches.
+ * Hands every queued batch to `send(batch)` in order. A batch whose send fails stays queued
+ * (with everything after it) and the error is rethrown.
  */
-export const sendBatchesOverWebSocket = (socket) => {
+export const processBatch = async (send = async () => {}) => {
+  while (pending.length > 0) {
+    await send(pending[0]);
+    pending.shift();
+  }
+};
+
+export const pendingBatchCount = () => pending.length;
+
+export const clearPending = () => {
+  pending = [];
+};
+
+/** Forwards every batch to an open WebSocket. Returns the subscription so callers can unsubscribe. */
+export const sendBatchesOverWebSocket = (socket) =>
   observeBatches().subscribe({
     next(batch) {
-      if (socket.readyState === WebSocket.OPEN) {
-        try {
-          socket.send(JSON.stringify(batch));
-        } catch (error) {
-          console.error('Error sending batch over WebSocket:', error);
-        }
+      if (socket.readyState !== WebSocket.OPEN) return;
+      try {
+        socket.send(JSON.stringify(batch));
+      } catch (error) {
+        console.error('Error sending batch over WebSocket:', error);
       }
     },
     error(err) {
-      console.error('WebSocket error:', err);
+      console.error('Batch stream error:', err);
     },
-    complete() {
-      console.log('Batch sending completed');
-    }
   });
-};
 
 /**
- * Service to update the 'synced' field of RxDB records based on UUID confirmation.
- *
- * @param {Array} records - Array of RxDB records to be updated.
- * @param {Object} syncActions - Object containing actions for updating records.
+ * For each record whose UUID the server confirms, marks it synced.
+ * Resolves once every record has been handled; failures are logged per record.
  */
-export const updateSyncField = (records, syncActions) => {
-  if (!records || records.length === 0 || !syncActions || !syncActions.updateRecord) return;
+export const updateSyncField = async (records, syncActions) => {
+  if (!records?.length || !syncActions?.updateRecord || !syncActions?.confirmUUID) return;
 
-  records.forEach(async (record) => {
-    try {
-      // Confirm UUID
-      const isUuidConfirmed = await syncActions.confirmUUID(record.uuid);
-
-      if (isUuidConfirmed) {
-        // Update the record's 'synced' field to true
-        await syncActions.updateRecord(record, { synced: true });
+  await Promise.all(
+    records.map(async (record) => {
+      try {
+        if (await syncActions.confirmUUID(record.uuid)) {
+          await syncActions.updateRecord(record, { synced: true });
+        }
+      } catch (error) {
+        console.error('Error updating sync field for record', record.uuid, error);
       }
-    } catch (error) {
-      console.error('Error updating sync field for record with UUID:', record.uuid, error);
-    }
-  });
+    })
+  );
+};
+
+export default {
+  batchRecords,
+  observeBatches,
+  processBatch,
+  pendingBatchCount,
+  clearPending,
+  sendBatchesOverWebSocket,
+  updateSyncField,
 };

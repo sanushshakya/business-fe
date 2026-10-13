@@ -5,7 +5,12 @@ import App from './App';
 import './index.css';
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => failureCount < 1 && !(error.response?.status < 500),
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
 createRoot(document.getElementById('root')).render(

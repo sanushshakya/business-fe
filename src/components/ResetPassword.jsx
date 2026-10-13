@@ -1,71 +1,80 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Button, Card, Form, Input } from '@/components/ui';
 import axios from '../utils/axios';
 
 /**
- * ResetPassword component to handle password reset.
- *
- * @returns {React.FC} - The ResetPassword component
+ * Confirms a password reset using the `uidb64` and `token` from the emailed link.
+ * Calls `onDone` after a successful reset (typically to navigate to /login).
  */
-const ResetPassword: React.FC = ({ token }) => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+const ResetPassword = ({ uidb64, token, onDone }) => {
+  const [password, setPassword] = React.useState('');
+  const [confirm, setConfirm] = React.useState('');
+  const [error, setError] = React.useState('');
+  const [success, setSuccess] = React.useState(false);
 
-  /**
-   * Handles form submission for password reset.
-   *
-   * @param {React.FormEvent} event - The form submission event
-   */
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    setError('');
+    if (password !== confirm) {
+      setError('Passwords do not match.');
       return;
     }
     try {
-      await axios.post('/api/reset-password', { token, password });
+      await axios.post('/auth/password_reset/confirm/', {
+        uidb64,
+        token,
+        new_password1: password,
+        new_password2: confirm,
+      });
       setSuccess(true);
+      onDone?.();
     } catch (err) {
-      setError(err.response ? err.response.data.message : 'An error occurred');
+      setError(
+        err.response?.status === 400
+          ? 'This reset link is invalid or the password is too weak.'
+          : 'Something went wrong. Try again.'
+      );
     }
   };
 
-  if (success) {
-    return (
-      <div>
-        <h1>Password Reset Successful</h1>
-        <p>Redirecting to login page...</p>
-        {window.location.replace('/login')}
-      </div>
-    );
-  }
+  if (success) return <p role="status">Password reset. You can now sign in.</p>;
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="password">New Password:</label>
-        <input
-          type="password"
-          id="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label htmlFor="confirmPassword">Confirm New Password:</label>
-        <input
-          type="password"
-          id="confirmPassword"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
-      </div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button type="submit">Reset Password</button>
-    </form>
+    <Card className="mx-auto w-full max-w-sm">
+      <Form onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="newPassword" className="mb-1 block text-sm font-medium">
+            New password
+          </label>
+          <Input
+            id="newPassword"
+            type="password"
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium">
+            Confirm new password
+          </label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+          />
+        </div>
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
+        <Button type="submit">Reset password</Button>
+      </Form>
+    </Card>
   );
 };
 

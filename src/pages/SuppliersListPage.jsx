@@ -1,37 +1,45 @@
 import React from 'react';
-import EmptyState from '../components/EmptyState'; // Import the new empty state component
-import SupplierList from '../components/SupplierList'; // Import the existing supplier list component
+import { Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
+import AlternativeSupplierCarousel from '../components/AlternativeSupplierCarousel';
+import QueryState from '../components/QueryState';
+import useApiList from '../hooks/useApiList';
 
-/**
- * @module src/pages/SuppliersListPage.jsx
- *
- * @description
- * This module defines the Suppliers List Page component. It uses the EmptyState component to display a message when there are no suppliers.
- */
-
-const SuppliersListPage = ({ suppliers }) => {
-  /**
-   * @function renderContent
-   *
-   * @param {Array} suppliers - An array of supplier objects.
-   * @returns {JSX.Element}
-   *
-   * @description
-   * This function renders the content based on whether there are suppliers or not.
-   */
-
-  const renderContent = () => {
-    if (suppliers.length === 0) {
-      return <EmptyState title="No Suppliers Found" description="Please add a new supplier to get started." />;
-    }
-    return <SupplierList suppliers={suppliers} />;
-  };
+const SuppliersListPage = () => {
+  const suppliers = useApiList('/logistics/suppliers/');
+  const alternatives = useApiList('/logistics/alternative-suppliers/');
 
   return (
-    <div>
-      <h1>Suppliers List</h1>
-      {renderContent()}
-    </div>
+    <section className="space-y-6">
+      <h2 className="text-xl font-semibold">Suppliers</h2>
+      <QueryState query={suppliers} emptyMessage="No suppliers yet.">
+        {(items) => (
+          <Table>
+            <Thead>
+              <Tr>
+                <Th>Name</Th>
+                <Th>Country</Th>
+                <Th>Lead time</Th>
+                <Th>Categories</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {items.map((s) => (
+                <Tr key={s.id}>
+                  <Td>{s.name}</Td>
+                  <Td>{s.country_of_origin}</Td>
+                  <Td>{s.lead_time_days} days</Td>
+                  <Td>{(s.product_categories || []).join(', ')}</Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        )}
+      </QueryState>
+      <div>
+        <h3 className="mb-2 font-semibold">Alternative suppliers</h3>
+        <AlternativeSupplierCarousel suppliers={alternatives.data || []} />
+      </div>
+    </section>
   );
 };
 

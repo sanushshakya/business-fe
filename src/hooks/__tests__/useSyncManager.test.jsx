@@ -1,31 +1,45 @@
-// src/hooks/__tests__/useSyncManager.test.jsx
-
-import { renderHook, act } from '@testing-library/react-hooks';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import useSyncManager from '../useSyncManager';
 
-describe('useSyncManager Hook', () => {
-  test('should update syncing state correctly during record count update', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => useSyncManager());
+describe('useSyncManager', () => {
+  it('flushes queued batches when the browser comes back online', async () => {
+    const processBatch = vi.fn().mockResolvedValue();
+    const onNetworkOnline = vi.fn();
+    const onNetworkOffline = vi.fn();
+    const { result } = renderHook(() => useSyncManager({ processBatch, onNetworkOnline, onNetworkOffline }));
 
-    // Initial state should be 'idle'
-    expect(result.current.syncingState).toBe('idle');
-
-    // Simulate updating record count
     act(() => {
-      result.current.updateRecordCount(10);
+      window.dispatchEvent(new Event('offline'));
     });
+    expect(onNetworkOffline).toHaveBeenCalledTimes(1);
+    expect(result.current.isOnline).toBe(false);
+    expect(processBatch).not.toHaveBeenCalled();
 
-    // State should now be 'syncing'
-    await waitForNextUpdate();
-    expect(result.current.syncingState).toBe('syncing');
-
-    // Simulate completion of update
-    act(() => {
-      result.current.completeUpdate();
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
     });
+    expect(onNetworkOnline).toHaveBeenCalledTimes(1);
+    expect(processBatch).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(result.current.syncCount).toBe(1));
+    expect(result.current.isSyncing).toBe(false);
+  });
 
-    // State should return to 'idle' after completion
-    await waitForNextUpdate();
-    expect(result.current.syncingState).toBe('idle');
+  it('exposes a failed sync without counting it', async () => {
+    const processBatch = vi.fn().mockRejectedValue(new Error('server down'));
+    const { result } = renderHook(() => useSyncManager({ processBatch }));
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(result.current.error.message).toBe('server down');
+    expect(result.current.syncCount).toBe(0);
+  });
+
+  it('stops listening after unmount', () => {
+    const processBatch = vi.fn().mockResolvedValue();
+    const { unmount } = renderHook(() => useSyncManager({ processBatch }));
+    unmount();
+    window.dispatchEvent(new Event('online'));
+    expect(processBatch).not.toHaveBeenCalled();
   });
 });

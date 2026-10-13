@@ -1,20 +1,15 @@
 import React from 'react';
 
 /**
- * EventBanner component displays a large event banner with the event name and remaining days.
- *
- * @param {Object} props - The component props.
- * @param {string} props.eventName - The name of the event to be displayed on the banner.
- * @param {number} props.daysRemaining - The number of days until the event.
- * @returns {React.FC} - The EventBanner component
+ * Banner announcing the next event and how many days remain.
  */
-const EventBanner: React.FC<{ eventName: string, daysRemaining: number }> = ({ eventName, daysRemaining }) => {
-  return (
-    <div className="bg-blue-600 text-white p-4 rounded-lg shadow-md text-center sm:flex justify-between items-center">
-      <h1 className="text-3xl font-bold sm:text-xl">{eventName}</h1>
-      <p className="mt-2 text-xl sm:text-base">Event in {daysRemaining} days</p>
-    </div>
-  );
-};
+const EventBanner = ({ eventName, daysRemaining }) => (
+  <div className="items-center justify-between rounded-lg bg-primary p-4 text-center text-white shadow-md sm:flex">
+    <h2 className="text-xl font-bold">{eventName}</h2>
+    <p className="mt-2 sm:mt-0">
+      {daysRemaining === 0 ? 'Event is today' : `Event in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}`}
+    </p>
+  </div>
+);
 
 export default EventBanner;

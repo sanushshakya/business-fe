@@ -1,53 +1,35 @@
 import { createRxDatabase } from 'rxdb';
-import indexedDBAdapter from 'rxdb/plugins/indexeddb';
+import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 
 /**
  * @module src/offlineDB.js
- * @description Initialize RxDB using IndexedDB adapter for offline database support.
+ * Offline database (RxDB on IndexedDB via Dexie) holding records captured while offline.
  */
 
-// Configure RxDB with IndexedDB adapter
-indexedDBAdapter.addIndexedDBPlugin();
+export const stockReceiptSchema = {
+  title: 'stockReceipts',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 64 },
+    product: { type: 'number' },
+    batch_number: { type: 'string' },
+    quantity: { type: 'number', minimum: 1 },
+    expiration_date: { type: 'string' },
+    synced: { type: 'boolean' },
+  },
+  required: ['id', 'product', 'batch_number', 'quantity', 'expiration_date', 'synced'],
+};
 
 /**
- * Creates an RxDB instance and initializes a sample collection for StockReceipts.
+ * Creates the database and its collections.
  *
- * @returns {Promise<RxDatabase>} A promise that resolves to the created RxDB instance with a StockReceipts collection.
+ * @param {{name?: string, storage?: object}} [options] - `storage` defaults to Dexie/IndexedDB; tests pass the memory storage.
+ * @returns {Promise<import('rxdb').RxDatabase>}
  */
-async function initRxDB() {
-  try {
-    // Create a new database instance using IndexedDB
-    const db = await createRxDatabase({
-      name: 'iq_fe_db', // Name of the database
-      adapter: indexedDBAdapter, // Use IndexedDB as the storage adapter
-      multiInstance: false, // Prevent multiple instances of the same database
-    });
-
-    // Initialize a sample collection for StockReceipts
-    if (!db.stockReceipts) {
-      await db.addCollections({
-        stockReceipts: {
-          schema: {
-            title: 'stockReceipts',
-            description: 'Stores stock receipt data',
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              itemId: { type: 'string' },
-              quantity: { type: 'number', minimum: 0 },
-              date: { type: 'string', format: 'date-time' }
-            },
-            required: ['id', 'itemId', 'quantity', 'date']
-          }
-        }
-      });
-    }
-
-    return db;
-  } catch (error) {
-    console.error('Error initializing RxDB:', error);
-    throw error;
-  }
+export async function initRxDB({ name = 'iq_fe_db', storage = getRxStorageDexie() } = {}) {
+  const db = await createRxDatabase({ name, storage, multiInstance: false });
+  await db.addCollections({ stockReceipts: { schema: stockReceiptSchema } });
+  return db;
 }
-
-export { initRxDB };

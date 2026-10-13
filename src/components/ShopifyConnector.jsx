@@ -1,34 +1,34 @@
 import React from 'react';
-import Modal from './Modal';
+import { Button, Modal } from '@/components/ui';
 
 /**
- * ShopifyConnector component to provide an optional button to connect to Shopify.
- *
- * @returns {React.FC} - The ShopifyConnector component
+ * Onboarding step offering to connect Shopify. `onConnect` is called when the user continues;
+ * skipping just closes the dialog.
  */
-const ShopifyConnector = () => {
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-
-  /**
-   * Handles opening the modal.
-   */
-  const openModal = () => setIsModalOpen(true);
-
-  /**
-   * Handles closing the modal.
-   */
-  const closeModal = () => setIsModalOpen(false);
+const ShopifyConnector = ({ onConnect }) => {
+  const [open, setOpen] = React.useState(false);
 
   return (
     <div>
-      <button onClick={openModal}>Connect to Shopify</button>
-      {isModalOpen && (
-        <Modal onClose={closeModal}>
-          <h2>Shopify Connection</h2>
-          <p>Click the button below to skip connecting to Shopify.</p>
-          <button onClick={() => closeModal()}>Skip</button>
-        </Modal>
-      )}
+      <Button onClick={() => setOpen(true)}>Connect to Shopify</Button>
+      <Modal open={open} onClose={() => setOpen(false)} title="Shopify connection">
+        <p className="mb-4 text-sm text-gray-700">
+          Connect your store to sync approved price changes, or skip and do it later.
+        </p>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              onConnect?.();
+              setOpen(false);
+            }}
+          >
+            Continue
+          </Button>
+          <Button variant="secondary" onClick={() => setOpen(false)}>
+            Skip
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };

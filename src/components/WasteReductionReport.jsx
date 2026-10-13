@@ -1,124 +1,40 @@
 import React from 'react';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
+import { Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
- * WasteReductionReport component to display the Waste Reduction Report page with a data table for individual markdown events.
+ * Value saved by markdowns of near-expiry stock in the last 30 days.
  *
- * @returns {React.FC} - The WasteReductionReport component
+ * @param {{id, product, old_price, new_price, reason, changed_at}[]} logs - PriceChangeLog rows
+ * @param {Record<number, string>} [productNames] - product id → name
  */
-const WasteReductionReport: React.FC = () => {
-  const [reportData, setReportData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+const WasteReductionReport = ({ logs = [], productNames = {}, now = new Date() }) => {
+  const rows = logs.filter(
+    (log) => log.reason === 'decay_markdown' && now - new Date(log.changed_at) <= THIRTY_DAYS_MS
+  );
 
-  /**
-   * Fetches the waste reduction report data from the API.
-   *
-   * @returns {Promise<void>} - A promise that resolves when the data is fetched.
-   */
-  const fetchReportData = async () => {
-    try {
-      const response = await fetch('/api/reports/waste-reduction/');
-      if (!response.ok) {
-        throw new Error(`Failed to fetch waste reduction report: ${response.statusText}`);
-      }
-      const data = await response.json();
-      setReportData(data);
-    } catch (error) {
-      console.error('Error fetching waste reduction report:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchReportData();
-  }, []);
-
-  /**
-   * Handles the rendering of the waste reduction report based on data availability.
-   *
-   * @returns {JSX.Element} - JSX element representing the rendered content.
-   */
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <Paper>
-          <TableContainer component={Paper}>
-            <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Loading...</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {/* Loading state */}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      );
-    }
-
-    if (!reportData) {
-      return (
-        <Paper>
-          <TableContainer component={Paper}>
-            <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
-              <TableHead>
-                <TableRow>
-                  <TableCell>No Data Available</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {/* No data available */}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      );
-    }
-
-    const filteredData = reportData.priceChangeLogs.filter(log => 
-      log.reason === 'decay_markdown' &&
-      new Date() - new Date(log.date) <= 30 * 24 * 60 * 60 * 1000 // last 30 days
-    );
-
-    return (
-      <Paper>
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Product Name</TableCell>
-                <TableCell>Value Saved</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredData.map((log, index) => (
-                <TableRow key={index}>
-                  <TableCell>{new Date(log.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{log.productName}</TableCell>
-                  <TableCell>${(log.value || 0).toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    );
-  };
+  if (rows.length === 0) return <p className="text-sm text-gray-500">No markdowns in the last 30 days.</p>;
 
   return (
-    <div>
-      {renderContent()}
-    </div>
+    <Table>
+      <Thead>
+        <Tr>
+          <Th>Date</Th>
+          <Th>Product</Th>
+          <Th>Markdown</Th>
+        </Tr>
+      </Thead>
+      <Tbody>
+        {rows.map((log) => (
+          <Tr key={log.id}>
+            <Td>{new Date(log.changed_at).toLocaleDateString()}</Td>
+            <Td>{productNames[log.product] ?? `Product #${log.product}`}</Td>
+            <Td>£{(Number(log.old_price) - Number(log.new_price)).toFixed(2)}</Td>
+          </Tr>
+        ))}
+      </Tbody>
+    </Table>
   );
 };
 

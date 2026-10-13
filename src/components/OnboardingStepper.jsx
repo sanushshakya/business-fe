@@ -1,62 +1,34 @@
-// src/components/OnboardingStepper.jsx
 import React from 'react';
-import { Stepper, Step, StepLabel } from '@/components/ui';
+import { Button, Step, StepLabel, Stepper } from '@/components/ui';
 
 /**
- * OnboardingStepper component for guiding users through the onboarding process.
- *
- * @returns {React.FC} - The OnboardingStepper component
+ * Multi-step flow. `steps` is `[{label, content}]`; `onFinish` runs on the last step.
  */
-const OnboardingStepper: React.FC = () => {
-  const steps = [
-    {
-      label: 'Company Profile',
-      content: <div>Step 1: Enter Company Name, Registration Number, and Address</div>,
-    },
-    {
-      label: 'Contact Information',
-      content: <div>Step 2: Add Contact Person Details</div>,
-    },
-    {
-      label: 'Payment Terms',
-      content: <div>Step 3: Set Payment Conditions</div>,
-    },
-    {
-      label: 'Review and Confirm',
-      content: <div>Step 4: Review Information and Confirm</div>,
-    },
-  ];
-
-  const [activeStep, setActiveStep] = React.useState(0);
-
-  const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
-
-  const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
-  };
+const OnboardingStepper = ({ steps, onFinish }) => {
+  const [active, setActive] = React.useState(0);
+  const last = active === steps.length - 1;
 
   return (
-    <Stepper activeStep={activeStep}>
-      {steps.map((step, index) => (
-        <Step key={index} completed={index < activeStep}>
-          <StepLabel>{step.label}</StepLabel>
-        </Step>
-      ))}
-      <div style={{ marginTop: '2rem' }}>
-        {activeStep === steps.length - 1 ? (
-          <Button type="submit">Finish</Button>
+    <div className="space-y-6">
+      <Stepper activeStep={active}>
+        {steps.map((step) => (
+          <Step key={step.label}>
+            <StepLabel>{step.label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+      <div>{steps[active].content}</div>
+      <div className="flex gap-2">
+        <Button variant="secondary" onClick={() => setActive((i) => i - 1)} disabled={active === 0}>
+          Back
+        </Button>
+        {last ? (
+          <Button onClick={onFinish}>Finish</Button>
         ) : (
-          <>
-            <Button onClick={handleBack} disabled={activeStep === 0}>
-              Back
-            </Button>
-            <Button onClick={handleNext}>Next</Button>
-          </>
+          <Button onClick={() => setActive((i) => i + 1)}>Next</Button>
         )}
       </div>
-    </Stepper>
+    </div>
   );
 };
 

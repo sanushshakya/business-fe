@@ -1,73 +1,42 @@
-// src/components/BranchForm.jsx
-
-import React, { useState } from 'react';
+import React from 'react';
+import { Button, Form, Input } from '@/components/ui';
 
 /**
- * BranchForm component to handle the form for adding a new branch.
- *
- * @returns {React.FC} - The BranchForm component
+ * Collects a branch name and address and hands them to `onSubmit({name, address})`.
  */
-const BranchForm = () => {
-  // State to hold branch data
-  const [branchName, setBranchName] = useState('');
-  const [address, setAddress] = useState('');
+const BranchForm = ({ onSubmit, submitting = false }) => {
+  const [name, setName] = React.useState('');
+  const [address, setAddress] = React.useState('');
 
-  /**
-   * Handle form submission.
-   *
-   * @param {React.FormEvent<HTMLFormElement>} event - The form submission event.
-   */
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // Logic to add branch
-    console.log('Branch Name:', branchName);
-    console.log('Address:', address);
-    setBranchName('');
+    try {
+      await onSubmit({ name: name.trim(), address: address.trim() });
+    } catch {
+      return; // the page shows the error; keep what was typed
+    }
+    setName('');
     setAddress('');
   };
 
-  /**
-   * Handle input change for branch name.
-   *
-   * @param {React.ChangeEvent<HTMLInputElement>} event - The input change event.
-   */
-  const handleBranchNameChange = (event) => {
-    setBranchName(event.target.value);
-  };
-
-  /**
-   * Handle input change for address.
-   *
-   * @param {React.ChangeEvent<HTMLInputElement>} event - The input change event.
-   */
-  const handleAddressChange = (event) => {
-    setAddress(event.target.value);
-  };
-
   return (
-    <form onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit}>
       <div>
-        <label htmlFor="branchName">Branch Name:</label>
-        <input
-          type="text"
-          id="branchName"
-          value={branchName}
-          onChange={handleBranchNameChange}
-          required
-        />
+        <label htmlFor="branchName" className="mb-1 block text-sm font-medium">
+          Branch name
+        </label>
+        <Input id="branchName" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div>
-        <label htmlFor="address">Address:</label>
-        <input
-          type="text"
-          id="address"
-          value={address}
-          onChange={handleAddressChange}
-          required
-        />
+        <label htmlFor="branchAddress" className="mb-1 block text-sm font-medium">
+          Address
+        </label>
+        <Input id="branchAddress" value={address} onChange={(e) => setAddress(e.target.value)} required />
       </div>
-      <button type="submit">Add Branch</button>
-    </form>
+      <Button type="submit" disabled={submitting}>
+        Add branch
+      </Button>
+    </Form>
   );
 };
 

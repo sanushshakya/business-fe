@@ -22,6 +22,7 @@ const BUTTON_VARIANTS = {
   danger: 'bg-red-600 text-white hover:bg-red-700',
 };
 
+/* eslint-disable react/button-has-type -- `type` defaults to "button"; callers pass "submit" explicitly */
 export const Button = ({ variant = 'primary', className, type = 'button', ...props }) => (
   <button
     type={type}
@@ -34,6 +35,7 @@ export const Button = ({ variant = 'primary', className, type = 'button', ...pro
     {...props}
   />
 );
+/* eslint-enable react/button-has-type */
 
 export const Input = React.forwardRef(({ className, ...props }, ref) => (
   <input
@@ -88,7 +90,9 @@ export const Select = ({ className, children, ...props }) => (
 
 export const Option = (props) => <option {...props} />;
 
-export const List = ({ className, ...props }) => <ul className={cx('divide-y divide-gray-100', className)} {...props} />;
+export const List = ({ className, ...props }) => (
+  <ul className={cx('divide-y divide-gray-100', className)} {...props} />
+);
 export const ListItem = ({ className, ...props }) => <li className={cx('py-2 text-sm', className)} {...props} />;
 
 export const Table = ({ className, children, ...props }) => (
@@ -130,7 +134,9 @@ export const Modal = ({ isOpen = true, open, onClose, title, children }) => {
 export const Stepper = ({ activeStep = 0, className, children }) => (
   <ol className={cx('flex items-center gap-4', className)}>
     {React.Children.map(children, (child, index) =>
-      React.isValidElement(child) ? React.cloneElement(child, { index, active: index === activeStep, done: index < activeStep }) : child
+      React.isValidElement(child)
+        ? React.cloneElement(child, { index, active: index === activeStep, done: index < activeStep })
+        : child
     )}
   </ol>
 );

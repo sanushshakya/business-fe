@@ -1,50 +1,41 @@
-// src/components/InviteUserForm.jsx
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Form, Input } from '@/components/ui';
 
 /**
- * InviteUserForm component to open a form for inviting users with email, role, and branch information.
- *
- * @returns {React.FC} - The InviteUserForm component
+ * Invites a user by email into a named group; matches POST /auth/invitations/.
  */
-const InviteUserForm = () => {
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
-  const [branch, setBranch] = useState('');
+const InviteUserForm = ({ onSubmit, submitting = false }) => {
+  const [email, setEmail] = React.useState('');
+  const [role, setRole] = React.useState('');
 
-  /**
-   * Handles form submission to invite a user.
-   *
-   * @param {Event} event - The form submission event
-   */
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // Add logic here to handle the form submission, e.g., sending an invitation email
-    console.log('Inviting user:', email, role, branch);
+    try {
+      await onSubmit({ invited_email: email, role });
+    } catch {
+      return; // the page shows the error; keep what was typed
+    }
+    setEmail('');
+    setRole('');
   };
 
   return (
     <Form onSubmit={handleSubmit}>
-      <div className="mb-4">
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+      <div>
+        <label htmlFor="inviteEmail" className="mb-1 block text-sm font-medium">
           Email
         </label>
-        <Input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Input id="inviteEmail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
-      <div className="mb-4">
-        <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+      <div>
+        <label htmlFor="inviteRole" className="mb-1 block text-sm font-medium">
           Role
         </label>
-        <Input type="text" id="role" value={role} onChange={(e) => setRole(e.target.value)} required />
+        <Input id="inviteRole" value={role} onChange={(e) => setRole(e.target.value)} required />
       </div>
-      <div className="mb-4">
-        <label htmlFor="branch" className="block text-sm font-medium text-gray-700">
-          Branch
-        </label>
-        <Input type="text" id="branch" value={branch} onChange={(e) => setBranch(e.target.value)} required />
-      </div>
-      <Button type="submit">Invite User</Button>
+      <Button type="submit" disabled={submitting}>
+        Invite user
+      </Button>
     </Form>
   );
 };

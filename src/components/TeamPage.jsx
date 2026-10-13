@@ -1,86 +1,65 @@
-// src/components/TeamPage.jsx
-
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { getUserList } from '../actions/syncActions';
-import useNetworkStatus from '../hooks/useNetworkStatus';
-import { Table, Modal, Button } from '@/components/ui';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Badge, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
+import axios from '../utils/axios';
+import useApiList from '../hooks/useApiList';
+import InviteUserForm from './InviteUserForm';
+import QueryState from './QueryState';
+
+const STATUS_COLORS = { accepted: 'green', pending: 'yellow', expired: 'red' };
 
 /**
- * TeamPage component to display the team list with specified columns.
- *
- * @returns {React.FC} - The TeamPage component
+ * Staff view of invitations (/auth/invitations/) with a form to invite someone new.
  */
-const TeamPage: React.FC = () => {
-  const dispatch = useDispatch();
-  const userList = useSelector(state => state.userList);
-  const isNetworkOnline = useNetworkStatus();
+const TeamPage = () => {
+  const queryClient = useQueryClient();
+  const invitations = useApiList('/auth/invitations/');
+  const invite = useMutation({
+    mutationFn: (payload) => axios.post('/auth/invitations/', payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['list', '/auth/invitations/'] }),
+  });
 
-  // Check if the current user has the appropriate role to access this page
-  const currentUserRole = useSelector(state => state.currentUser.role);
-  const hasAccess = ['admin', 'owner'].includes(currentUserRole);
-
-  /**
-   * Fetches the user list from the API when the component mounts or network status changes.
-   *
-   * @async
-   */
-  React.useEffect(() => {
-    if (isNetworkOnline) {
-      dispatch(getUserList());
-    }
-  }, [dispatch, isNetworkOnline]);
-
-  // Placeholder for handling row click to open a modal with user details
-  const handleRowClick = (user) => {
-    console.log('User clicked:', user);
-    Modal.open({
-      title: 'User Details',
-      content: (
-        <div>
-          <p>Name: {user.name}</p>
-          <p>Email: {user.email}</p>
-          <p>Role: {user.role}</p>
-          {/* Additional details can be added here */}
-        </div>
-      ),
-    });
-  };
-
-  if (!hasAccess) {
-    return (
-      <div>
-        <h1>Access Denied</h1>
-        <p>You do not have permission to view this page.</p>
-      </div>
-    );
-  }
+  const errorMessage =
+    invite.error?.response?.status === 403
+      ? 'Only company admins can invite users.'
+      : invite.isError
+        ? 'Could not send the invitation.'
+        : null;
 
   return (
-    <Table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Branch Assignment</th>
-          <th>Last Login</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {userList.map(user => (
-          <tr key={user.id} onClick={() => handleRowClick(user)}>
-            <td>{user.name}</td>
-            <td>{user.email}</td>
-            <td><span className={`badge ${user.role.toLowerCase()}`}>{user.role}</span></td>
-            <td>{user.branchAssignment}</td>
-            <td>{user.lastLogin}</td>
-            <td>{user.status}</td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
+    <section className="space-y-6">
+      <h2 className="text-xl font-semibold">Team</h2>
+      <InviteUserForm onSubmit={invite.mutateAsync} submitting={invite.isLoading} />
+      {errorMessage && (
+        <p role="alert" className="text-sm text-red-600">
+          {errorMessage}
+        </p>
+      )}
+      <QueryState query={invitations} emptyMessage="No invitations yet.">
+        {(items) => (
+          <Table>
+            <Thead>
+              <Tr>
+                <Th>Email</Th>
+                <Th>Role</Th>
+                <Th>Status</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {items.map((item) => (
+                <Tr key={item.id}>
+                  <Td>{item.invited_email}</Td>
+                  <Td>{item.role}</Td>
+                  <Td>
+                    <Badge color={STATUS_COLORS[item.status] || 'gray'}>{item.status}</Badge>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        )}
+      </QueryState>
+    </section>
   );
 };
 

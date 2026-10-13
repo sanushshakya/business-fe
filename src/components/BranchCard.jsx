@@ -1,59 +1,43 @@
 import React from 'react';
-import { Card, Text, Badge, List, ListItem, Skeleton } from '@/components/ui';
+import { Badge, Button, Card, List, ListItem } from '@/components/ui';
 
 /**
- * BranchCard component to display a single branch as a card with an expandable Till list.
+ * A branch with an expandable list of its tills.
  *
- * @param {Object} props - The properties for the BranchCard component.
- * @param {string} props.name - The name of the branch.
- * @param {string} props.address - The address of the branch.
- * @param {number} props.tills - The number of tills in the branch.
- * @param {number} props.staff - The number of staff members at the branch.
- * @param {boolean} props.isActive - Whether the branch is active or not.
- * @returns {React.FC} - The BranchCard component
+ * @param {{name: string, address: string, is_active: boolean}} branch
+ * @param {{id: number, name?: string}[]} [tills]
+ * @param {(till: object) => void} [onDeactivateTill]
  */
-const BranchCard = ({ name, address, tills, staff, isActive, tillData }) => {
-  const [isExpanded, setIsExpanded] = React.useState(false);
+const BranchCard = ({ branch, tills = [], onDeactivateTill }) => {
+  const [expanded, setExpanded] = React.useState(false);
 
   return (
     <Card className="w-full">
-      <div className="flex justify-between items-center">
-        <Skeleton Text size="lg" count={1} />
-        {/* Display active/inactive badge based on branch status */}
-        <Badge variant={isActive ? 'success' : 'destructive'}>{isActive ? 'Active' : 'Inactive'}</Badge>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold">{branch.name}</h3>
+        <Badge color={branch.is_active ? 'green' : 'red'}>{branch.is_active ? 'Active' : 'Inactive'}</Badge>
       </div>
-      <hr />
-      <div className="mt-4 space-y-2">
-        <Skeleton count={1} />
-        <Skeleton count={1} />
-        <Skeleton count={1} />
-        {/* Add expand button */}
-        <Button onClick={() => setIsExpanded(!isExpanded)}>{isExpanded ? 'Collapse Tills' : 'Expand Tills'}</Button>
-      </div>
-      {/* Conditionally render the Till list */}
-      {isExpanded && (
-        <List>
-          {tillData.map((till, index) => (
-            <ListItem key={index}>
-              <Skeleton count={1} />
-              {/* Add deactivate button for each till */}
-              <Button onClick={() => deactivateTill(till.id)}>Deactivate</Button>
+      <p className="mt-2 text-sm text-gray-600">{branch.address}</p>
+      <Button variant="secondary" className="mt-3" onClick={() => setExpanded((open) => !open)}>
+        {expanded ? 'Hide tills' : `Show tills (${tills.length})`}
+      </Button>
+      {expanded && (
+        <List className="mt-2">
+          {tills.length === 0 && <ListItem>No tills.</ListItem>}
+          {tills.map((till) => (
+            <ListItem key={till.id} className="flex items-center justify-between">
+              <span>{till.name ?? `Till #${till.id}`}</span>
+              {onDeactivateTill && (
+                <Button variant="danger" onClick={() => onDeactivateTill(till)}>
+                  Deactivate
+                </Button>
+              )}
             </ListItem>
           ))}
         </List>
       )}
     </Card>
   );
-
-  /**
-   * Function to handle deactivating a till.
-   *
-   * @param {string} tillId - The ID of the till to deactivate.
-   */
-  const deactivateTill = (tillId) => {
-    // Logic to deactivate the till
-    console.log(`Deactivating till with ID: ${tillId}`);
-  };
 };
 
 export default BranchCard;

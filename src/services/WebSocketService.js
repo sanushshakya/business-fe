@@ -1,67 +1,49 @@
-/**
- * WebSocketService.js
- *
- * Service for handling WebSocket connections.
- */
+// src/services/WebSocketService.js
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Establishes a WebSocket connection and manages its lifecycle.
+ * Keeps a WebSocket open to `url` for the lifetime of the component.
  *
- * @param {string} url - The URL of the WebSocket server.
- * @returns {{ socket: WebSocket | null, connect: () => void, disconnect: () => void }}
+ * @param {string} [url] - Nothing is opened until a url is given.
+ * @returns {{socket: WebSocket|null, isOpen: boolean, connect: () => void, disconnect: () => void}}
  */
 const useWebSocketService = (url) => {
   const [socket, setSocket] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const socketRef = useRef(null);
 
-  useEffect(() => {
-    if (!url) return;
+  const disconnect = useCallback(() => {
+    socketRef.current?.close();
+    socketRef.current = null;
+    setSocket(null);
+    setIsOpen(false);
+  }, []);
 
-    const newSocket = new WebSocket(url);
+  const connect = useCallback(() => {
+    if (!url || socketRef.current) return;
 
-    newSocket.onopen = () => {
-      console.log('WebSocket connection established');
-    };
-
-    newSocket.onmessage = (event) => {
-      console.log('Message from server:', event.data);
-    };
-
-    newSocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    newSocket.onclose = () => {
-      console.log('WebSocket connection closed');
-    };
-
-    setSocket(newSocket);
-
-    return () => {
-      if (newSocket) {
-        newSocket.close();
+    const next = new WebSocket(url);
+    next.onopen = () => setIsOpen(true);
+    next.onclose = () => {
+      if (socketRef.current === next) {
+        socketRef.current = null;
+        setSocket(null);
       }
+      setIsOpen(false);
     };
+    next.onerror = (error) => console.error('WebSocket error:', error);
+
+    socketRef.current = next;
+    setSocket(next);
   }, [url]);
 
-  const connect = () => {
-    if (socket && socket.readyState === WebSocket.CLOSED) {
-      socket.reconnect();
-    } else {
-      console.log('WebSocket is already connected');
-    }
-  };
+  useEffect(() => {
+    connect();
+    return disconnect;
+  }, [connect, disconnect]);
 
-  const disconnect = () => {
-    if (socket) {
-      socket.close();
-    } else {
-      console.log('No WebSocket connection to close');
-    }
-  };
-
-  return { socket, connect, disconnect };
+  return { socket, isOpen, connect, disconnect };
 };
 
 export default useWebSocketService;

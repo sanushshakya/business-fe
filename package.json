@@ -2,7 +2,9 @@
   "name": "iq-fe",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": ">=18.19" },
+  "engines": {
+    "node": ">=18.19"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,10 +13,10 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@heroicons/react": "^2.0.18",
-    "@mui/material": "^5.14.0",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
+    "@heroicons/react": "^2.0.18",
+    "@mui/material": "^5.14.0",
     "@reduxjs/toolkit": "^1.9.7",
     "@tanstack/react-query": "^4.36.1",
     "axios": "^1.6.0",
@@ -39,6 +41,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.1",
     "@typescript-eslint/eslint-plugin": "^6.13.0",

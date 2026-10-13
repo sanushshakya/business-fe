@@ -1,59 +1,41 @@
 import React from 'react';
-import { Form, Input, Button, Skeleton } from '@/components/ui';
+import { Button, Form, Input } from '@/components/ui';
 
 /**
- * CompanyProfileForm component for capturing company profile details (name, registration number, address).
- *
- * @returns {React.FC} - The CompanyProfileForm component
+ * Edits the company name and address (the registration number is read-only on the backend).
  */
-const CompanyProfileForm: React.FC = () => {
-  // State to hold the form values
-  const [companyName, setCompanyName] = React.useState('');
-  const [registrationNumber, setRegistrationNumber] = React.useState('');
-  const [address, setAddress] = React.useState('');
-
-  /**
-   * Handle form submission.
-   *
-   * @param {React.FormEvent} event - The form submission event
-   */
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    // Logic to submit the company profile data
-    console.log('Company Name:', companyName);
-    console.log('Registration Number:', registrationNumber);
-    console.log('Address:', address);
-  };
+const CompanyProfileForm = ({ company, onSubmit, submitting = false }) => {
+  const [name, setName] = React.useState(company?.name ?? '');
+  const [address, setAddress] = React.useState(company?.address ?? '');
 
   return (
-    <Form onSubmit={handleSubmit}>
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Input
-          type="text"
-          placeholder="Company Name"
-          value={companyName}
-          onChange={(e) => setCompanyName(e.target.value)}
-          required
-        />
-        <Skeleton className="h-10 w-full" />
-        <Input
-          type="text"
-          placeholder="Registration Number"
-          value={registrationNumber}
-          onChange={(e) => setRegistrationNumber(e.target.value)}
-          required
-        />
-        <Skeleton className="h-10 w-full" />
-        <Input
-          type="text"
-          placeholder="Address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          required
-        />
-        <Button type="submit">Submit</Button>
+    <Form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit({ name, address });
+      }}
+    >
+      <div>
+        <label htmlFor="companyName" className="mb-1 block text-sm font-medium">
+          Company name
+        </label>
+        <Input id="companyName" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
+      <div>
+        <label htmlFor="registrationNumber" className="mb-1 block text-sm font-medium">
+          Registration number
+        </label>
+        <Input id="registrationNumber" value={company?.registration_number ?? ''} readOnly disabled />
+      </div>
+      <div>
+        <label htmlFor="companyAddress" className="mb-1 block text-sm font-medium">
+          Address
+        </label>
+        <Input id="companyAddress" value={address} onChange={(e) => setAddress(e.target.value)} required />
+      </div>
+      <Button type="submit" disabled={submitting}>
+        Save
+      </Button>
     </Form>
   );
 };

@@ -25,7 +25,11 @@ const LoginForm = () => {
       navigate(location.state?.from?.pathname || '/dashboard', { replace: true });
     } catch (err) {
       const status = err.response?.status;
-      setError(status === 400 || status === 401 ? 'Invalid email or password.' : 'Could not reach the server. Please try again.');
+      setError(
+        status === 400 || status === 401
+          ? 'Invalid email or password.'
+          : 'Could not reach the server. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }

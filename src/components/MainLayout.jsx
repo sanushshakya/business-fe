@@ -11,6 +11,12 @@ const NAV_ITEMS = [
   { to: '/dashboard', label: 'Stock Alerts', end: true },
   { to: '/dashboard/inventory', label: 'Inventory' },
   { to: '/dashboard/events', label: 'Events' },
+  { to: '/dashboard/freight', label: 'Freight' },
+  { to: '/dashboard/suppliers', label: 'Suppliers' },
+  { to: '/dashboard/branches', label: 'Branches' },
+  { to: '/dashboard/waste', label: 'Waste' },
+  { to: '/dashboard/team', label: 'Team' },
+  { to: '/dashboard/settings', label: 'Settings' },
 ];
 
 const linkClass = ({ isActive }) =>

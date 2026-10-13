@@ -1,94 +1,82 @@
-// src/components/StockReceiptModal.jsx
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import useAddStockReceipt from '@/hooks/useAddStockReceipt';
+import { Button, Input, Modal } from '@/components/ui';
+import ProductSelect from './ProductSelect';
 
 /**
- * StockReceiptModal component for creating and submitting stock receipts.
+ * Records a stock batch; `onSubmit` gets `{product, batch_number, quantity, expiration_date}`
+ * (the shape POST /inventory/batches/ expects).
  */
-const StockReceiptModal = ({ isOpen, onClose }) => {
+const StockReceiptModal = ({ isOpen, onClose, onSubmit, submitting = false }) => {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
+    reset,
     formState: { errors },
-  } = useForm();
+  } = useForm({ defaultValues: { product: '' } });
 
-  // Mutation to handle the submission of the stock receipt
-  const { mutate, isLoading } = useAddStockReceipt({
-    onSuccess: () => {
-      onClose();
-    },
-  });
+  React.useEffect(() => {
+    register('product', { required: 'Product is required' });
+  }, [register]);
 
-  // Handler for form submission
-  const onSubmit = (data) => {
-    mutate(data);
+  const submit = async (values) => {
+    try {
+      await onSubmit({
+        product: Number(values.product),
+        batch_number: values.batch_number,
+        quantity: Number(values.quantity),
+        expiration_date: values.expiration_date,
+      });
+    } catch {
+      return; // the page shows the error; keep what was typed
+    }
+    reset();
   };
 
-  return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Create Stock Receipt</h2>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="mb-4">
-            <label htmlFor="product" className="block text-sm font-medium text-gray-700">
-              Product
-            </label>
-            <input
-              id="product"
-              type="text"
-              {...register('product', { required: 'Product is required' })}
-              className="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
-            {errors.product && <p className="text-red-500 text-xs mt-1">{errors.product.message}</p>}
-          </div>
-          <div className="mb-4">
-            <label htmlFor="batchNumber" className="block text-sm font-medium text-gray-700">
-              Batch Number
-            </label>
-            <input
-              id="batchNumber"
-              type="text"
-              {...register('batchNumber', { required: 'Batch Number is required' })}
-              className="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
-            {errors.batchNumber && <p className="text-red-500 text-xs mt-1">{errors.batchNumber.message}</p>}
-          </div>
-          <div className="mb-4">
-            <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-              Quantity
-            </label>
-            <input
-              id="quantity"
-              type="number"
-              {...register('quantity', { required: 'Quantity is required', min: 1 })}
-              className="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
-            {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity.message}</p>}
-          </div>
-          <div className="mb-4">
-            <label htmlFor="unitCost" className="block text-sm font-medium text-gray-700">
-              Unit Cost
-            </label>
-            <input
-              id="unitCost"
-              type="number"
-              {...register('unitCost', { required: 'Unit Cost is required' })}
-              className="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
-            {errors.unitCost && <p className="text-red-500 text-xs mt-1">{errors.unitCost.message}</p>}
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 focus:outline-none"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Submitting...' : 'Submit'}
-          </button>
-        </form>
-      </div>
+  const field = (id, label, type, rules) => (
+    <div>
+      <label htmlFor={id} className="mb-1 block text-sm font-medium">
+        {label}
+      </label>
+      <Input id={id} type={type} {...register(id, rules)} />
+      {errors[id] && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          {errors[id].message}
+        </p>
+      )}
     </div>
+  );
+
+  return (
+    <Modal open={isOpen} onClose={onClose} title="Receive stock">
+      <form onSubmit={handleSubmit(submit)} className="space-y-4">
+        <div>
+          <label htmlFor="product" className="mb-1 block text-sm font-medium">
+            Product
+          </label>
+          <ProductSelect
+            value={watch('product')}
+            onChange={(value) => setValue('product', value, { shouldValidate: true })}
+          />
+          {errors.product && (
+            <p role="alert" className="mt-1 text-xs text-red-600">
+              {errors.product.message}
+            </p>
+          )}
+        </div>
+        {field('batch_number', 'Batch number', 'text', { required: 'Batch number is required' })}
+        {field('quantity', 'Quantity', 'number', {
+          required: 'Quantity is required',
+          min: { value: 1, message: 'Quantity must be at least 1' },
+        })}
+        {field('expiration_date', 'Expiration date', 'date', { required: 'Expiration date is required' })}
+        <Button type="submit" className="w-full" disabled={submitting}>
+          {submitting ? 'Saving…' : 'Save'}
+        </Button>
+      </form>
+    </Modal>
   );
 };
 

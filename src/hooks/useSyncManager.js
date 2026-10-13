@@ -1,92 +1,54 @@
+// src/hooks/useSyncManager.js
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { processBatch as defaultProcessBatch } from '../services/rxdbBatchService';
+
 /**
- * Custom hook to manage synchronization logic based on network status and batch processing using rxdbBatchService.
+ * Flushes queued offline batches whenever the browser comes back online.
  *
- * This hook listens for 'online' and 'offline' events from the window object.
- * When the network status changes, it triggers a callback function to perform
- * necessary actions such as syncing data with the server or storing data locally,
- * utilizing the batching service for efficient record processing.
- *
- * @returns {void}
+ * @param {{processBatch?: () => Promise<void>, onNetworkOnline?: () => void, onNetworkOffline?: () => void}} [options]
+ * @returns {{isOnline: boolean, isSyncing: boolean, syncCount: number, error: Error|null}}
  */
-const useSyncManager = () => {
-  const [syncingStatus, setSyncingStatus] = useState(false);
+const useSyncManager = ({ processBatch = defaultProcessBatch, onNetworkOnline, onNetworkOffline } = {}) => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [syncCount, setSyncCount] = useState(0);
+  const [error, setError] = useState(null);
 
-  const checkNetworkStatus = async (event) => {
-    if (navigator.onLine) {
-      // Perform actions when the network is online
-      console.log('Network is now online');
-      try {
-        // Batch process records using rxdbBatchService
-        await rxdbBatchService.processBatch();
-        setSyncCount(prevCount => prevCount + 1);
-        setSyncingStatus(false);
-        console.log('Records synced and processed successfully');
-      } catch (error) {
-        console.error('Error syncing and processing records:', error);
-      }
-    } else {
-      // Perform actions when the network is offline
-      console.log('Network is now offline');
-      setSyncingStatus(true);
-      // Example: Store data locally or perform other necessary actions
-    }
-  };
+  // Handlers are read through a ref so the listeners never need re-registering.
+  const handlers = useRef({});
+  handlers.current = { processBatch, onNetworkOnline, onNetworkOffline };
 
-  const handleSyncConfirmation = async (uuid) => {
+  const handleOnline = useCallback(async () => {
+    setIsOnline(true);
+    handlers.current.onNetworkOnline?.();
+    setIsSyncing(true);
+    setError(null);
     try {
-      // Assuming getRecord and updateRecord are defined elsewhere in your application
-      const record = await getRecord(uuid);
-      if (record) {
-        record.set('synced', true);
-        await record.save();
-        console.log(`Record with UUID ${uuid} has been marked as synced.`);
-      } else {
-        console.warn(`No record found for UUID ${uuid}.`);
-      }
-    } catch (error) {
-      console.error(`Error updating synced status for UUID ${uuid}:`, error);
+      await handlers.current.processBatch();
+      setSyncCount((count) => count + 1);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsSyncing(false);
     }
-  };
+  }, []);
 
-  const updateLastSeenAt = async () => {
-    try {
-      // Assuming getCurrentTill is defined elsewhere in your application
-      const till = await getCurrentTill();
-      if (till) {
-        till.set('last_seen_at', new Date());
-        await till.save();
-        console.log(`last_seen_at updated for Till with ID ${till.id}`);
-      } else {
-        console.warn('No Till found to update last_seen_at.');
-      }
-    } catch (error) {
-      console.error(`Error updating last_seen_at for Till:`, error);
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener('online', checkNetworkStatus);
-    window.addEventListener('offline', checkNetworkStatus);
-
-    return () => {
-      window.removeEventListener('online', checkNetworkStatus);
-      window.removeEventListener('offline', checkNetworkStatus);
-    };
+  const handleOffline = useCallback(() => {
+    setIsOnline(false);
+    handlers.current.onNetworkOffline?.();
   }, []);
 
   useEffect(() => {
-    // Update last_seen_at every time the WebSocket connection is established
-    const handleWebSocketConnection = () => {
-      updateLastSeenAt();
-    };
-
-    WebSocketService.on('connect', handleWebSocketConnection);
-
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     return () => {
-      WebSocketService.off('connect', handleWebSocketConnection);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [handleOnline, handleOffline]);
 
-  return { syncingStatus, syncCount };
+  return { isOnline, isSyncing, syncCount, error };
 };
+
+export default useSyncManager;
