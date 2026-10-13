@@ -1,140 +1,85 @@
-## README.md
+# Supply Chain IQ — frontend
 
-### Fetching Event Dates
+React 18 + Vite single-page app for the Supply Chain IQ backend (Django/DRF, in the sibling `config/` repo). It covers stock alerts, inventory and stock receipts, cultural events, freight alerts, suppliers, branches, waste reduction, team invitations and company settings.
 
-To fetch event dates from `/api/demand/calendar/?months=3`, you can use the following endpoint:
+## Getting started
 
-- **URL**: `/api/demand/calendar/?months=3`
-- **Method**: GET
-- **Description**: Retrieves event dates for the next three months.
-- **Response**:
-  - Status: `200 OK`
-  - Content-Type: `application/json`
-  - Body: Array of event date objects.
+Requires **Node 18.19 or newer** (older 18.x breaks `workbox-build`).
 
-Example response:
-```json
-[
-  {
-    "date": "2023-10-01",
-    "events": [
-      {
-        "id": 1,
-        "title": "Event 1"
-      },
-      {
-        "id": 2,
-        "title": "Event 2"
-      }
-    ]
-  },
-  {
-    "date": "2023-10-02",
-    "events": [
-      {
-        "id": 3,
-        "title": "Event 3"
-      }
-    ]
-  }
-]
+```bash
+npm install
+npm run dev          # http://localhost:5173
 ```
 
-### Price Changes Component
+The backend has no CORS configuration, so the dev server proxies API calls to it. Start the backend first (from `config/`, with `SECRET_KEY` set):
 
-The `PriceChangesPage` component is used to display price changes for products. It utilizes the `useInventory` hook to fetch inventory data directly from the backend.
-
-- **Usage**:
-```jsx
-import React from 'react';
-import PriceChangesPage from './src/components/PriceChangesPage';
-
-const App = () => {
-  return (
-    <div>
-      <h1>Price Changes</h1>
-      <PriceChangesPage />
-    </div>
-  );
-};
-
-export default App;
+```bash
+python manage.py migrate
+python manage.py seed_demo_data      # demo company + owner (see seed_demo_data --help)
+python manage.py runserver           # http://localhost:8000
 ```
 
-### EventCard Component
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Where the dev proxy forwards `/auth`, `/tenants`, `/inventory`, `/demand`, `/calendar`, `/logistics`, `/pricing`, `/sync`, `/common`. |
+| `VITE_API_URL` | empty (same origin) | Base URL for API calls. Set it for a production build served from a different origin. |
 
-The `EventCard` component is used to display event information. It utilizes the `useNetworkStatus` hook to manage network status and the `useInventory` hook to fetch inventory data directly from the backend.
+## Scripts
 
-- **Usage**:
-```jsx
-import React from 'react';
-import EventCard from './src/components/EventCard';
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server with hot reload and API proxy. |
+| `npm run build` | Production build into `dist/`, plus the service worker `dist/sw.js`. |
+| `npm test` | Vitest with coverage (jsdom). Use `npx vitest run <file>` for a single file. |
+| `npm run lint` | ESLint over `src/`. |
+| `npm run format` | Prettier. Prettier owns formatting; ESLint does not check style. |
 
-const App = () => {
-  return (
-    <div>
-      <h1>Events</h1>
-      <EventCard />
-    </div>
-  );
-};
+## Routes
 
-export default App;
+| Path | Page |
+| --- | --- |
+| `/login` | Sign in |
+| `/reset-password?uid=…&token=…` | Confirm a password reset from the emailed link |
+| `/dashboard` | Stock alerts |
+| `/dashboard/inventory` | Products, with a "Receive stock" dialog |
+| `/dashboard/events` | Cultural events |
+| `/dashboard/freight` | Freight rate alerts (dismissable) |
+| `/dashboard/suppliers` | Suppliers and alternative suppliers |
+| `/dashboard/branches` | Branches and their tills; add a branch |
+| `/dashboard/waste` | Markdowns of near-expiry stock, last 30 days |
+| `/dashboard/team` | Invitations and inviting a user |
+| `/dashboard/settings` | Company profile |
+
+Everything under `/dashboard` requires a signed-in user and redirects to `/login` otherwise.
+
+## Architecture
+
+```
+src/
+  main.jsx, App.jsx        entry, providers, routes
+  pages/                   fetch data and wire components together
+  components/              presentational components (props in, events out)
+  components/ui/           local Tailwind primitives (Button, Card, Table, Modal, …)
+  hooks/                   useApiList, useNetworkStatus, useSyncManager
+  services/                authService, rxdbBatchService, WebSocketService
+  stores/                  zustand: authStore (tokens), companyStore
+  utils/axios.js           the single configured axios instance
+  offlineDB.js             RxDB (Dexie) offline database
 ```
 
-### useNetworkStatus Hook
+- **Data fetching.** Pages use `useApiList(url)` (react-query; walks DRF pagination, `{count, next, previous, results}`) for reads and `useMutation` with `utils/axios` for writes. Mutations invalidate the matching `['list', url]` query.
+- **Auth.** `POST /auth/login/` takes `{username, password}` (the email goes in `username`) and returns `{access_token, refresh_token}`. Tokens live in `authStore` and are mirrored to `localStorage`. On a 401 the axios instance makes **one shared** `POST /auth/token/refresh/` and retries; refresh tokens are single use, so concurrent refreshes must not race. A failed refresh clears the session.
+- **Errors.** `QueryState` renders loading, empty and error states and says so when the backend returns 403. Client errors (4xx) are not retried. Forms keep their values when `onSubmit` rejects, so pages should let the mutation error propagate and show it themselves.
+- **Offline layer.** `offlineDB.js`, `rxdbBatchService.js` (batch queue), `useSyncManager` (drains the queue when the browser comes back online) and `WebSocketService` are tested but not yet connected to any page.
+- **Path alias.** `@` is `src/`, e.g. `import { Button } from '@/components/ui'`.
 
-The `useNetworkStatus` hook is a Zustand store for managing network status. It provides a boolean value indicating whether the user is online or offline.
+## Testing
 
-- **Usage**:
-```jsx
-import React from 'react';
-import { useNetworkStatus } from './src/hooks/useNetworkStatus';
+Tests sit next to the code in `__tests__/` folders and run on Vitest with Testing Library and jest-dom (set up in `src/setupTests.js`). `src/tests/modules.test.js` imports every module in `src/` as a smoke test, so a broken import fails the suite. RxDB tests use the in-memory storage; HTTP is mocked at `utils/axios` or the axios adapter.
 
-const App = () => {
-  const isOnline = useNetworkStatus();
+## Backend behaviours to know about
 
-  return (
-    <div>
-      <h1>Network Status</h1>
-      <p>{isOnline ? 'Online' : 'Offline'}</p>
-    </div>
-  );
-};
-
-export default App;
-```
-
-### My Suppliers Panel Feature
-
-The new feature allows the application to fetch user suppliers directly from the backend, ensuring that data is up-to-date without requiring a manual refresh.
-
-- **Description**:
-  - The `MySuppliersPanel` component displays the UserSupplier list in a table and manages suppliers.
-  - It utilizes the `useSyncManager` hook to manage synchronization logic based on network status and batch size.
-
-- **API Endpoints**
-  - **Get User Suppliers**
-    - **URL**: `/api/suppliers/`
-    - **Method**: GET
-    - **Description**: Retrieves the list of user suppliers.
-    - **Response**:
-      - Status: `200 OK`
-      - Content-Type: `application/json`
-
-- **Usage**:
-```jsx
-import React from 'react';
-import MySuppliersPanel from './src/feature';
-
-const App = () => {
-  return (
-    <div>
-      <h1>My Suppliers</h1>
-      <MySuppliersPanel />
-    </div>
-  );
-};
-
-export default App;
-```
+- Creating branches, and listing or creating invitations, is staff-only. The seeded demo owner is not `is_staff`, so those return 403 until you make them staff.
+- Creating a stock batch does not change `Product.stock_quantity`; only stock movements do.
+- There is no endpoint to list branch demand alerts (only create and dismiss), so there is no demand-alerts page.
+- The API docs are at `/api/docs/` on the backend.
