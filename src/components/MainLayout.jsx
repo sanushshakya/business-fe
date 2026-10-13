@@ -4,6 +4,7 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import ConnectivityBadge from './ConnectivityBadge';
+import SyncStatus from './SyncStatus';
 import { Button } from '@/components/ui';
 import { logout } from '../services/authService';
 
@@ -49,7 +50,10 @@ const MainLayout = () => {
 
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
-          <ConnectivityBadge />
+          <div className="flex items-center gap-3">
+            <ConnectivityBadge />
+            <SyncStatus />
+          </div>
           <Button variant="secondary" onClick={handleLogout}>
             Log out
           </Button>

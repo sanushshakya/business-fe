@@ -18,6 +18,7 @@ export const stockReceiptSchema = {
     quantity: { type: 'number', minimum: 1 },
     expiration_date: { type: 'string' },
     synced: { type: 'boolean' },
+    error: { type: 'string' },
   },
   required: ['id', 'product', 'batch_number', 'quantity', 'expiration_date', 'synced'],
 };
