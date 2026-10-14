@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: '/dashboard/inventory', label: 'Inventory' },
   { to: '/dashboard/events', label: 'Events' },
   { to: '/dashboard/freight', label: 'Freight' },
+  { to: '/dashboard/demand', label: 'Demand' },
   { to: '/dashboard/suppliers', label: 'Suppliers' },
   { to: '/dashboard/branches', label: 'Branches' },
   { to: '/dashboard/waste', label: 'Waste' },

@@ -5,6 +5,7 @@ import LoginForm from './components/LoginForm';
 import MainLayout from './components/MainLayout';
 import PrivateRoute from './components/PrivateRoute';
 import BranchesPage from './pages/BranchesPage';
+import DemandAlertsPage from './pages/DemandAlertsPage';
 import EventsPage from './pages/EventsPage';
 import FreightAlertsPage from './pages/FreightAlertsPage';
 import InventoryListPage from './pages/InventoryListPage';
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="inventory" element={<InventoryListPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="freight" element={<FreightAlertsPage />} />
+          <Route path="demand" element={<DemandAlertsPage />} />
           <Route path="suppliers" element={<SuppliersListPage />} />
           <Route path="branches" element={<BranchesPage />} />
           <Route path="waste" element={<PriceChangesPage />} />

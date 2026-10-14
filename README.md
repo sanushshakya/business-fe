@@ -44,6 +44,7 @@ python manage.py runserver           # http://localhost:8000
 | `/dashboard/inventory` | Products, with a "Receive stock" dialog |
 | `/dashboard/events` | Cultural events |
 | `/dashboard/freight` | Freight rate alerts (dismissable) |
+| `/dashboard/demand` | Branch demand alerts (open ones, dismissable) |
 | `/dashboard/suppliers` | Suppliers and alternative suppliers |
 | `/dashboard/branches` | Branches and their tills; add a branch |
 | `/dashboard/waste` | Markdowns of near-expiry stock, last 30 days |
@@ -81,5 +82,5 @@ Tests sit next to the code in `__tests__/` folders and run on Vitest with Testin
 
 - Creating branches, and listing or creating invitations, is staff-only. The seeded demo owner is not `is_staff`, so those return 403 until you make them staff.
 - Creating a stock batch does not change `Product.stock_quantity`; only stock movements do.
-- Branch demand alerts are listed at `GET /common/api/alerts/demand/` (open by default; `?status=handled` or `all`), but the frontend has no demand-alerts page yet.
+- Branch demand alerts are listed at `GET /common/api/alerts/demand/` (open by default; `?status=handled` or `all`), shown on the Demand page.
 - The API docs are at `/api/docs/` on the backend.
