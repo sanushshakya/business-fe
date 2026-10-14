@@ -26,7 +26,7 @@ const BranchCard = ({ branch, tills = [], onDeactivateTill }) => {
           {tills.length === 0 && <ListItem>No tills.</ListItem>}
           {tills.map((till) => (
             <ListItem key={till.id} className="flex items-center justify-between">
-              <span>{till.name ?? `Till #${till.id}`}</span>
+              <span>{till.name ?? (till.number == null ? `Till #${till.id}` : `Till ${till.number}`)}</span>
               {onDeactivateTill && (
                 <Button variant="danger" onClick={() => onDeactivateTill(till)}>
                   Deactivate

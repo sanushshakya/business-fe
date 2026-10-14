@@ -10,6 +10,8 @@ import { logout } from '../services/authService';
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Stock Alerts', end: true },
+  { to: '/dashboard/pos', label: 'Till' },
+  { to: '/dashboard/sales', label: 'Sales' },
   { to: '/dashboard/inventory', label: 'Inventory' },
   { to: '/dashboard/events', label: 'Events' },
   { to: '/dashboard/freight', label: 'Freight' },

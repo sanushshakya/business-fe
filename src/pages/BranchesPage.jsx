@@ -1,9 +1,11 @@
 import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from '../utils/axios';
+import { apiErrorMessage } from '../utils/http';
 import BranchForm from '../components/BranchForm';
 import BranchList from '../components/BranchList';
 import QueryState from '../components/QueryState';
+import TillForm from '../components/TillForm';
 import useApiList from '../hooks/useApiList';
 
 const BranchesPage = () => {
@@ -13,6 +15,11 @@ const BranchesPage = () => {
   const create = useMutation({
     mutationFn: (payload) => axios.post('/tenants/branches/', payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['list', '/tenants/branches/'] }),
+  });
+
+  const createTill = useMutation({
+    mutationFn: (payload) => axios.post('/tenants/tills/', payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['list', '/tenants/tills/'] }),
   });
 
   const tillsByBranch = {};
@@ -28,6 +35,19 @@ const BranchesPage = () => {
             ? 'Only company staff can add branches.'
             : 'Could not add the branch.'}
         </p>
+      )}
+      {branches.data?.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="font-semibold">Add a till</h3>
+          <TillForm branches={branches.data} onSubmit={createTill.mutateAsync} submitting={createTill.isLoading} />
+          {createTill.isError && (
+            <p role="alert" className="text-sm text-red-600">
+              {createTill.error?.response?.status === 403
+                ? 'Only company staff can add tills.'
+                : apiErrorMessage(createTill.error, 'Could not add the till.')}
+            </p>
+          )}
+        </div>
       )}
       <QueryState query={branches} emptyMessage="No branches yet.">
         {(items) => <BranchList branches={items} tillsByBranch={tillsByBranch} />}

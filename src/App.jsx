@@ -9,7 +9,9 @@ import DemandAlertsPage from './pages/DemandAlertsPage';
 import EventsPage from './pages/EventsPage';
 import FreightAlertsPage from './pages/FreightAlertsPage';
 import InventoryListPage from './pages/InventoryListPage';
+import PosPage from './pages/PosPage';
 import PriceChangesPage from './pages/PriceChangesPage';
+import SalesPage from './pages/SalesPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import SettingsPage from './pages/SettingsPage';
 import StockAlertsPage from './pages/StockAlertsPage';
@@ -31,6 +33,8 @@ const App = () => (
           }
         >
           <Route index element={<StockAlertsPage />} />
+          <Route path="pos" element={<PosPage />} />
+          <Route path="sales" element={<SalesPage />} />
           <Route path="inventory" element={<InventoryListPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="freight" element={<FreightAlertsPage />} />

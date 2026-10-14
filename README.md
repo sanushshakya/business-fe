@@ -21,7 +21,7 @@ python manage.py runserver           # http://localhost:8000
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Where the dev proxy forwards `/auth`, `/tenants`, `/inventory`, `/demand`, `/calendar`, `/logistics`, `/pricing`, `/sync`, `/common`. |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Where the dev proxy forwards `/auth`, `/tenants`, `/inventory`, `/sales`, `/demand`, `/calendar`, `/logistics`, `/pricing`, `/sync`, `/common`. |
 | `VITE_API_URL` | empty (same origin) | Base URL for API calls. Set it for a production build served from a different origin. |
 
 ## Scripts
@@ -41,12 +41,14 @@ python manage.py runserver           # http://localhost:8000
 | `/login` | Sign in |
 | `/reset-password?uid=…&token=…` | Confirm a password reset from the emailed link |
 | `/dashboard` | Stock alerts |
+| `/dashboard/pos` | Till: open a till with a float, ring up cash/card sales, print receipts, close with a cash count |
+| `/dashboard/sales` | Sales history (filter, view receipt, void) and till sessions with their cash variance |
 | `/dashboard/inventory` | Products, with a "Receive stock" dialog |
 | `/dashboard/events` | Cultural events |
 | `/dashboard/freight` | Freight rate alerts (dismissable) |
 | `/dashboard/demand` | Branch demand alerts (open ones, dismissable) |
 | `/dashboard/suppliers` | Suppliers and alternative suppliers |
-| `/dashboard/branches` | Branches and their tills; add a branch |
+| `/dashboard/branches` | Branches and their tills; add a branch or a till (staff) |
 | `/dashboard/waste` | Markdowns of near-expiry stock, last 30 days |
 | `/dashboard/team` | Invitations and inviting a user |
 | `/dashboard/settings` | Company profile |
@@ -72,6 +74,7 @@ src/
 - **Auth.** `POST /auth/login/` takes `{username, password}` (the email goes in `username`) and returns `{access_token, refresh_token}`. Tokens live in `authStore` and are mirrored to `localStorage`. On a 401 the axios instance makes **one shared** `POST /auth/token/refresh/` and retries; refresh tokens are single use, so concurrent refreshes must not race. A failed refresh clears the session.
 - **Errors.** `QueryState` renders loading, empty and error states and says so when the backend returns 403. Client errors (4xx) are not retried. Forms keep their values when `onSubmit` rejects, so pages should let the mutation error propagate and show it themselves.
 - **Offline stock receipts.** `OfflineProvider` (in `main.jsx`) keeps receipts in RxDB (IndexedDB) when the browser is offline or the server is unreachable or answers 5xx, shows "n waiting to sync" in the header, and sends them when the browser comes back online or the app starts. A 4xx is a real rejection: the receipt is marked and only retried from the header's Retry button. `rxdbBatchService` and `WebSocketService` are tested but unused (the backend's `/ws/sync/` is a stub). Reads are cached in memory only, so the product list needs one online visit per page load.
+- **Till (point of sale).** `PosPage` runs a shift: pick a till, open a session with a float, tap products into the basket (`hooks/useCart`, in whole pence), take cash (change is shown) or card, then show/print the receipt; stock refreshes after each sale. The server prices the sale and takes stock oldest expiry first. Each charge carries a `client_ref` that is reused while the basket and payment are unchanged, so resending after a lost response cannot charge twice. Selling needs a connection (charging pauses offline); only stock receipts are queued offline. Closing the till records the counted cash and shows over/short. `SalesPage` lists sales (paged, `hooks/usePagedList`) and till sessions; voiding is for staff or the sale's own cashier while the session is open.
 - **Path alias.** `@` is `src/`, e.g. `import { Button } from '@/components/ui'`.
 
 ## Testing
@@ -82,5 +85,7 @@ Tests sit next to the code in `__tests__/` folders and run on Vitest with Testin
 
 - Creating branches, and listing or creating invitations, is staff-only. The seeded demo owner is not `is_staff`, so those return 403 until you make them staff.
 - Creating a stock batch does not change `Product.stock_quantity`; only stock movements do.
+- Products with stock but no stock batch cannot be sold at a till: sales take stock from batches, so receive a batch first. Expired batches are never sold.
+- Voiding and closing are limited to staff or the person who rang up the sale / opened the till. Creating tills is staff-only.
 - Branch demand alerts are listed at `GET /common/api/alerts/demand/` (open by default; `?status=handled` or `all`), shown on the Demand page.
 - The API docs are at `/api/docs/` on the backend.
