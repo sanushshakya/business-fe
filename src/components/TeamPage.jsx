@@ -5,6 +5,8 @@ import axios from '../utils/axios';
 import useApiList from '../hooks/useApiList';
 import InviteUserForm from './InviteUserForm';
 import QueryState from './QueryState';
+import OperatorsPanel from './OperatorsPanel';
+import { apiErrorMessage } from '../utils/http';
 
 const STATUS_COLORS = { accepted: 'green', pending: 'yellow', expired: 'red' };
 
@@ -18,6 +20,34 @@ const TeamPage = () => {
     mutationFn: (payload) => axios.post('/auth/invitations/', payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['list', '/auth/invitations/'] }),
   });
+
+  const OPERATORS = '/tenants/operators/';
+  const operators = useApiList(OPERATORS);
+  const [issued, setIssued] = React.useState(null);
+  const refreshOperators = () => queryClient.invalidateQueries({ queryKey: ['list', OPERATORS] });
+  const createOperator = useMutation({
+    mutationFn: (payload) => axios.post(OPERATORS, payload).then((r) => r.data),
+    onSuccess: (user) => {
+      setIssued({ name: user.name, code: user.code });
+      refreshOperators();
+    },
+  });
+  const resetCode = useMutation({
+    mutationFn: (user) => axios.post(`${OPERATORS}${user.id}/reset-code/`).then((r) => r.data),
+    onSuccess: (user) => {
+      setIssued({ name: user.name, code: user.code, reset: true });
+      refreshOperators();
+    },
+  });
+  const toggleActive = useMutation({
+    mutationFn: (user) => axios.patch(`${OPERATORS}${user.id}/`, { is_active: !user.is_active }),
+    onSuccess: refreshOperators,
+  });
+  const changeRole = useMutation({
+    mutationFn: ({ user, role }) => axios.patch(`${OPERATORS}${user.id}/`, { role }),
+    onSuccess: refreshOperators,
+  });
+  const operatorError = [createOperator, resetCode, toggleActive, changeRole].find((m) => m.isError);
 
   const errorMessage =
     invite.error?.response?.status === 403
@@ -59,6 +89,36 @@ const TeamPage = () => {
           </Table>
         )}
       </QueryState>
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold">Operators</h3>
+        <p className="text-sm text-gray-600">
+          Operators sign in with an 8-digit code instead of an email and password and only see the area their role
+          covers: till, demand, freight, supplier or stock.
+        </p>
+        {operatorError && (
+          <p role="alert" className="text-sm text-red-600">
+            {operatorError.error?.response?.status === 403
+              ? 'Only company admins can manage operators.'
+              : apiErrorMessage(operatorError.error, 'Could not update operators.')}
+          </p>
+        )}
+        {operators.isError && (
+          <p role="alert" className="text-sm text-red-600">
+            {operators.error?.response?.status === 403
+              ? "You don't have permission to view operators."
+              : 'Could not load operators.'}
+          </p>
+        )}
+        <OperatorsPanel
+          users={operators.data || []}
+          onCreate={createOperator.mutateAsync}
+          onResetCode={resetCode.mutateAsync}
+          onToggleActive={toggleActive.mutate}
+          onChangeRole={(user, role) => changeRole.mutate({ user, role })}
+          issued={issued}
+          onDismissCode={() => setIssued(null)}
+        />
+      </div>
     </section>
   );
 };

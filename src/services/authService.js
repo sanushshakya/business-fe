@@ -16,6 +16,17 @@ export const login = async (email, password) => {
 };
 
 /**
+ * Signs an operator (till, demand, freight, ...) in with their 8-digit code and stores the returned token pair.
+ *
+ * @param {string} code
+ * @returns {Promise<void>}
+ */
+export const loginWithCode = async (code) => {
+  const response = await axios.post('/auth/code-login/', { code });
+  useAuthStore.getState().setTokens(response.data);
+};
+
+/**
  * Revokes the session on the server (best effort) and clears local tokens.
  */
 export const logout = async () => {
@@ -31,4 +42,4 @@ export const logout = async () => {
 
 export const isAuthenticated = () => Boolean(useAuthStore.getState().accessToken);
 
-export default { login, logout, isAuthenticated };
+export default { login, loginWithCode, logout, isAuthenticated };

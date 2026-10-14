@@ -6,8 +6,10 @@ import MainLayout from './components/MainLayout';
 import PrivateRoute from './components/PrivateRoute';
 import BranchesPage from './pages/BranchesPage';
 import DemandAlertsPage from './pages/DemandAlertsPage';
+import DemandPovPage from './pages/DemandPovPage';
 import EventsPage from './pages/EventsPage';
 import FreightAlertsPage from './pages/FreightAlertsPage';
+import FreightPovPage from './pages/FreightPovPage';
 import InventoryListPage from './pages/InventoryListPage';
 import PosPage from './pages/PosPage';
 import PriceChangesPage from './pages/PriceChangesPage';
@@ -16,6 +18,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import SettingsPage from './pages/SettingsPage';
 import StockAlertsPage from './pages/StockAlertsPage';
 import SuppliersListPage from './pages/SuppliersListPage';
+import SupplierPovPage from './pages/SupplierPovPage';
 import TeamPage from './components/TeamPage';
 
 const App = () => (
@@ -33,6 +36,9 @@ const App = () => (
           }
         >
           <Route index element={<StockAlertsPage />} />
+          <Route path="pov/demand" element={<DemandPovPage />} />
+          <Route path="pov/freight" element={<FreightPovPage />} />
+          <Route path="pov/supplier" element={<SupplierPovPage />} />
           <Route path="pos" element={<PosPage />} />
           <Route path="sales" element={<SalesPage />} />
           <Route path="inventory" element={<InventoryListPage />} />

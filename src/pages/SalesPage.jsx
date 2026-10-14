@@ -108,7 +108,7 @@ const SalesTab = () => {
                     <Td>
                       {sale.branch_name} – {sale.till_number}
                     </Td>
-                    <Td>{sale.cashier_email}</Td>
+                    <Td>{sale.cashier_name ?? sale.cashier_email}</Td>
                     <Td>{sale.payment_method === 'cash' ? 'Cash' : 'Card'}</Td>
                     <Td>{formatMoney(sale.total)}</Td>
                     <Td>
@@ -192,7 +192,7 @@ const ShiftsTab = () => {
                     </Td>
                     <Td>
                       {time(s.opened_at)}
-                      <span className="block text-xs text-gray-500">{s.opened_by_email}</span>
+                      <span className="block text-xs text-gray-500">{s.opened_by_name ?? s.opened_by_email}</span>
                     </Td>
                     <Td>{s.is_open ? <Badge color="green">Open</Badge> : time(s.closed_at)}</Td>
                     <Td>{formatMoney(s.opening_float)}</Td>

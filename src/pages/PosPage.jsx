@@ -174,7 +174,7 @@ const PosPage = () => {
             </p>
             <p className="text-gray-600">
               Open since {new Date(current.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} by{' '}
-              {current.opened_by_email} · float {formatMoney(current.opening_float)}
+              {current.opened_by_name ?? current.opened_by_email} · float {formatMoney(current.opening_float)}
             </p>
           </div>
           <div className="flex items-center gap-4 text-sm">
