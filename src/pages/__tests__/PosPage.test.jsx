@@ -157,4 +157,77 @@ describe('PosPage', () => {
     );
     expect(await screen.findByTestId('closed-variance')).toHaveTextContent('Short by £1.00.');
   });
+
+  describe('loyalty cards', () => {
+    const customer = { first_name: 'Amira', points_balance: 24, tier: 'Bronze', points_gbp_value: '0.24' };
+    const respond = (lookup) =>
+      axios.post.mockImplementation((url) => {
+        if (url === '/sync/loyalty/lookup/') return lookup();
+        if (url === '/sales/sales/') return Promise.resolve({ data: sale });
+        return Promise.reject(new Error(`unexpected POST ${url}`));
+      });
+    const scan = (code) => {
+      const input = screen.getByLabelText('Loyalty card');
+      fireEvent.change(input, { target: { value: code } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+    };
+    const chargeCard = async () => {
+      fireEvent.click(await screen.findByRole('button', { name: /^Rice £12\.50/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
+      await screen.findByText('Receipt S-000001');
+      return axios.post.mock.calls.find(([url]) => url === '/sales/sales/')[1];
+    };
+
+    it('sends loyalty_barcode with the charge', async () => {
+      localStorage.setItem('pos_till', '3');
+      respond(() => Promise.resolve({ data: customer }));
+      renderPage();
+      await screen.findByRole('button', { name: /^Rice £12\.50/ });
+      scan('2995520383161');
+      expect(await screen.findByText('Amira')).toBeInTheDocument();
+      expect(axios.post).toHaveBeenCalledWith('/sync/loyalty/lookup/', { barcode: '2995520383161' });
+
+      const body = await chargeCard();
+      expect(body.loyalty_barcode).toBe('2995520383161');
+      expect(screen.getByText('Loyalty: Amira · points will be added')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'New sale' }));
+      expect(screen.getByLabelText('Loyalty card')).toBeInTheDocument(); // the next customer starts with no card
+      expect(screen.queryByText('Amira')).not.toBeInTheDocument();
+    });
+
+    it('charges without loyalty when lookup fails', async () => {
+      localStorage.setItem('pos_till', '3');
+      respond(() => Promise.reject({ response: { status: 503, data: { code: 'loyalty_unavailable' } } }));
+      renderPage();
+      await screen.findByRole('button', { name: /^Rice £12\.50/ });
+      scan('2995520383161');
+      expect(await screen.findByText(/Loyalty unavailable/)).toBeInTheDocument();
+
+      const body = await chargeCard();
+      expect(body).not.toHaveProperty('loyalty_barcode');
+      expect(screen.queryByText(/Loyalty:/)).not.toBeInTheDocument();
+    });
+
+    it('does not hold up charging while a lookup is in flight', async () => {
+      localStorage.setItem('pos_till', '3');
+      respond(() => new Promise(() => {}));
+      renderPage();
+      await screen.findByRole('button', { name: /^Rice £12\.50/ });
+      scan('2995520383161');
+      expect(await screen.findByText('Looking up card…')).toBeInTheDocument();
+      const body = await chargeCard();
+      expect(body).not.toHaveProperty('loyalty_barcode');
+    });
+
+    it('tells the cashier when a card is not recognised', async () => {
+      localStorage.setItem('pos_till', '3');
+      respond(() => Promise.reject({ response: { status: 404, data: { code: 'not_found' } } }));
+      renderPage();
+      await screen.findByRole('button', { name: /^Rice £12\.50/ });
+      scan('0000000000000');
+      expect(await screen.findByText('Card not recognised')).toBeInTheDocument();
+    });
+  });
 });

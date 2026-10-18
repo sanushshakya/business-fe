@@ -7,6 +7,7 @@ import { formatMoney } from '../utils/money';
 import { Button, Card, Modal } from '@/components/ui';
 import Cart from '../components/pos/Cart';
 import CashUpForm from '../components/pos/CashUpForm';
+import LoyaltyCard from '../components/pos/LoyaltyCard';
 import OpenTillForm from '../components/pos/OpenTillForm';
 import PaymentPanel from '../components/pos/PaymentPanel';
 import ProductPicker from '../components/pos/ProductPicker';
@@ -17,6 +18,18 @@ import useCart from '../hooks/useCart';
 import { useOffline } from '../offline/OfflineProvider';
 
 const SESSIONS = '/sales/sessions/';
+const LOOKUP = '/sync/loyalty/lookup/';
+
+// What the card box says about a lookup. Only a found card is sent with the charge; anything else sells without points.
+const loyaltyStatus = (lookup, card) => {
+  if (card) return 'found';
+  if (lookup.isLoading) return 'loading';
+  if (!lookup.isError) return 'idle';
+  const status = lookup.error?.response?.status;
+  if (status === 404) return 'not_found';
+  if (status === 400 || status === 409) return 'error';
+  return 'unavailable';
+};
 const STORAGE_KEY = 'pos_till';
 
 const readStoredTill = () => {
@@ -42,6 +55,7 @@ const PosPage = () => {
   const attempt = React.useRef(null);
   const [tillId, setTillId] = React.useState(readStoredTill);
   const [receipt, setReceipt] = React.useState(null);
+  const [card, setCard] = React.useState(null); // {barcode, customer} once a lookup finds the card
   const [cashUpOpen, setCashUpOpen] = React.useState(false);
   const [closed, setClosed] = React.useState(null);
 
@@ -81,11 +95,26 @@ const PosPage = () => {
     onSuccess: refresh,
   });
 
+  const lookup = useMutation({
+    mutationFn: (barcode) => axios.post(LOOKUP, { barcode }).then((r) => r.data),
+    onSuccess: (customer, barcode) => setCard({ barcode, customer }),
+  });
+  const { reset: resetLookup } = lookup;
+  const clearCard = React.useCallback(() => {
+    setCard(null);
+    resetLookup();
+  }, [resetLookup]);
+  const scanCard = (barcode) => {
+    setCard(null);
+    lookup.mutate(barcode);
+  };
+
   const sell = useMutation({
     mutationFn: (payload) => axios.post('/sales/sales/', payload).then((r) => r.data),
-    onSuccess: (sale) => {
-      setReceipt(sale);
+    onSuccess: (sale, payload) => {
+      setReceipt({ sale, loyalty: payload.loyalty_barcode ? (attempt.current?.customer ?? null) : null });
       cart.clear();
+      clearCard();
       attempt.current = null;
       refresh();
     },
@@ -101,6 +130,7 @@ const PosPage = () => {
       setClosed(data);
       setCashUpOpen(false);
       cart.clear();
+      clearCard();
       refresh();
     },
   });
@@ -116,10 +146,12 @@ const PosPage = () => {
       session: current.id,
       items: cart.lines.map((l) => ({ product: l.product, quantity: l.quantity })),
       ...payment,
+      ...(card ? { loyalty_barcode: card.barcode } : {}),
     };
     // The same basket and payment keeps its reference, so resending after a lost response cannot charge twice.
     const key = JSON.stringify(body);
     if (attempt.current?.key !== key) attempt.current = { key, ref: uuidv4() };
+    attempt.current.customer = card?.customer ?? null; // named on the receipt, as charged
     sell.mutate({ ...body, client_ref: attempt.current.ref });
   };
 
@@ -212,6 +244,13 @@ const PosPage = () => {
                 Clear basket
               </Button>
             )}
+            <LoyaltyCard
+              value={card?.customer ?? null}
+              status={loyaltyStatus(lookup, card)}
+              message={apiErrorMessage(lookup.error, 'Could not look up the card.')}
+              onScan={scanCard}
+              onClear={clearCard}
+            />
             <PaymentPanel
               totalCents={cart.totalCents}
               onCharge={charge}
@@ -237,7 +276,7 @@ const PosPage = () => {
       <Modal open={Boolean(receipt)} onClose={() => setReceipt(null)} title="Sale complete">
         {receipt && (
           <>
-            <Receipt sale={receipt} />
+            <Receipt sale={receipt.sale} loyalty={receipt.loyalty} />
             <Button className="mt-3 w-full" onClick={() => setReceipt(null)}>
               New sale
             </Button>

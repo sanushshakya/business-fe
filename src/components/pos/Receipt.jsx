@@ -4,8 +4,9 @@ import { formatMoney } from '../../utils/money';
 
 /**
  * A sale as returned by `/sales/sales/`. Everything inside `.print-area` is all that gets printed.
+ * `loyalty` is the customer whose card was scanned for this sale, if any (points are added in the storefront).
  */
-const Receipt = ({ sale, onPrint = () => window.print() }) => {
+const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
   const voided = sale.status === 'voided';
   return (
     <div>
@@ -49,6 +50,7 @@ const Receipt = ({ sale, onPrint = () => window.print() }) => {
             </div>
           )}
           {voided && sale.void_reason && <p className="text-gray-600">Void reason: {sale.void_reason}</p>}
+          {loyalty && <p className="text-gray-600">Loyalty: {loyalty.first_name} · points will be added</p>}
         </div>
       </div>
       <Button variant="secondary" className="mt-3" onClick={onPrint}>
