@@ -24,6 +24,9 @@ python manage.py runserver           # http://localhost:8000
 | `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Where the dev proxy forwards `/auth`, `/tenants`, `/inventory`, `/sales`, `/demand`, `/calendar`, `/logistics`, `/pricing`, `/sync`, `/common`. |
 | `VITE_API_URL` | empty (same origin) | Base URL for API calls. Set it for a production build served from a different origin. |
 
+In Docker, `Dockerfile` runs this same dev server (Node 22) with `VITE_API_PROXY_TARGET` pointing at the IQ
+container; the workspace-level `docker-compose.yml` starts it with both backends.
+
 ## Scripts
 
 | Command | What it does |
