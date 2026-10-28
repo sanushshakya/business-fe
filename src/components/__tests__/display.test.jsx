@@ -150,27 +150,30 @@ describe('RecentAlertsSummary', () => {
 
 describe('WasteReductionReport', () => {
   const now = new Date('2024-02-01T00:00:00Z');
+  const markdown = {
+    product: 7,
+    old_price: '10.00',
+    reason: 'decay_markdown',
+    source: 'decay_markdown',
+    is_approved: true,
+    is_rejected: false,
+  };
   const logs = [
+    { ...markdown, id: 1, new_price: '7.50', changed_at: '2024-01-25T00:00:00Z' },
+    { ...markdown, id: 2, new_price: '9.00', changed_at: '2023-11-01T00:00:00Z' }, // too old
+    { ...markdown, id: 3, new_price: '9.00', source: 'manual', reason: 'manual', changed_at: '2024-01-30T00:00:00Z' },
+    { ...markdown, id: 4, new_price: '8.00', is_approved: false, changed_at: '2024-01-26T00:00:00Z' }, // pending
     {
-      id: 1,
-      product: 7,
-      old_price: '10.00',
-      new_price: '7.50',
-      reason: 'decay_markdown',
-      changed_at: '2024-01-25T00:00:00Z',
+      ...markdown,
+      id: 5,
+      new_price: '8.00',
+      is_approved: false,
+      is_rejected: true,
+      changed_at: '2024-01-27T00:00:00Z',
     },
-    {
-      id: 2,
-      product: 7,
-      old_price: '10.00',
-      new_price: '9.00',
-      reason: 'decay_markdown',
-      changed_at: '2023-11-01T00:00:00Z',
-    },
-    { id: 3, product: 7, old_price: '10.00', new_price: '9.00', reason: 'manual', changed_at: '2024-01-30T00:00:00Z' },
   ];
 
-  it('lists only recent decay markdowns with the amount saved', () => {
+  it('lists only recent approved markdowns with the amount saved', () => {
     render(<WasteReductionReport logs={logs} productNames={{ 7: 'Dates' }} now={now} />);
     expect(screen.getAllByRole('row')).toHaveLength(2); // header + one row
     expect(screen.getByText('Dates')).toBeInTheDocument();
@@ -178,7 +181,7 @@ describe('WasteReductionReport', () => {
   });
 
   it('shows a message when nothing qualifies', () => {
-    render(<WasteReductionReport logs={[logs[1]]} now={now} />);
+    render(<WasteReductionReport logs={logs.slice(1)} now={now} />);
     expect(screen.getByText('No markdowns in the last 30 days.')).toBeInTheDocument();
   });
 });

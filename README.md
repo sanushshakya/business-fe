@@ -24,6 +24,9 @@ python manage.py runserver           # http://localhost:8000
 | `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Where the dev proxy forwards `/auth`, `/tenants`, `/inventory`, `/sales`, `/demand`, `/calendar`, `/logistics`, `/pricing`, `/sync`, `/common`. |
 | `VITE_API_URL` | empty (same origin) | Base URL for API calls. Set it for a production build served from a different origin. |
 
+In Docker, `Dockerfile` runs this same dev server (Node 22) with `VITE_API_PROXY_TARGET` pointing at the IQ
+container; the workspace-level `docker-compose.yml` starts it with both backends.
+
 ## Scripts
 
 | Command | What it does |
@@ -49,7 +52,7 @@ python manage.py runserver           # http://localhost:8000
 | `/dashboard/demand` | Branch demand alerts (open ones, dismissable) |
 | `/dashboard/suppliers` | Suppliers and alternative suppliers |
 | `/dashboard/branches` | Branches and their tills; add a branch or a till (staff) |
-| `/dashboard/waste` | Markdowns of near-expiry stock, last 30 days |
+| `/dashboard/waste` | Staff only: pending price changes (source, who asked; approve or reject with an optional note; approval sets the product's price, which then syncs to the storefronts) and recent decisions (who, when, note). Everyone with the tab: markdowns of near-expiry stock, last 30 days (rejected ones left out) |
 | `/dashboard/pov/demand` | Demand overview: open alerts, upcoming events, low stock |
 | `/dashboard/pov/freight` | Freight overview: rate alerts, deliveries (add, change status), carriers, current rates |
 | `/dashboard/pov/supplier` | Supplier overview: what is owed, overdue invoices (mark paid), suppliers and alternatives |
