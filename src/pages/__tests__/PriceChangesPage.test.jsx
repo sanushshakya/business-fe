@@ -14,14 +14,16 @@ const pending = {
   old_price: '1.99',
   new_price: '1.79',
   reason: 'decay_markdown',
+  source: 'decay_markdown',
   changed_at: '2026-10-19T09:00:00Z',
   is_approved: false,
+  is_rejected: false,
 };
 
 let logs;
-const serve = ({ isStaff = true } = {}) =>
+const serve = ({ isStaff = true, role = '' } = {}) =>
   axios.get.mockImplementation(async (url) => {
-    if (url.startsWith('/auth/me/')) return { data: { id: 9, is_staff: isStaff } };
+    if (url.startsWith('/auth/me/')) return { data: { id: 9, is_staff: isStaff, role } };
     if (url.startsWith('/inventory/products/'))
       return { data: { results: [{ id: 1, name: 'Shin Ramyun' }], next: null } };
     return { data: { results: logs, next: null } };
@@ -48,28 +50,31 @@ describe('PriceChangesPage', () => {
   it('approves a pending change and refreshes the list', async () => {
     serve();
     axios.post.mockImplementation(async () => {
-      logs = [{ ...pending, is_approved: true }];
+      logs = [{ ...pending, is_approved: true, decided_by_name: 'Priya', decided_at: '2026-10-20T10:00:00Z' }];
       return { data: logs[0] };
     });
     renderPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Approve Shin Ramyun' }));
-    expect(axios.post).toHaveBeenCalledWith('/pricing/price-changes/4/approve/');
-    expect(await screen.findByText('No price changes waiting for approval.')).toBeInTheDocument();
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Note for Shin Ramyun' }), 'ok');
+    await userEvent.click(screen.getByRole('button', { name: 'Approve Shin Ramyun' }));
+    expect(axios.post).toHaveBeenCalledWith('/pricing/price-changes/4/approve/', { note: 'ok' });
+    expect(await screen.findByText('No price changes waiting for a decision.')).toBeInTheDocument();
+    expect(await screen.findByText('Priya')).toBeInTheDocument(); // now under recent decisions
     await settled();
   });
 
-  it('rejects a pending change by deleting it', async () => {
+  it('rejects a pending change, keeping it as a decision', async () => {
     serve();
-    axios.delete.mockImplementation(async () => {
-      logs = [];
-      return {};
+    axios.post.mockImplementation(async () => {
+      logs = [{ ...pending, is_rejected: true, decided_by_name: 'Priya', decided_at: '2026-10-20T10:00:00Z' }];
+      return { data: logs[0] };
     });
     renderPage();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Reject Shin Ramyun' }));
-    expect(axios.delete).toHaveBeenCalledWith('/pricing/price-changes/4/');
-    await waitFor(() => expect(screen.queryByRole('button', { name: /Reject/ })).not.toBeInTheDocument());
+    expect(axios.post).toHaveBeenCalledWith('/pricing/price-changes/4/reject/', { note: '' });
+    expect(axios.delete).not.toHaveBeenCalled();
+    expect(await screen.findByText('Rejected')).toBeInTheDocument();
     await settled();
   });
 
@@ -88,13 +93,15 @@ describe('PriceChangesPage', () => {
     await settled();
   });
 
-  it('shows pending changes without buttons to non-staff', async () => {
-    serve({ isStaff: false });
+  it('hides pending changes and decisions from operators', async () => {
+    serve({ isStaff: false, role: 'stock' });
     renderPage();
 
-    expect(await screen.findByText(/£1\.99 → £1\.79/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Waste reduction' })).toBeInTheDocument();
     await waitFor(() => expect(axios.get).toHaveBeenCalledWith('/auth/me/'));
-    expect(screen.queryByRole('button', { name: /Approve/ })).not.toBeInTheDocument();
     await settled();
+    expect(screen.queryByRole('heading', { name: 'Pending price changes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Recent decisions' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Approve|Reject/ })).not.toBeInTheDocument();
   });
 });

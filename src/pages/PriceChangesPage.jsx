@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from '../utils/axios';
 import { apiErrorMessage } from '../utils/http';
 import PendingPriceChanges from '../components/PendingPriceChanges';
+import PriceDecisions from '../components/PriceDecisions';
 import QueryState from '../components/QueryState';
 import WasteReductionReport from '../components/WasteReductionReport';
 import useApiList from '../hooks/useApiList';
@@ -22,41 +23,64 @@ const PriceChangesPage = () => {
     queryClient.invalidateQueries({ queryKey: ['list', URL] });
     queryClient.invalidateQueries({ queryKey: ['list', PRODUCTS_URL] }); // approval changes the product's price
   };
-  const approve = useMutation({ mutationFn: (log) => axios.post(`${URL}${log.id}/approve/`), onSuccess: refresh });
-  const reject = useMutation({ mutationFn: (log) => axios.delete(`${URL}${log.id}/`), onSuccess: refresh });
+  // A decision is `{log, note}`; the note is optional and kept with the decision.
+  const approve = useMutation({
+    mutationFn: ({ log, note }) => axios.post(`${URL}${log.id}/approve/`, { note }),
+    onSuccess: refresh,
+  });
+  const reject = useMutation({
+    mutationFn: ({ log, note }) => axios.post(`${URL}${log.id}/reject/`, { note }),
+    onSuccess: refresh,
+  });
   const failed = approve.isError ? approve : reject.isError ? reject : null;
-  const busyId = approve.isLoading ? approve.variables?.id : reject.isLoading ? reject.variables?.id : undefined;
+  const busyId = approve.isLoading
+    ? approve.variables?.log.id
+    : reject.isLoading
+      ? reject.variables?.log.id
+      : undefined;
+  // Deciding is for staff only (the backend refuses everyone else), so operators only get the waste report.
+  const isStaff = Boolean(me.data?.is_staff);
 
-  const decide = (mutation, other) => (log) => {
+  const decide = (mutation, other) => (log, note) => {
     other.reset();
-    mutation.mutate(log);
+    mutation.mutate({ log, note });
   };
 
   return (
     <section className="space-y-8">
-      <div>
-        <h2 className="mb-1 text-xl font-semibold">Pending price changes</h2>
-        <p className="mb-4 text-sm text-gray-500">
-          A change takes effect, and reaches the online shop, only once it is approved.
-        </p>
-        {failed && (
-          <p role="alert" className="mb-2 text-sm text-red-600">
-            {apiErrorMessage(failed.error, 'Could not save the decision. Please try again.')}
-          </p>
-        )}
-        <QueryState query={logs} emptyMessage="No price changes yet.">
-          {(items) => (
-            <PendingPriceChanges
-              logs={items}
-              productNames={names}
-              canDecide={Boolean(me.data?.is_staff)}
-              onApprove={decide(approve, reject)}
-              onReject={decide(reject, approve)}
-              busyId={busyId}
-            />
-          )}
-        </QueryState>
-      </div>
+      {isStaff && (
+        <>
+          <div>
+            <h2 className="mb-1 text-xl font-semibold">Pending price changes</h2>
+            <p className="mb-4 text-sm text-gray-500">
+              A change takes effect, and reaches the online shop, only once it is approved. Rejected changes are kept
+              below.
+            </p>
+            {failed && (
+              <p role="alert" className="mb-2 text-sm text-red-600">
+                {apiErrorMessage(failed.error, 'Could not save the decision. Please try again.')}
+              </p>
+            )}
+            <QueryState query={logs} emptyMessage="No price changes yet.">
+              {(items) => (
+                <PendingPriceChanges
+                  logs={items}
+                  productNames={names}
+                  onApprove={decide(approve, reject)}
+                  onReject={decide(reject, approve)}
+                  busyId={busyId}
+                />
+              )}
+            </QueryState>
+          </div>
+          <div>
+            <h2 className="mb-4 text-xl font-semibold">Recent decisions</h2>
+            <QueryState query={logs} emptyMessage="No price changes yet.">
+              {(items) => <PriceDecisions logs={items} productNames={names} />}
+            </QueryState>
+          </div>
+        </>
+      )}
       <div>
         <h2 className="mb-4 text-xl font-semibold">Waste reduction</h2>
         <QueryState query={logs} emptyMessage="No price changes yet.">

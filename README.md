@@ -52,7 +52,7 @@ container; the workspace-level `docker-compose.yml` starts it with both backends
 | `/dashboard/demand` | Branch demand alerts (open ones, dismissable) |
 | `/dashboard/suppliers` | Suppliers and alternative suppliers |
 | `/dashboard/branches` | Branches and their tills; add a branch or a till (staff) |
-| `/dashboard/waste` | Pending price changes (staff approve or reject them; approval sets the product's price, which then syncs to the storefronts) and markdowns of near-expiry stock, last 30 days |
+| `/dashboard/waste` | Staff only: pending price changes (source, who asked; approve or reject with an optional note; approval sets the product's price, which then syncs to the storefronts) and recent decisions (who, when, note). Everyone with the tab: markdowns of near-expiry stock, last 30 days (rejected ones left out) |
 | `/dashboard/pov/demand` | Demand overview: open alerts, upcoming events, low stock |
 | `/dashboard/pov/freight` | Freight overview: rate alerts, deliveries (add, change status), carriers, current rates |
 | `/dashboard/pov/supplier` | Supplier overview: what is owed, overdue invoices (mark paid), suppliers and alternatives |
