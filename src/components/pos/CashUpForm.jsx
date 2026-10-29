@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Form, Input } from '@/components/ui';
 import { formatCents, formatMoney, parseMoney, toCents } from '../../utils/money';
+import VatSummary from './VatSummary';
 
 /**
  * Closing a till: shows what the drawer should hold, takes the counted cash and previews the variance.
@@ -36,6 +37,12 @@ const CashUpForm = ({ session, onSubmit, submitting = false }) => {
         <dt className="font-semibold">Cash expected in drawer</dt>
         <dd className="text-right font-semibold">{formatMoney(summary.expected_cash)}</dd>
       </dl>
+      {summary.vat_by_rate?.length > 0 && <VatSummary rows={summary.vat_by_rate} />}
+      {toCents(summary.vat_not_recorded_total ?? '0') > 0 && (
+        <p className="text-xs text-gray-600">
+          Sales without VAT recorded: {formatMoney(summary.vat_not_recorded_total)}
+        </p>
+      )}
       <div>
         <label htmlFor="countedCash" className="mb-1 block text-sm font-medium">
           Counted cash
