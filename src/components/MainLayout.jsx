@@ -5,16 +5,23 @@ import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ConnectivityBadge from './ConnectivityBadge';
+import StorefrontSyncBadge from './StorefrontSyncBadge';
 import SyncStatus from './SyncStatus';
 import { Button, Skeleton } from '@/components/ui';
 import useMe, { ME_KEY } from '../hooks/useMe';
+import useStorefrontSync from '../hooks/useStorefrontSync';
 import { canOpen, navItemsFor, ROLE_HOME } from '../roles';
 import { logout } from '../services/authService';
+import useAuthStore from '../stores/authStore';
+import { refreshTokens } from '../utils/axios';
 
 const linkClass = ({ isActive }) =>
   `block rounded-md px-3 py-2 text-sm font-medium ${
     isActive ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
   }`;
+
+// The status socket was refused (expired token): refresh it like a 401 would; the new token reopens the socket.
+const signInAgain = () => refreshTokens().catch(() => useAuthStore.getState().clearTokens());
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -23,6 +30,9 @@ const MainLayout = () => {
   const me = useMe();
   const role = me.data?.role || '';
   const navItems = navItemsFor(role);
+  // Operators are refused by /ws/sync/; everyone else sees the online shop's sync status.
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const shopSync = useStorefrontSync(me.data && !role ? accessToken : null, signInAgain);
 
   const handleLogout = async () => {
     await logout();
@@ -50,6 +60,7 @@ const MainLayout = () => {
           <div className="flex items-center gap-3">
             <ConnectivityBadge />
             <SyncStatus />
+            <StorefrontSyncBadge status={shopSync.status} disconnected={shopSync.disconnected} />
           </div>
           <div className="flex items-center gap-3">
             {role && (
