@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from '../../utils/axios';
 import useAuthStore from '../../stores/authStore';
-import { login, loginWithCode, logout } from '../authService';
+import { confirmEnrolment, login, loginWithCode, logout } from '../authService';
 
 vi.mock('../../utils/axios', () => ({ default: { post: vi.fn() } }));
 
@@ -36,6 +36,33 @@ describe('authService', () => {
     useAuthStore.getState().setTokens({ access_token: 'a', refresh_token: 'r' });
     axios.post.mockRejectedValue(new Error('down'));
     await logout();
+    expect(useAuthStore.getState().accessToken).toBeNull();
+  });
+});
+
+describe('authService two-factor', () => {
+  it('returns the challenge and stores no tokens when a second step is needed', async () => {
+    axios.post.mockResolvedValue({ data: { two_factor: 'verify', challenge: 'ch', expires_in: 300 } });
+    expect(await login('x@y.test', 'pw')).toEqual({ step: 'verify', challenge: 'ch' });
+    expect(useAuthStore.getState().accessToken).toBeNull();
+  });
+
+  it("drops the previous person's session before signing in", async () => {
+    useAuthStore.getState().setTokens({ access_token: 'old', refresh_token: 'old-r' });
+    axios.post.mockResolvedValue({ data: { two_factor: 'enrol', challenge: 'ch', expires_in: 300 } });
+    await login('x@y.test', 'pw');
+    expect(useAuthStore.getState().accessToken).toBeNull();
+  });
+
+  it('returns null after a plain sign-in', async () => {
+    axios.post.mockResolvedValue({ data: { access_token: 'a', refresh_token: 'r' } });
+    expect(await login('x@y.test', 'pw')).toBeNull();
+  });
+
+  it('stores tokens from a confirmed enrolment only when the server sends them', async () => {
+    axios.post.mockResolvedValue({ data: { recovery_codes: ['a'] } });
+    expect(await confirmEnrolment('123456')).toEqual(['a']);
+    expect(axios.post).toHaveBeenCalledWith('/auth/2fa/enrol/confirm/', { code: '123456' });
     expect(useAuthStore.getState().accessToken).toBeNull();
   });
 });

@@ -6,6 +6,8 @@ import useApiList from '../hooks/useApiList';
 import InviteUserForm from './InviteUserForm';
 import QueryState from './QueryState';
 import OperatorsPanel from './OperatorsPanel';
+import StaffTwoFactorList from './StaffTwoFactorList';
+import useMe from '../hooks/useMe';
 import { apiErrorMessage } from '../utils/http';
 
 const STATUS_COLORS = { accepted: 'green', pending: 'yellow', expired: 'red' };
@@ -47,6 +49,14 @@ const TeamPage = () => {
     mutationFn: ({ user, role }) => axios.patch(`${OPERATORS}${user.id}/`, { role }),
     onSuccess: refreshOperators,
   });
+  const TWO_FACTOR_USERS = '/auth/2fa/users/';
+  const me = useMe();
+  const twoFactorUsers = useApiList(TWO_FACTOR_USERS);
+  const resetTwoFactor = useMutation({
+    mutationFn: (user) => axios.post(`${TWO_FACTOR_USERS}${user.id}/reset/`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['list', TWO_FACTOR_USERS] }),
+  });
+
   const operatorError = [createOperator, resetCode, toggleActive, changeRole].find((m) => m.isError);
 
   const errorMessage =
@@ -118,6 +128,37 @@ const TeamPage = () => {
           issued={issued}
           onDismissCode={() => setIssued(null)}
         />
+      </div>
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold">Two-factor sign-in</h3>
+        <p className="text-sm text-gray-600">
+          Admins must use two-factor sign-in; others can turn it on in Settings. If someone loses their phone, reset
+          theirs: they are signed out and set it up again at their next sign-in.
+        </p>
+        {resetTwoFactor.isError && (
+          <p role="alert" className="text-sm text-red-600">
+            {apiErrorMessage(resetTwoFactor.error, 'Could not reset two-factor sign-in.')}
+          </p>
+        )}
+        {resetTwoFactor.isSuccess && (
+          <p role="status" className="text-sm text-green-700">
+            Two-factor sign-in was reset.
+          </p>
+        )}
+        {twoFactorUsers.isError ? (
+          <p role="alert" className="text-sm text-red-600">
+            {twoFactorUsers.error?.response?.status === 403
+              ? 'Only company admins can see this.'
+              : 'Could not load two-factor status.'}
+          </p>
+        ) : (
+          <StaffTwoFactorList
+            users={twoFactorUsers.data || []}
+            currentUserId={me.data?.id}
+            onReset={resetTwoFactor.mutate}
+            resetting={resetTwoFactor.isLoading}
+          />
+        )}
       </div>
     </section>
   );
