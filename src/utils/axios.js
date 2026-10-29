@@ -10,7 +10,7 @@ const instance = axios.create({ baseURL, timeout: 10000 });
 // Refresh tokens are single use, so concurrent 401s must share one refresh request.
 let refreshPromise = null;
 
-const refreshTokens = () => {
+export const refreshTokens = () => {
   if (!refreshPromise) {
     const { refreshToken, setTokens } = useAuthStore.getState();
     if (!refreshToken) return Promise.reject(new Error('No refresh token'));

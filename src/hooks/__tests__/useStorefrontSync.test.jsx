@@ -24,8 +24,8 @@ class FakeSocket {
     this.onmessage?.({ data: JSON.stringify(data) });
   }
 
-  drop() {
-    this.onclose?.();
+  drop(code = 1006) {
+    this.onclose?.({ code });
   }
 }
 
@@ -78,6 +78,26 @@ describe('useStorefrontSync', () => {
     expect(FakeSocket.instances).toHaveLength(2);
     act(() => vi.advanceTimersByTime(1));
     expect(FakeSocket.instances).toHaveLength(3);
+  });
+
+  it('asks for a new token instead of retrying when the server says sign in again (4401)', () => {
+    const signInAgain = vi.fn();
+    const { result } = renderHook(() => useStorefrontSync('old', signInAgain));
+    act(() => FakeSocket.instances[0].drop(4401));
+    expect(signInAgain).toHaveBeenCalledTimes(1);
+    expect(result.current.disconnected).toBe(true);
+    act(() => vi.advanceTimersByTime(60000));
+    expect(FakeSocket.instances).toHaveLength(1); // the refreshed token reopens it, not a timer
+  });
+
+  it('ignores a status older than the one it already has', () => {
+    const { result } = renderHook(() => useStorefrontSync('tok'));
+    const socket = FakeSocket.instances[0];
+    act(() => {
+      socket.message({ type: 'sync.status', state: 'green', as_of: '2026-10-29T10:00:02+00:00' });
+      socket.message({ type: 'sync.status', state: 'amber', as_of: '2026-10-29T10:00:01+00:00' });
+    });
+    expect(result.current.status.state).toBe('green');
   });
 
   it('closes the socket on unmount and when the token changes', () => {

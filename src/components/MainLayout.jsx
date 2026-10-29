@@ -13,11 +13,15 @@ import useStorefrontSync from '../hooks/useStorefrontSync';
 import { canOpen, navItemsFor, ROLE_HOME } from '../roles';
 import { logout } from '../services/authService';
 import useAuthStore from '../stores/authStore';
+import { refreshTokens } from '../utils/axios';
 
 const linkClass = ({ isActive }) =>
   `block rounded-md px-3 py-2 text-sm font-medium ${
     isActive ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
   }`;
+
+// The status socket was refused (expired token): refresh it like a 401 would; the new token reopens the socket.
+const signInAgain = () => refreshTokens().catch(() => useAuthStore.getState().clearTokens());
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -28,7 +32,7 @@ const MainLayout = () => {
   const navItems = navItemsFor(role);
   // Operators are refused by /ws/sync/; everyone else sees the online shop's sync status.
   const accessToken = useAuthStore((state) => state.accessToken);
-  const shopSync = useStorefrontSync(me.data && !role ? accessToken : null);
+  const shopSync = useStorefrontSync(me.data && !role ? accessToken : null, signInAgain);
 
   const handleLogout = async () => {
     await logout();
