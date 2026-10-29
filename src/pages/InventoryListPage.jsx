@@ -5,6 +5,7 @@ import axios from '../utils/axios';
 import EmptyState from '../components/EmptyState';
 import QueryState from '../components/QueryState';
 import StockReceiptModal from '../components/StockReceiptModal';
+import VatCodeSelect from '../components/VatCodeSelect';
 import useApiList from '../hooks/useApiList';
 import { useOffline } from '../offline/OfflineProvider';
 import { isRejection } from '../utils/http';
@@ -23,6 +24,11 @@ const InventoryListPage = () => {
       setNotice(null);
       queryClient.invalidateQueries({ queryKey: ['list'] });
     },
+  });
+
+  const changeVat = useMutation({
+    mutationFn: ({ product, vatCode }) => axios.patch(`/inventory/products/${product.id}/`, { vat_code: vatCode }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['list'] }),
   });
 
   // Online: send it now. No connection (or the server is unreachable or failing): keep it on this device
@@ -59,6 +65,7 @@ const InventoryListPage = () => {
               <Tr>
                 <Th>Product</Th>
                 <Th>Price</Th>
+                <Th>VAT</Th>
                 <Th>In stock</Th>
                 <Th>Status</Th>
               </Tr>
@@ -68,6 +75,14 @@ const InventoryListPage = () => {
                 <Tr key={product.id}>
                   <Td>{product.name}</Td>
                   <Td>£{Number(product.price).toFixed(2)}</Td>
+                  <Td>
+                    <VatCodeSelect
+                      productName={product.name}
+                      value={product.vat_code}
+                      disabled={changeVat.isLoading}
+                      onChange={(vatCode) => changeVat.mutate({ product, vatCode })}
+                    />
+                  </Td>
                   <Td>{product.stock_quantity}</Td>
                   <Td>
                     {product.stock_quantity <= product.reorder_threshold ? (
@@ -91,6 +106,11 @@ const InventoryListPage = () => {
       {notice && (
         <p role="status" className="mt-2 text-sm text-gray-700">
           {notice}
+        </p>
+      )}
+      {changeVat.isError && (
+        <p role="alert" className="mt-2 text-sm text-red-600">
+          Could not change the VAT code.
         </p>
       )}
       {receive.isError && (

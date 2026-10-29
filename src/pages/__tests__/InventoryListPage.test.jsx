@@ -7,9 +7,9 @@ import InventoryListPage from '../InventoryListPage';
 
 const queueReceipt = vi.fn();
 vi.mock('../../offline/OfflineProvider', () => ({ useOffline: () => ({ queueReceipt }) }));
-vi.mock('../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
 
-const products = [{ id: 4, name: 'Dates', price: '8.99', stock_quantity: 50, reorder_threshold: 10 }];
+const products = [{ id: 4, name: 'Dates', price: '8.99', stock_quantity: 50, reorder_threshold: 10, vat_code: 'zero' }];
 const setOnline = (value) => Object.defineProperty(window.navigator, 'onLine', { configurable: true, value });
 
 const renderPage = () =>
@@ -88,5 +88,26 @@ describe('InventoryListPage receiving stock', () => {
     expect(await screen.findByText('Could not record the stock.')).toBeInTheDocument();
     expect(queueReceipt).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+});
+
+describe('InventoryListPage VAT code', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    axios.get.mockResolvedValue({ data: { results: products, next: null } });
+  });
+
+  it('saves a new VAT code for a product', async () => {
+    axios.patch.mockResolvedValue({ data: { ...products[0], vat_code: 'standard' } });
+    renderPage();
+    fireEvent.change(await screen.findByLabelText('VAT for Dates'), { target: { value: 'standard' } });
+    await waitFor(() => expect(axios.patch).toHaveBeenCalledWith('/inventory/products/4/', { vat_code: 'standard' }));
+  });
+
+  it('says so when the VAT code cannot be saved', async () => {
+    axios.patch.mockRejectedValue({ response: { status: 403 } });
+    renderPage();
+    fireEvent.change(await screen.findByLabelText('VAT for Dates'), { target: { value: 'standard' } });
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not change the VAT code.');
   });
 });
