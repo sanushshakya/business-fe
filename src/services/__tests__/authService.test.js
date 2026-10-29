@@ -47,6 +47,13 @@ describe('authService two-factor', () => {
     expect(useAuthStore.getState().accessToken).toBeNull();
   });
 
+  it("drops the previous person's session before signing in", async () => {
+    useAuthStore.getState().setTokens({ access_token: 'old', refresh_token: 'old-r' });
+    axios.post.mockResolvedValue({ data: { two_factor: 'enrol', challenge: 'ch', expires_in: 300 } });
+    await login('x@y.test', 'pw');
+    expect(useAuthStore.getState().accessToken).toBeNull();
+  });
+
   it('returns null after a plain sign-in', async () => {
     axios.post.mockResolvedValue({ data: { access_token: 'a', refresh_token: 'r' } });
     expect(await login('x@y.test', 'pw')).toBeNull();

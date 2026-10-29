@@ -114,13 +114,17 @@ describe('Sign-in with two-factor', () => {
     signIn();
     const qr = await screen.findByRole('img', { name: 'QR code for your authenticator app' });
     expect(qr.getAttribute('src')).toMatch(/^data:image\/svg\+xml,/);
-    expect(axios.post).toHaveBeenCalledWith('/auth/2fa/enrol/', { challenge: 'ch-2' });
+    expect(axios.post).toHaveBeenCalledWith('/auth/2fa/enrol/', { challenge: 'ch-2' }, { skipAuthRefresh: true });
     expect(screen.getByText(ENROLMENT.secret)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('6-digit code'), { target: { value: '654321' } });
     fireEvent.click(screen.getByRole('button', { name: 'Turn on' }));
     await screen.findByText(CODES[0]);
     expect(screen.getAllByRole('listitem')).toHaveLength(10);
-    expect(axios.post).toHaveBeenCalledWith('/auth/2fa/enrol/confirm/', { challenge: 'ch-2', code: '654321' });
+    expect(axios.post).toHaveBeenCalledWith(
+      '/auth/2fa/enrol/confirm/',
+      { challenge: 'ch-2', code: '654321' },
+      { skipAuthRefresh: true }
+    );
     expect(screen.queryByText('The dashboard')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: "I've saved these codes" }));
     await screen.findByText('The dashboard');

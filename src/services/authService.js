@@ -12,6 +12,8 @@ import useAuthStore from '../stores/authStore';
  * @returns {Promise<null | {step: 'verify' | 'enrol', challenge: string}>}
  */
 export const login = async (email, password) => {
+  // A new sign-in replaces whoever was signed in here, so their token is not sent with this person's set-up calls.
+  useAuthStore.getState().clearTokens();
   const { data } = await axios.post('/auth/login/', { username: email, password });
   if (data.two_factor) return { step: data.two_factor, challenge: data.challenge };
   useAuthStore.getState().setTokens(data);
@@ -35,7 +37,9 @@ export const verifyTwoFactor = async (challenge, { code, recoveryCode }) => {
  * admin must set it up before signing in; leave it out when already signed in.
  */
 export const startEnrolment = async (challenge) => {
-  const { data } = await axios.post('/auth/2fa/enrol/', challenge ? { challenge } : {});
+  const { data } = challenge
+    ? await axios.post('/auth/2fa/enrol/', { challenge }, { skipAuthRefresh: true })
+    : await axios.post('/auth/2fa/enrol/', {});
   return data;
 };
 
@@ -45,7 +49,9 @@ export const startEnrolment = async (challenge) => {
  */
 export const confirmEnrolment = async (code, challenge) => {
   const body = { ...(challenge ? { challenge } : {}), code: code.replace(/\s/g, '') };
-  const { data } = await axios.post('/auth/2fa/enrol/confirm/', body);
+  const { data } = challenge
+    ? await axios.post('/auth/2fa/enrol/confirm/', body, { skipAuthRefresh: true })
+    : await axios.post('/auth/2fa/enrol/confirm/', body);
   if (data.access_token) useAuthStore.getState().setTokens(data);
   return data.recovery_codes;
 };

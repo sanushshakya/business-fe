@@ -52,4 +52,28 @@ describe('axios instance', () => {
     await expect(instance.get('/a')).rejects.toThrow('HTTP 500');
     expect(post).not.toHaveBeenCalled();
   });
+
+  it('passes a 401 straight through when there is no session to refresh', async () => {
+    useAuthStore.getState().clearTokens();
+    const post = vi.spyOn(axios, 'post');
+    instance.defaults.adapter = async (config) => reject(config, 401);
+    const error = await instance.post('/auth/2fa/verify/', { challenge: 'c' }).catch((e) => e);
+    expect(error.response.status).toBe(401);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('never refreshes for sign-in calls, even with an older session stored', async () => {
+    const post = vi.spyOn(axios, 'post');
+    instance.defaults.adapter = async (config) => reject(config, 401);
+    for (const call of [
+      () => instance.post('/auth/login/', {}),
+      () => instance.post('/auth/2fa/verify/', {}),
+      () => instance.post('/auth/2fa/enrol/', { challenge: 'c' }, { skipAuthRefresh: true }),
+    ]) {
+      const error = await call().catch((e) => e);
+      expect(error.response.status).toBe(401);
+    }
+    expect(post).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().refreshToken).toBe('r1');
+  });
 });

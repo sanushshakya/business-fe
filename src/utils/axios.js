@@ -33,11 +33,18 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
+// Sign-in calls answer 401 for a wrong or expired credential/challenge; that is never fixed by a refresh.
+const SIGN_IN_URL = /^\/auth\/(login|code-login|2fa\/verify|token\/refresh)\/$/;
+
 instance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
     if (error.response?.status !== 401 || !original || original._retry) return Promise.reject(error);
+    // Nothing to refresh (e.g. mid sign-in): let the caller see the real 401.
+    if (original.skipAuthRefresh || SIGN_IN_URL.test(original.url) || !useAuthStore.getState().refreshToken) {
+      return Promise.reject(error);
+    }
     original._retry = true;
 
     try {
