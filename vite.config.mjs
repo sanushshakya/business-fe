@@ -30,9 +30,10 @@ export default defineConfig({
   },
   server: {
     // The backend has no CORS configuration, so the dev server proxies API calls to it.
-    proxy: Object.fromEntries(
-      API_PREFIXES.map((prefix) => [`/${prefix}/`, { target: API_TARGET, changeOrigin: true }])
-    ),
+    proxy: {
+      ...Object.fromEntries(API_PREFIXES.map((prefix) => [`/${prefix}/`, { target: API_TARGET, changeOrigin: true }])),
+      '/ws/': { target: API_TARGET, changeOrigin: true, ws: true }, // live sync status (useStorefrontSync)
+    },
   },
   test: {
     environment: 'jsdom',
