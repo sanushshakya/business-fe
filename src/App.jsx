@@ -17,6 +17,8 @@ import SalesPage from './pages/SalesPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import SettingsPage from './pages/SettingsPage';
 import StockAlertsPage from './pages/StockAlertsPage';
+import TransfersPage from './pages/TransfersPage';
+import RequisitionsPage from './pages/RequisitionsPage';
 import SuppliersListPage from './pages/SuppliersListPage';
 import SupplierPovPage from './pages/SupplierPovPage';
 import TeamPage from './components/TeamPage';
@@ -42,6 +44,8 @@ const App = () => (
           <Route path="pos" element={<PosPage />} />
           <Route path="sales" element={<SalesPage />} />
           <Route path="inventory" element={<InventoryListPage />} />
+          <Route path="transfers" element={<TransfersPage />} />
+          <Route path="requisitions" element={<RequisitionsPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="freight" element={<FreightAlertsPage />} />
           <Route path="demand" element={<DemandAlertsPage />} />
