@@ -51,14 +51,15 @@ const LineEditor = ({ lines, products, onChange }) => {
               </option>
             ))}
           </Select>
-          <Input
-            aria-label={`Quantity ${index + 1}`}
-            type="number"
-            min="1"
-            className="w-24"
-            value={line.quantity}
-            onChange={(event) => update(index, { quantity: event.target.value })}
-          />
+          <div className="w-24 shrink-0">
+            <Input
+              aria-label={`Quantity ${index + 1}`}
+              type="number"
+              min="1"
+              value={line.quantity}
+              onChange={(event) => update(index, { quantity: event.target.value })}
+            />
+          </div>
           {lines.length > 1 && (
             <Button
               variant="secondary"

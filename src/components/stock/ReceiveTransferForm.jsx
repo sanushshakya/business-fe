@@ -48,15 +48,16 @@ const ReceiveTransferForm = ({ transfer, products, onSubmit, submitting = false 
               <span className="flex-1">
                 {name} <span className="text-gray-500">(sent {line.quantity})</span>
               </span>
-              <Input
-                aria-label={`Received ${name}`}
-                type="number"
-                min="0"
-                max={line.quantity}
-                className="w-24"
-                value={row.received}
-                onChange={(event) => update(line.id, { received: event.target.value })}
-              />
+              <div className="w-24 shrink-0">
+                <Input
+                  aria-label={`Received ${name}`}
+                  type="number"
+                  min="0"
+                  max={line.quantity}
+                  value={row.received}
+                  onChange={(event) => update(line.id, { received: event.target.value })}
+                />
+              </div>
             </div>
             {differs && (
               <Input

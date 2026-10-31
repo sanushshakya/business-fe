@@ -54,15 +54,16 @@ const FulfilForm = ({ requisition, locations, products, onSubmit, submitting = f
             <span className="flex-1">
               {name} <span className="text-gray-500">({line.open_quantity} open)</span>
             </span>
-            <Input
-              aria-label={`Send ${name}`}
-              type="number"
-              min="0"
-              max={line.open_quantity}
-              className="w-24"
-              value={amounts[line.id]}
-              onChange={(event) => setAmounts((current) => ({ ...current, [line.id]: event.target.value }))}
-            />
+            <div className="w-24 shrink-0">
+              <Input
+                aria-label={`Send ${name}`}
+                type="number"
+                min="0"
+                max={line.open_quantity}
+                value={amounts[line.id]}
+                onChange={(event) => setAmounts((current) => ({ ...current, [line.id]: event.target.value }))}
+              />
+            </div>
           </div>
         );
       })}
