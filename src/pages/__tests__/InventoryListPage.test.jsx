@@ -4,12 +4,25 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from '../../utils/axios';
 import InventoryListPage from '../InventoryListPage';
+import { LOCATIONS } from '../../components/stock/__tests__/fixtures';
 
 const queueReceipt = vi.fn();
 vi.mock('../../offline/OfflineProvider', () => ({ useOffline: () => ({ queueReceipt }) }));
 vi.mock('../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
 
 const products = [{ id: 4, name: 'Dates', price: '8.99', stock_quantity: 50, reorder_threshold: 10, vat_code: 'zero' }];
+const BATCHES_AT_WH = [
+  { id: 1, product: 4, location: 9, quantity: 6 },
+  { id: 2, product: 4, location: 9, quantity: 2 },
+];
+const page = (results) => ({ data: { results, next: null } });
+const serve = (locations = LOCATIONS) =>
+  axios.get.mockImplementation((url) => {
+    if (url.startsWith('/inventory/locations/')) return Promise.resolve(page(locations));
+    if (url.startsWith('/inventory/batches/?location=9')) return Promise.resolve(page(BATCHES_AT_WH));
+    if (url.startsWith('/inventory/batches/')) return Promise.resolve(page([]));
+    return Promise.resolve(page(products));
+  });
 const setOnline = (value) => Object.defineProperty(window.navigator, 'onLine', { configurable: true, value });
 
 const renderPage = () =>
@@ -38,12 +51,12 @@ const fillAndSave = async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 };
 
-const payload = { product: 4, batch_number: 'B-1', quantity: 3, expiration_date: '2027-01-31' };
+const payload = { product: 4, batch_number: 'B-1', quantity: 3, expiration_date: '2027-01-31', location: 7 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   setOnline(true);
-  axios.get.mockResolvedValue({ data: { results: products, next: null } });
+  serve();
 });
 
 describe('InventoryListPage receiving stock', () => {
@@ -91,10 +104,45 @@ describe('InventoryListPage receiving stock', () => {
   });
 });
 
+describe('InventoryListPage locations', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setOnline(true);
+    serve();
+  });
+
+  it('shows the stock at the chosen location', async () => {
+    renderPage();
+    const row = async () => (await screen.findByText('Dates')).closest('tr');
+    expect(await row()).toHaveTextContent('50');
+    await screen.findAllByRole('option', { name: 'WH-1 · Fake warehouse' });
+    fireEvent.change(screen.getByLabelText('Stock at'), { target: { value: '9' } });
+    await waitFor(async () => expect(await row()).toHaveTextContent('8'));
+    expect(axios.get).toHaveBeenCalledWith('/inventory/batches/?location=9', expect.anything());
+  });
+
+  it('receives at the chosen location', async () => {
+    axios.post.mockResolvedValue({});
+    renderPage();
+    await screen.findAllByRole('option', { name: 'WH-1 · Fake warehouse' });
+    fireEvent.change(screen.getByLabelText('Stock at'), { target: { value: '9' } });
+    await fillAndSave();
+    await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/inventory/batches/', { ...payload, location: 9 }));
+  });
+
+  it('requires a location when it cannot guess one', async () => {
+    serve([...LOCATIONS, { id: 12, code: 'SHOP-2', name: 'Fake second shop', type: 'shop_floor', is_active: true }]);
+    renderPage();
+    await fillAndSave();
+    expect(await screen.findByText('Location is required')).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+});
+
 describe('InventoryListPage VAT code', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    axios.get.mockResolvedValue({ data: { results: products, next: null } });
+    serve();
   });
 
   it('saves a new VAT code for a product', async () => {

@@ -2,12 +2,14 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input, Modal } from '@/components/ui';
 import ProductSelect from './ProductSelect';
+import LocationSelect from './stock/LocationSelect';
 
 /**
- * Records a stock batch; `onSubmit` gets `{product, batch_number, quantity, expiration_date}`
- * (the shape POST /inventory/batches/ expects).
+ * Records a stock batch; `onSubmit` gets `{product, batch_number, quantity, expiration_date, location}`
+ * (the shape POST /inventory/batches/ expects). `locations` are the company's; `defaultLocation` is picked
+ * each time the form opens (the page's chosen location, or the only shop floor).
  */
-const StockReceiptModal = ({ isOpen, onClose, onSubmit, submitting = false }) => {
+const StockReceiptModal = ({ isOpen, onClose, onSubmit, submitting = false, locations = [], defaultLocation = '' }) => {
   const {
     register,
     handleSubmit,
@@ -19,7 +21,12 @@ const StockReceiptModal = ({ isOpen, onClose, onSubmit, submitting = false }) =>
 
   React.useEffect(() => {
     register('product', { required: 'Product is required' });
+    register('location', { required: 'Location is required' });
   }, [register]);
+
+  React.useEffect(() => {
+    if (isOpen) setValue('location', defaultLocation ?? '');
+  }, [isOpen, defaultLocation, setValue]);
 
   const submit = async (values) => {
     try {
@@ -28,6 +35,7 @@ const StockReceiptModal = ({ isOpen, onClose, onSubmit, submitting = false }) =>
         batch_number: values.batch_number,
         quantity: Number(values.quantity),
         expiration_date: values.expiration_date,
+        location: Number(values.location),
       });
     } catch {
       return; // the page shows the error; keep what was typed
@@ -63,6 +71,23 @@ const StockReceiptModal = ({ isOpen, onClose, onSubmit, submitting = false }) =>
           {errors.product && (
             <p role="alert" className="mt-1 text-xs text-red-600">
               {errors.product.message}
+            </p>
+          )}
+        </div>
+        <div>
+          <label htmlFor="receive-location" className="mb-1 block text-sm font-medium">
+            Receive at
+          </label>
+          <LocationSelect
+            id="receive-location"
+            label="Receive at"
+            locations={locations}
+            value={watch('location')}
+            onChange={(value) => setValue('location', value, { shouldValidate: true })}
+          />
+          {errors.location && (
+            <p role="alert" className="mt-1 text-xs text-red-600">
+              {errors.location.message}
             </p>
           )}
         </div>
