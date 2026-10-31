@@ -4,7 +4,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SyncStatus from '../../components/SyncStatus';
-import { initRxDB } from '../../offlineDB';
+import { createRxDatabase } from 'rxdb';
+import { initRxDB, stockReceiptSchemaV0 } from '../../offlineDB';
 import axios from '../../utils/axios';
 import { OfflineProvider, useOffline } from '../OfflineProvider';
 
@@ -50,6 +51,17 @@ afterEach(async () => {
 });
 
 describe('OfflineProvider', () => {
+  it('sends the location a receipt was queued with', async () => {
+    axios.post.mockResolvedValue({});
+    await setup();
+    await act(() => offline.queueReceipt({ ...receipt(1), location: 7 }));
+    setOnline(true);
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+    });
+    await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/inventory/batches/', { ...receipt(1), location: 7 }));
+  });
+
   it('queues receipts and shows how many are waiting', async () => {
     await setup();
     await act(() => offline.queueReceipt(receipt(1)));
@@ -150,5 +162,22 @@ describe('useOffline', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => render(<Probe />)).toThrow('inside <OfflineProvider>');
     vi.restoreAllMocks();
+  });
+});
+
+describe('offlineDB', () => {
+  it('migrates v0 receipts', async () => {
+    const name = `m${Math.random().toString(36).slice(2)}`;
+    const storage = getRxStorageMemory();
+    const old = await createRxDatabase({ name, storage, multiInstance: false });
+    await old.addCollections({ stockReceipts: { schema: stockReceiptSchemaV0 } });
+    await old.stockReceipts.insert({ id: 'r1', ...receipt(1), synced: false });
+    await old.destroy();
+
+    const upgraded = await initRxDB({ name, storage });
+    const docs = await upgraded.stockReceipts.find().exec();
+    expect(docs.map((doc) => doc.toJSON())).toEqual([expect.objectContaining({ id: 'r1', ...receipt(1), synced: false })]);
+    expect(docs[0].location).toBeUndefined();
+    await upgraded.destroy();
   });
 });
