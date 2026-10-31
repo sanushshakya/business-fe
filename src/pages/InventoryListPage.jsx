@@ -9,7 +9,7 @@ import LocationSelect, { usableLocations } from '../components/stock/LocationSel
 import VatCodeSelect from '../components/VatCodeSelect';
 import useApiList from '../hooks/useApiList';
 import { useOffline } from '../offline/OfflineProvider';
-import { isRejection } from '../utils/http';
+import { apiErrorMessage, isRejection } from '../utils/http';
 
 const InventoryListPage = () => {
   const queryClient = useQueryClient();
@@ -41,7 +41,12 @@ const InventoryListPage = () => {
     for (const batch of batches.data || []) totals[batch.product] = (totals[batch.product] || 0) + batch.quantity;
     return totals;
   }, [batches.data]);
-  const inStock = (product) => (stockAt === '' ? product.stock_quantity : atLocation[product.id] || 0);
+  const inStock = (product) => {
+    if (stockAt === '') return product.stock_quantity;
+    if (batches.isLoading) return '…';
+    if (batches.isError) return '—';
+    return atLocation[product.id] || 0;
+  };
 
   const shopFloors = usableLocations(locations.data).filter((location) => location.type === 'shop_floor');
   const defaultLocation = stockAt || (shopFloors.length === 1 ? shopFloors[0].id : '');
@@ -77,7 +82,14 @@ const InventoryListPage = () => {
             onChange={setStockAt}
             className="w-56"
           />
-          <Button onClick={() => setReceiving(true)}>Receive stock</Button>
+          <Button
+            onClick={() => {
+              receive.reset();
+              setReceiving(true);
+            }}
+          >
+            Receive stock
+          </Button>
         </div>
       </div>
       <QueryState
@@ -109,9 +121,9 @@ const InventoryListPage = () => {
                       onChange={(vatCode) => changeVat.mutate({ product, vatCode })}
                     />
                   </Td>
-                  <Td>{stockAt !== '' && batches.isLoading ? '…' : inStock(product)}</Td>
+                  <Td>{inStock(product)}</Td>
                   <Td>
-                    {product.stock_quantity <= product.reorder_threshold ? (
+                    {stockAt !== '' ? null : product.stock_quantity <= product.reorder_threshold ? (
                       <Badge color="yellow">Reorder</Badge>
                     ) : (
                       <Badge color="green">OK</Badge>
@@ -125,11 +137,15 @@ const InventoryListPage = () => {
       </QueryState>
       <StockReceiptModal
         isOpen={receiving}
-        onClose={() => setReceiving(false)}
+        onClose={() => {
+          setReceiving(false);
+          receive.reset();
+        }}
         onSubmit={submitReceipt}
         submitting={receive.isLoading}
         locations={locations.data}
         defaultLocation={defaultLocation}
+        error={receive.isError ? apiErrorMessage(receive.error, 'Could not record the stock.') : null}
       />
       {notice && (
         <p role="status" className="mt-2 text-sm text-gray-700">
@@ -141,9 +157,9 @@ const InventoryListPage = () => {
           Could not change the VAT code.
         </p>
       )}
-      {receive.isError && (
+      {stockAt !== '' && batches.isError && (
         <p role="alert" className="mt-2 text-sm text-red-600">
-          Could not record the stock.
+          Could not load the stock at this location.
         </p>
       )}
     </section>

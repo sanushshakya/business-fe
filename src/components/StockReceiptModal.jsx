@@ -7,9 +7,18 @@ import LocationSelect from './stock/LocationSelect';
 /**
  * Records a stock batch; `onSubmit` gets `{product, batch_number, quantity, expiration_date, location}`
  * (the shape POST /inventory/batches/ expects). `locations` are the company's; `defaultLocation` is picked
- * each time the form opens (the page's chosen location, or the only shop floor).
+ * each time the form opens (the page's chosen location, or the only shop floor). `error` is the server's answer
+ * to the last save, shown in the form.
  */
-const StockReceiptModal = ({ isOpen, onClose, onSubmit, submitting = false, locations = [], defaultLocation = '' }) => {
+const StockReceiptModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  submitting = false,
+  locations = [],
+  defaultLocation = '',
+  error = null,
+}) => {
   const {
     register,
     handleSubmit,
@@ -97,6 +106,11 @@ const StockReceiptModal = ({ isOpen, onClose, onSubmit, submitting = false, loca
           min: { value: 1, message: 'Quantity must be at least 1' },
         })}
         {field('expiration_date', 'Expiration date', 'date', { required: 'Expiration date is required' })}
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? 'Saving…' : 'Save'}
         </Button>

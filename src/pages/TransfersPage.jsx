@@ -44,6 +44,16 @@ const TransfersPage = () => {
     setCreating(false);
   };
   const step = (transfer, action, body) => run.mutateAsync({ url: `${TRANSFERS}${transfer.id}/${action}/`, body });
+  // Each modal starts and ends without an earlier error showing.
+  const openCreate = (value) => {
+    setError(null);
+    setCreating(value);
+  };
+  const openReceive = (transfer) => {
+    setError(null);
+    setReceiving(transfer);
+  };
+
   const receive = async (body) => {
     await step(receiving, 'receive', body);
     setReceiving(null);
@@ -66,7 +76,7 @@ const TransfersPage = () => {
               </option>
             ))}
           </Select>
-          <Button onClick={() => setCreating(true)}>New transfer</Button>
+          <Button onClick={() => openCreate(true)}>New transfer</Button>
         </div>
       </div>
       {error && !creating && !receiving && (
@@ -87,14 +97,11 @@ const TransfersPage = () => {
             busy={run.isLoading}
             onDispatch={(transfer) => step(transfer, 'dispatch').catch(() => {})}
             onCancel={(transfer) => step(transfer, 'cancel').catch(() => {})}
-            onReceive={(transfer) => {
-              setError(null);
-              setReceiving(transfer);
-            }}
+            onReceive={openReceive}
           />
         )}
       </QueryState>
-      <Modal open={creating} onClose={() => setCreating(false)} title="New transfer">
+      <Modal open={creating} onClose={() => openCreate(false)} title="New transfer">
         <TransferForm
           locations={locations.data}
           products={products.data}
@@ -109,7 +116,7 @@ const TransfersPage = () => {
       </Modal>
       <Modal
         open={Boolean(receiving)}
-        onClose={() => setReceiving(null)}
+        onClose={() => openReceive(null)}
         title={receiving ? `Receive ${receiving.reference}` : ''}
       >
         {receiving && (

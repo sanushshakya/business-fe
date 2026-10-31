@@ -90,6 +90,19 @@ describe('TransfersPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Fake dates: only 4 available at WH-1.');
   });
 
+  it('does not carry an old error into the New transfer form', async () => {
+    axios.post.mockRejectedValue({
+      response: { status: 400, data: { lines: ['Fake dates: only 4 available at WH-1.'] } },
+    });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'New transfer' }));
+    expect(within(screen.getByRole('dialog')).queryByRole('alert')).toBeNull();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('filters by status', async () => {
     renderPage();
     await screen.findByText('T-000005');

@@ -61,6 +61,15 @@ describe('TransferForm', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('clears the destination when the same location is chosen as the source', () => {
+    render(<TransferForm locations={LOCATIONS} products={PRODUCTS} onSubmit={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '7' } });
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '7' } });
+    expect(screen.getByLabelText('To')).toHaveValue('');
+    fireEvent.click(screen.getByRole('button', { name: 'Create transfer' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose where the stock comes from and goes to.');
+  });
+
   it('refuses a product listed twice', () => {
     const onSubmit = vi.fn();
     render(<TransferForm locations={LOCATIONS} products={PRODUCTS} onSubmit={onSubmit} />);

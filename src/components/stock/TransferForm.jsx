@@ -32,7 +32,16 @@ const TransferForm = ({ locations, products, onSubmit, submitting = false }) => 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <div className="grid grid-cols-2 gap-2">
-        <LocationSelect id="transfer-from" label="From" locations={locations} value={source} onChange={setSource} />
+        <LocationSelect
+          id="transfer-from"
+          label="From"
+          locations={locations}
+          value={source}
+          onChange={(value) => {
+            setSource(value);
+            if (value === destination) setDestination(''); // it is no longer offered as the destination
+          }}
+        />
         <LocationSelect
           id="transfer-to"
           label="To"
