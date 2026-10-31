@@ -9,12 +9,25 @@ const options = () => screen.getAllByRole('option').map((option) => option.textC
 describe('LocationSelect', () => {
   it('lists real, active locations as "CODE · name"', () => {
     render(<LocationSelect id="loc" label="Location" locations={LOCATIONS} value="" onChange={() => {}} />);
-    expect(options()).toEqual(['Choose a location', 'SHOP-1 · Fake shop floor', 'BUT-1 · Fake butchery', 'WH-1 · Fake warehouse']);
+    expect(options()).toEqual([
+      'Choose a location',
+      'SHOP-1 · Fake shop floor',
+      'BUT-1 · Fake butchery',
+      'WH-1 · Fake warehouse',
+    ]);
   });
 
   it('offers only store locations with filter="store", and drops excluded ones', () => {
     render(
-      <LocationSelect id="loc" label="Store" locations={LOCATIONS} filter="store" exclude={8} value="" onChange={() => {}} />
+      <LocationSelect
+        id="loc"
+        label="Store"
+        locations={LOCATIONS}
+        filter="store"
+        exclude={8}
+        value=""
+        onChange={() => {}}
+      />
     );
     expect(options()).toEqual(['Choose a location', 'SHOP-1 · Fake shop floor']);
   });
@@ -22,7 +35,14 @@ describe('LocationSelect', () => {
   it('can offer "all" and reports the chosen id as a number', () => {
     const onChange = vi.fn();
     render(
-      <LocationSelect id="loc" label="Location" locations={LOCATIONS} allLabel="All locations" value="" onChange={onChange} />
+      <LocationSelect
+        id="loc"
+        label="Location"
+        locations={LOCATIONS}
+        allLabel="All locations"
+        value=""
+        onChange={onChange}
+      />
     );
     expect(options()[0]).toBe('All locations');
     fireEvent.change(screen.getByLabelText('Location'), { target: { value: '9' } });

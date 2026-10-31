@@ -57,7 +57,9 @@ describe('FulfilForm', () => {
     fireEvent.change(screen.getByLabelText('Send from'), { target: { value: '9' } });
     fireEvent.change(screen.getByLabelText('Send Fake dates'), { target: { value: '4' } });
     fireEvent.click(screen.getByRole('button', { name: 'Make transfer' }));
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ source_location: 9, lines: [{ line: 31, quantity: 4 }] }));
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({ source_location: 9, lines: [{ line: 31, quantity: 4 }] })
+    );
   });
 
   it('refuses nothing to send, or more than is open', () => {

@@ -77,7 +77,9 @@ describe('TransferForm', () => {
 describe('ReceiveTransferForm', () => {
   it('pre-fills what was sent and receives it all', async () => {
     const onSubmit = vi.fn().mockResolvedValue();
-    render(<ReceiveTransferForm transfer={transfer({ status: 'dispatched' })} products={PRODUCTS} onSubmit={onSubmit} />);
+    render(
+      <ReceiveTransferForm transfer={transfer({ status: 'dispatched' })} products={PRODUCTS} onSubmit={onSubmit} />
+    );
     expect(screen.getByLabelText('Received Fake dates')).toHaveValue(6);
     expect(screen.queryByLabelText('Reason for Fake dates')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Receive' }));
@@ -93,7 +95,9 @@ describe('ReceiveTransferForm', () => {
 
   it('needs a reason when what arrived differs', async () => {
     const onSubmit = vi.fn().mockResolvedValue();
-    render(<ReceiveTransferForm transfer={transfer({ status: 'dispatched' })} products={PRODUCTS} onSubmit={onSubmit} />);
+    render(
+      <ReceiveTransferForm transfer={transfer({ status: 'dispatched' })} products={PRODUCTS} onSubmit={onSubmit} />
+    );
     fireEvent.change(screen.getByLabelText('Received Fake dates'), { target: { value: '5' } });
     fireEvent.click(screen.getByRole('button', { name: 'Receive' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Fake dates: say why 5 of 6 arrived.');
@@ -113,7 +117,9 @@ describe('ReceiveTransferForm', () => {
 
   it('refuses more than was sent', () => {
     const onSubmit = vi.fn();
-    render(<ReceiveTransferForm transfer={transfer({ status: 'dispatched' })} products={PRODUCTS} onSubmit={onSubmit} />);
+    render(
+      <ReceiveTransferForm transfer={transfer({ status: 'dispatched' })} products={PRODUCTS} onSubmit={onSubmit} />
+    );
     fireEvent.change(screen.getByLabelText('Received Fake rice'), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: 'Receive' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Fake rice: received must be between 0 and 2.');

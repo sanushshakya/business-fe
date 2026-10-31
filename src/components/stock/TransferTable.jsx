@@ -18,7 +18,9 @@ export const codeOf = (locations, id) => (locations || []).find((location) => lo
 
 const lineText = (line, products) => {
   const name = productName(products, line.product);
-  return line.received_quantity == null ? `${line.quantity} × ${name}` : `${line.received_quantity} of ${line.quantity} × ${name}`;
+  return line.received_quantity == null
+    ? `${line.quantity} × ${name}`
+    : `${line.received_quantity} of ${line.quantity} × ${name}`;
 };
 
 /** Transfers with the next step for each: a draft is dispatched or cancelled, a dispatched one received. */

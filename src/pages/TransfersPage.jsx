@@ -54,7 +54,12 @@ const TransfersPage = () => {
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-xl font-semibold">Transfers</h2>
         <div className="flex items-center gap-2">
-          <Select aria-label="Status" value={status} onChange={(event) => setStatus(event.target.value)} className="w-44">
+          <Select
+            aria-label="Status"
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="w-44"
+          >
             {STATUSES.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -90,16 +95,30 @@ const TransfersPage = () => {
         )}
       </QueryState>
       <Modal open={creating} onClose={() => setCreating(false)} title="New transfer">
-        <TransferForm locations={locations.data} products={products.data} onSubmit={create} submitting={run.isLoading} />
+        <TransferForm
+          locations={locations.data}
+          products={products.data}
+          onSubmit={create}
+          submitting={run.isLoading}
+        />
         {error && (
           <p role="alert" className="mt-2 text-sm text-red-600">
             {error}
           </p>
         )}
       </Modal>
-      <Modal open={Boolean(receiving)} onClose={() => setReceiving(null)} title={receiving ? `Receive ${receiving.reference}` : ''}>
+      <Modal
+        open={Boolean(receiving)}
+        onClose={() => setReceiving(null)}
+        title={receiving ? `Receive ${receiving.reference}` : ''}
+      >
         {receiving && (
-          <ReceiveTransferForm transfer={receiving} products={products.data} onSubmit={receive} submitting={run.isLoading} />
+          <ReceiveTransferForm
+            transfer={receiving}
+            products={products.data}
+            onSubmit={receive}
+            submitting={run.isLoading}
+          />
         )}
         {error && (
           <p role="alert" className="mt-2 text-sm text-red-600">

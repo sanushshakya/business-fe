@@ -23,7 +23,8 @@ const ReceiveTransferForm = ({ transfer, products, onSubmit, submitting = false 
       if (rows[line.id].received === '' || !Number.isInteger(received) || received < 0 || received > line.quantity) {
         return setError(`${name}: received must be between 0 and ${line.quantity}.`);
       }
-      if (received !== line.quantity && !reason) return setError(`${name}: say why ${received} of ${line.quantity} arrived.`);
+      if (received !== line.quantity && !reason)
+        return setError(`${name}: say why ${received} of ${line.quantity} arrived.`);
       lines.push({ line: line.id, received_quantity: received, reason: received === line.quantity ? '' : reason });
     }
     setError(null);

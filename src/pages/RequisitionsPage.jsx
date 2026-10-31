@@ -72,7 +72,12 @@ const RequisitionsPage = () => {
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-xl font-semibold">Requisitions</h2>
         <div className="flex items-center gap-2">
-          <Select aria-label="Status" value={status} onChange={(event) => setStatus(event.target.value)} className="w-44">
+          <Select
+            aria-label="Status"
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="w-44"
+          >
             {STATUSES.map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -104,10 +109,19 @@ const RequisitionsPage = () => {
         )}
       </QueryState>
       <Modal open={creating} onClose={() => setCreating(false)} title="New requisition">
-        <RequisitionForm locations={locations.data} products={products.data} onSubmit={create} submitting={save.isLoading} />
+        <RequisitionForm
+          locations={locations.data}
+          products={products.data}
+          onSubmit={create}
+          submitting={save.isLoading}
+        />
         {errorLine}
       </Modal>
-      <Modal open={Boolean(fulfilling)} onClose={() => setFulfilling(null)} title={fulfilling ? `Fulfil ${fulfilling.reference}` : ''}>
+      <Modal
+        open={Boolean(fulfilling)}
+        onClose={() => setFulfilling(null)}
+        title={fulfilling ? `Fulfil ${fulfilling.reference}` : ''}
+      >
         {fulfilling && (
           <FulfilForm
             requisition={fulfilling}

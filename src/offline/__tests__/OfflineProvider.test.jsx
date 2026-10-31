@@ -176,7 +176,9 @@ describe('offlineDB', () => {
 
     const upgraded = await initRxDB({ name, storage });
     const docs = await upgraded.stockReceipts.find().exec();
-    expect(docs.map((doc) => doc.toJSON())).toEqual([expect.objectContaining({ id: 'r1', ...receipt(1), synced: false })]);
+    expect(docs.map((doc) => doc.toJSON())).toEqual([
+      expect.objectContaining({ id: 'r1', ...receipt(1), synced: false }),
+    ]);
     expect(docs[0].location).toBeUndefined();
     await upgraded.destroy();
   });

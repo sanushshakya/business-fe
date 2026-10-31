@@ -38,7 +38,12 @@ const RequisitionForm = ({ locations, products, onSubmit, submitting = false }) 
         onChange={setLocation}
       />
       <LineEditor lines={lines} products={products} onChange={setLines} />
-      <Input aria-label="Note" placeholder="Note (optional)" value={note} onChange={(event) => setNote(event.target.value)} />
+      <Input
+        aria-label="Note"
+        placeholder="Note (optional)"
+        value={note}
+        onChange={(event) => setNote(event.target.value)}
+      />
       {error && (
         <p role="alert" className="text-sm text-red-600">
           {error}

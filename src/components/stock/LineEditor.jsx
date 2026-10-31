@@ -40,7 +40,9 @@ const LineEditor = ({ lines, products, onChange }) => {
           <Select
             aria-label={`Product ${index + 1}`}
             value={line.product}
-            onChange={(event) => update(index, { product: event.target.value === '' ? '' : Number(event.target.value) })}
+            onChange={(event) =>
+              update(index, { product: event.target.value === '' ? '' : Number(event.target.value) })
+            }
           >
             <option value="">Select a product</option>
             {(products || []).map((product) => (

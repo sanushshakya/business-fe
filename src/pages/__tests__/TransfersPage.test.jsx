@@ -82,7 +82,9 @@ describe('TransfersPage', () => {
   });
 
   it("shows the server's reason when a dispatch is refused", async () => {
-    axios.post.mockRejectedValue({ response: { status: 400, data: { lines: ['Fake dates: only 4 available at WH-1.'] } } });
+    axios.post.mockRejectedValue({
+      response: { status: 400, data: { lines: ['Fake dates: only 4 available at WH-1.'] } },
+    });
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Fake dates: only 4 available at WH-1.');
@@ -92,6 +94,8 @@ describe('TransfersPage', () => {
     renderPage();
     await screen.findByText('T-000005');
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'dispatched' } });
-    await waitFor(() => expect(axios.get).toHaveBeenCalledWith('/inventory/transfers/?status=dispatched', expect.anything()));
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith('/inventory/transfers/?status=dispatched', expect.anything())
+    );
   });
 });
