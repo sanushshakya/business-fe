@@ -152,11 +152,11 @@ describe('MainLayout for operators', () => {
     expect(await screen.findByText('Freight alerts page')).toBeInTheDocument();
   });
 
-  it('keeps a stock controller on the stock alerts and inventory', async () => {
+  it('keeps a stock controller on the stock screens', async () => {
     axios.get.mockResolvedValue(me('stock', 'Stock controller'));
     renderLayout('/dashboard');
     expect(await screen.findByText('Stock alerts page')).toBeInTheDocument();
-    expect(links()).toEqual(['Stock Alerts', 'Inventory', 'Waste']);
+    expect(links()).toEqual(['Stock Alerts', 'Inventory', 'Transfers', 'Requisitions', 'Waste']);
   });
 
   it('leaves every screen open to regular users, including the till and the overviews', async () => {

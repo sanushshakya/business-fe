@@ -113,7 +113,8 @@ describe('StockReceiptModal', () => {
 
   it('submits the batch payload', async () => {
     const onSubmit = vi.fn().mockResolvedValue();
-    renderModal({ onSubmit });
+    const locations = [{ id: 7, code: 'SHOP-1', name: 'Fake shop floor', type: 'shop_floor', is_active: true }];
+    renderModal({ onSubmit, locations, defaultLocation: 7 });
     await screen.findByRole('option', { name: 'Dates' });
     fireEvent.change(screen.getByLabelText('Product'), { target: { value: '4' } });
     type('Batch number', 'B-1');
@@ -126,6 +127,7 @@ describe('StockReceiptModal', () => {
         batch_number: 'B-1',
         quantity: 12,
         expiration_date: '2027-01-31',
+        location: 7,
       })
     );
   });

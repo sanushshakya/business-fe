@@ -5,14 +5,18 @@ import axios from '../utils/axios';
 import EmptyState from '../components/EmptyState';
 import QueryState from '../components/QueryState';
 import StockReceiptModal from '../components/StockReceiptModal';
+import LocationSelect, { usableLocations } from '../components/stock/LocationSelect';
 import VatCodeSelect from '../components/VatCodeSelect';
 import useApiList from '../hooks/useApiList';
 import { useOffline } from '../offline/OfflineProvider';
-import { isRejection } from '../utils/http';
+import { apiErrorMessage, isRejection } from '../utils/http';
 
 const InventoryListPage = () => {
   const queryClient = useQueryClient();
   const products = useApiList('/inventory/products/');
+  const locations = useApiList('/inventory/locations/');
+  const [stockAt, setStockAt] = React.useState('');
+  const batches = useApiList(`/inventory/batches/?location=${stockAt}`, { enabled: stockAt !== '' });
   const { queueReceipt } = useOffline();
   const [receiving, setReceiving] = React.useState(false);
   const [notice, setNotice] = React.useState(null);
@@ -30,6 +34,22 @@ const InventoryListPage = () => {
     mutationFn: ({ product, vatCode }) => axios.patch(`/inventory/products/${product.id}/`, { vat_code: vatCode }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['list'] }),
   });
+
+  // Units per product at the chosen location (the product's own figure is the company total).
+  const atLocation = React.useMemo(() => {
+    const totals = {};
+    for (const batch of batches.data || []) totals[batch.product] = (totals[batch.product] || 0) + batch.quantity;
+    return totals;
+  }, [batches.data]);
+  const inStock = (product) => {
+    if (stockAt === '') return product.stock_quantity;
+    if (batches.isLoading) return '…';
+    if (batches.isError) return '—';
+    return atLocation[product.id] || 0;
+  };
+
+  const shopFloors = usableLocations(locations.data).filter((location) => location.type === 'shop_floor');
+  const defaultLocation = stockAt || (shopFloors.length === 1 ? shopFloors[0].id : '');
 
   // Online: send it now. No connection (or the server is unreachable or failing): keep it on this device
   // and let the offline layer send it later. A server rejection (4xx) is a real error and goes back to the form.
@@ -52,7 +72,25 @@ const InventoryListPage = () => {
     <section>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-semibold">Inventory</h2>
-        <Button onClick={() => setReceiving(true)}>Receive stock</Button>
+        <div className="flex items-center gap-2">
+          <LocationSelect
+            id="stock-at"
+            label="Stock at"
+            locations={locations.data}
+            allLabel="All locations"
+            value={stockAt}
+            onChange={setStockAt}
+            className="w-56"
+          />
+          <Button
+            onClick={() => {
+              receive.reset();
+              setReceiving(true);
+            }}
+          >
+            Receive stock
+          </Button>
+        </div>
       </div>
       <QueryState
         query={products}
@@ -83,9 +121,9 @@ const InventoryListPage = () => {
                       onChange={(vatCode) => changeVat.mutate({ product, vatCode })}
                     />
                   </Td>
-                  <Td>{product.stock_quantity}</Td>
+                  <Td>{inStock(product)}</Td>
                   <Td>
-                    {product.stock_quantity <= product.reorder_threshold ? (
+                    {stockAt !== '' ? null : product.stock_quantity <= product.reorder_threshold ? (
                       <Badge color="yellow">Reorder</Badge>
                     ) : (
                       <Badge color="green">OK</Badge>
@@ -99,9 +137,15 @@ const InventoryListPage = () => {
       </QueryState>
       <StockReceiptModal
         isOpen={receiving}
-        onClose={() => setReceiving(false)}
+        onClose={() => {
+          setReceiving(false);
+          receive.reset();
+        }}
         onSubmit={submitReceipt}
         submitting={receive.isLoading}
+        locations={locations.data}
+        defaultLocation={defaultLocation}
+        error={receive.isError ? apiErrorMessage(receive.error, 'Could not record the stock.') : null}
       />
       {notice && (
         <p role="status" className="mt-2 text-sm text-gray-700">
@@ -113,9 +157,9 @@ const InventoryListPage = () => {
           Could not change the VAT code.
         </p>
       )}
-      {receive.isError && (
+      {stockAt !== '' && batches.isError && (
         <p role="alert" className="mt-2 text-sm text-red-600">
-          Could not record the stock.
+          Could not load the stock at this location.
         </p>
       )}
     </section>

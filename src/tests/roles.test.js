@@ -18,6 +18,15 @@ describe('roles', () => {
     expect(canOpen('stock', '/dashboard/team')).toBe(false);
   });
 
+  it('gives stock controllers (and only them among operators) the transfer and requisition screens', () => {
+    for (const path of ['/dashboard/transfers', '/dashboard/requisitions']) {
+      expect(canOpen('stock', path)).toBe(true);
+      expect(canOpen('', path)).toBe(true);
+      for (const role of ['till', 'demand', 'freight', 'supplier'])
+        expect(canOpen(role, path), `${role} ${path}`).toBe(false);
+    }
+  });
+
   it('opens everything for users without a role', () => {
     expect(canOpen('', '/dashboard/team')).toBe(true);
     expect(canOpen(undefined, '/dashboard/pos')).toBe(true);

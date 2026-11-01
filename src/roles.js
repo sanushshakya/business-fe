@@ -21,6 +21,8 @@ const ITEMS = {
   freightView: { to: '/dashboard/pov/freight', label: 'Freight overview' },
   supplierView: { to: '/dashboard/pov/supplier', label: 'Supplier overview' },
   inventory: { to: '/dashboard/inventory', label: 'Inventory' },
+  transfers: { to: '/dashboard/transfers', label: 'Transfers' },
+  requisitions: { to: '/dashboard/requisitions', label: 'Requisitions' },
   events: { to: '/dashboard/events', label: 'Events' },
   freight: { to: '/dashboard/freight', label: 'Freight' },
   demand: { to: '/dashboard/demand', label: 'Demand' },
@@ -38,7 +40,7 @@ const ROLE_ITEMS = {
   demand: [ITEMS.demandView, ITEMS.demand, ITEMS.events, ITEMS.stockAlerts],
   freight: [ITEMS.freightView, ITEMS.freight],
   supplier: [ITEMS.supplierView, ITEMS.suppliers],
-  stock: [ITEMS.stockAlerts, ITEMS.inventory, ITEMS.waste],
+  stock: [ITEMS.stockAlerts, ITEMS.inventory, ITEMS.transfers, ITEMS.requisitions, ITEMS.waste],
 };
 
 /** Where an operator lands after signing in, and where they are sent from a screen that is not theirs. */

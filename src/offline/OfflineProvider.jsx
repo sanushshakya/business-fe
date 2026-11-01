@@ -19,7 +19,7 @@ const BATCH_URL = '/inventory/batches/';
 /**
  * Keeps stock receipts captured offline in RxDB and sends them to the backend once the browser is online.
  *
- * A receipt is `{id, product, batch_number, quantity, expiration_date, synced, error?}`:
+ * A receipt is `{id, product, batch_number, quantity, expiration_date, location?, synced, error?}`:
  * - network or 5xx failure: it stays queued and is retried on the next `online` event or `flush()`;
  * - 4xx (the server rejected it): it is marked with `error` so it is not retried forever; `retryFailed()` clears that.
  *
@@ -61,9 +61,11 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
       try {
         for (const doc of docs) {
           if (doc.error) continue;
-          const { product, batch_number, quantity, expiration_date } = doc.toJSON();
+          const { product, batch_number, quantity, expiration_date, location } = doc.toJSON();
+          const body = { product, batch_number, quantity, expiration_date };
+          if (location != null) body.location = location; // receipts queued before G13 have none
           try {
-            await axios.post(BATCH_URL, { product, batch_number, quantity, expiration_date });
+            await axios.post(BATCH_URL, body);
             await doc.patch({ synced: true });
             sent += 1;
           } catch (error) {
