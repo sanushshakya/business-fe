@@ -5,9 +5,13 @@ import { formatMoney } from '../../utils/money';
 const MAX_SHOWN = 60;
 
 /**
- * Searchable grid of products. Enter in the search box adds the first match that is in stock.
+ * Searchable grid of products. Enter in the search box adds the first match that is in stock, or, for something a
+ * scanner typed (a barcode or label), hands the code to `onScan`.
  */
-const ProductPicker = ({ products = [], onAdd }) => {
+// What a scanner types rather than a person: 8+ digits, a symbology id (]e0) or a bracketed GS1 code ((01)...).
+const looksScanned = (text) => /^\s*(\]|\(|[0-9]{8,})/.test(text);
+
+const ProductPicker = ({ products = [], onAdd, onScan }) => {
   const [query, setQuery] = React.useState('');
   const needle = query.trim().toLowerCase();
   const matches = products.filter(
@@ -17,6 +21,11 @@ const ProductPicker = ({ products = [], onAdd }) => {
   const handleKeyDown = (event) => {
     if (event.key !== 'Enter') return;
     event.preventDefault();
+    if (onScan && looksScanned(query)) {
+      onScan(query);
+      setQuery('');
+      return;
+    }
     const first = matches.find((p) => p.stock_quantity > 0);
     if (first) {
       onAdd(first);

@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from '../../utils/axios';
 import PosPage from '../PosPage';
+import { ean13CheckDigit, valueCheckDigit } from '../../utils/barcodes';
 
 let online = true;
 vi.mock('../../offline/OfflineProvider', () => ({ useOffline: () => ({ isOnline: online }) }));
@@ -50,7 +51,25 @@ const serve = () =>
     if (url === '/tenants/tills/') return Promise.resolve(page([{ id: 3, branch: 1, number: 1, is_active: true }]));
     if (url === '/tenants/branches/') return Promise.resolve(page([{ id: 1, name: 'High Street' }]));
     if (url === '/inventory/products/')
-      return Promise.resolve(page([{ id: 1, name: 'Rice', price: '12.50', stock_quantity: 5 }]));
+      return Promise.resolve(
+        page([
+          { id: 1, name: 'Rice', price: '12.50', stock_quantity: 5, barcode: '4006381333931' },
+          {
+            id: 4,
+            name: 'Mince',
+            price: '0.00',
+            stock_quantity: 0,
+            sold_by: 'weight',
+            price_per_kg: '8.9900',
+            plu: '42',
+          },
+        ])
+      );
+    if (url === '/auth/me/') return Promise.resolve({ data: { id: 7, company: 'Fake Foods Ltd' } });
+    if (url === '/inventory/barcode-rules/?active=true')
+      return Promise.resolve(
+        page([{ id: 1, prefix: '21', item_code_length: 4, value_type: 'weight', decimals: 3, value_check_digit: true }])
+      );
     if (url === '/sales/sessions/') return Promise.resolve(page(openSession ? [openSession] : []));
     return Promise.reject(new Error(`unexpected GET ${url}`));
   });
@@ -125,6 +144,54 @@ describe('PosPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Charge £25.00' }));
     await screen.findByText('Receipt S-000001');
     expect(axios.post.mock.calls[1][1].client_ref).toBe(axios.post.mock.calls[0][1].client_ref);
+  });
+
+  describe('scanning labels', () => {
+    // Prefix 21, PLU 0042, value check digit, 0.512 kg, EAN check digit.
+    const LABEL = (() => {
+      const body = `210042${valueCheckDigit('00512')}00512`;
+      return body + ean13CheckDigit(body);
+    })();
+    const scan = async (code) => {
+      const search = await screen.findByLabelText('Search products');
+      await waitFor(() =>
+        expect(axios.get).toHaveBeenCalledWith('/inventory/barcode-rules/?active=true', expect.anything())
+      );
+      fireEvent.change(search, { target: { value: code } });
+      fireEvent.keyDown(search, { key: 'Enter' });
+    };
+
+    it('adds a weight label priced weight × £/kg and charges with only the barcode', async () => {
+      localStorage.setItem('pos_till', '3');
+      axios.post.mockResolvedValue({ data: sale });
+      renderPage();
+      await scan(LABEL);
+      expect(await screen.findByText('0.512 kg × £8.99/kg')).toBeInTheDocument();
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('£4.60');
+      fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Charge £4.60' }));
+      await screen.findByText('Receipt S-000001');
+      expect(axios.post.mock.calls[0][1].items).toEqual([{ barcode: LABEL }]);
+    });
+
+    it('adds the product for an ordinary barcode', async () => {
+      localStorage.setItem('pos_till', '3');
+      renderPage();
+      await scan('4006381333931');
+      await waitFor(() => expect(screen.getByTestId('cart-total')).toHaveTextContent('£12.50'));
+    });
+
+    it('says why a label cannot be added', async () => {
+      localStorage.setItem('pos_till', '3');
+      renderPage();
+      const unknown = (() => {
+        const body = `210099${valueCheckDigit('00512')}00512`;
+        return body + ean13CheckDigit(body);
+      })();
+      await scan(unknown);
+      expect(await screen.findByText(/No product has PLU 99/)).toBeInTheDocument();
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('£0.00');
+    });
   });
 
   it('pauses charging while offline', async () => {

@@ -187,3 +187,92 @@ describe('OpenTillForm', () => {
     expect(onOpen).toHaveBeenCalledWith({ till: 3, opening_float: '100.00' });
   });
 });
+
+describe('scale labels at the till', () => {
+  it('ProductPicker sends a scanned code to onScan and still searches names', () => {
+    const onAdd = vi.fn();
+    const onScan = vi.fn();
+    render(<ProductPicker products={products} onAdd={onAdd} onScan={onScan} />);
+    const search = screen.getByLabelText('Search products');
+    for (const code of ['2100421005129', ']e0010501234567890', '(01)05012345678900']) {
+      fireEvent.change(search, { target: { value: code } });
+      fireEvent.keyDown(search, { key: 'Enter' });
+      expect(onScan).toHaveBeenLastCalledWith(code);
+      expect(search).toHaveValue('');
+    }
+    fireEvent.change(search, { target: { value: 'ghee' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(onAdd).toHaveBeenCalledWith(products[2]);
+    expect(onScan).toHaveBeenCalledTimes(3);
+  });
+
+  it('Cart shows a label line as weight × £/kg with no quantity buttons', () => {
+    const onRemove = vi.fn();
+    const lines = [
+      {
+        key: 'label-1',
+        product: 4,
+        name: 'Mince',
+        barcode: '2100421005129',
+        weightKg: '0.512',
+        pricePerKg: '8.9900',
+        labelPrice: null,
+        unitCents: 460,
+        quantity: 1,
+        max: 1,
+      },
+      {
+        key: 'label-2',
+        product: 7,
+        name: 'Cake',
+        barcode: '2000077001501',
+        weightKg: null,
+        labelPrice: '1.50',
+        unitCents: 150,
+        quantity: 1,
+        max: 1,
+      },
+    ];
+    render(<Cart lines={lines} totalCents={610} onQuantity={vi.fn()} onRemove={onRemove} />);
+    expect(screen.getByText('0.512 kg × £8.99/kg')).toBeInTheDocument();
+    expect(screen.getByText('Label price')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Increase Mince' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove Mince' })[0]);
+    expect(onRemove).toHaveBeenCalledWith('label-1');
+  });
+
+  it('Receipt prints weight × £/kg for a weighed item', () => {
+    const sale = {
+      id: 1,
+      receipt_number: 'S-000001',
+      created_at: '2026-11-02T09:05:00Z',
+      branch_name: 'High Street',
+      till_number: 1,
+      cashier_email: 'a@b.test',
+      payment_method: 'card',
+      total: '4.60',
+      amount_tendered: '4.60',
+      change_due: '0.00',
+      status: 'completed',
+      vat_recorded: true,
+      vat_summary: [],
+      items: [
+        {
+          id: 1,
+          product: 4,
+          product_name: 'Mince',
+          quantity: 1,
+          unit_price: '8.99',
+          weight_kg: '0.512',
+          price_per_kg: '8.9950',
+          line_total: '4.60',
+          vat_code: 'zero',
+          label_price: null,
+        },
+      ],
+    };
+    render(<Receipt sale={sale} onPrint={vi.fn()} />);
+    expect(screen.getByText('0.512 kg × £8.995/kg')).toBeInTheDocument();
+    expect(screen.getByText(/Mince/)).toBeInTheDocument();
+  });
+});

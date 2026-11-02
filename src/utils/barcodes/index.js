@@ -3,3 +3,4 @@
 export * from './decimal';
 export * from './ean13';
 export * from './gs1';
+export * from './scan';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, Button } from '@/components/ui';
-import { formatMoney } from '../../utils/money';
+import { formatMoney, weightTimesPrice } from '../../utils/money';
 import { vatLetter } from '../../utils/vat';
 import VatSummary from './VatSummary';
 
@@ -31,7 +31,12 @@ const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
               <tr key={item.id} className="border-t border-gray-100">
                 <td className="py-1">
                   {item.quantity} × {item.product_name}
-                  <span className="block text-xs text-gray-500">{formatMoney(item.unit_price)} each</span>
+                  <span className="block text-xs text-gray-500">
+                    {item.weight_kg
+                      ? weightTimesPrice(item.weight_kg, item.price_per_kg)
+                      : `${formatMoney(item.unit_price)} each`}
+                    {item.label_price ? ' · label price' : ''}
+                  </span>
                 </td>
                 <td className="py-1 text-right">
                   {formatMoney(item.line_total)}

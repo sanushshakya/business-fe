@@ -19,3 +19,12 @@ export function withDecimals(text, decimals) {
   const [whole, fraction = ''] = text.split('.');
   return decimals === 0 ? whole : `${whole}.${fraction.padEnd(decimals, '0').slice(0, decimals)}`;
 }
+
+/** A decimal string as a whole number of `1 / 10^decimals` units: `toUnits('8.99', 4)` → `89900`. Never a float. */
+export function toUnits(text, decimals) {
+  const [whole, fraction = ''] = String(text).split('.');
+  return Number(whole + fraction.padEnd(decimals, '0').slice(0, decimals));
+}
+
+/** Integer division rounded half-up (both positive). */
+export const divideHalfUp = (numerator, denominator) => Math.floor((numerator * 2 + denominator) / (denominator * 2));

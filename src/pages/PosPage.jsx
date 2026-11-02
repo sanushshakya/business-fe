@@ -14,7 +14,10 @@ import ProductPicker from '../components/pos/ProductPicker';
 import Receipt from '../components/pos/Receipt';
 import QueryState from '../components/QueryState';
 import useApiList from '../hooks/useApiList';
+import useBarcodeRules from '../hooks/useBarcodeRules';
 import useCart from '../hooks/useCart';
+import { readScan } from '../utils/barcodes';
+import { ukToday } from '../utils/dateUtils';
 import { useOffline } from '../offline/OfflineProvider';
 
 const SESSIONS = '/sales/sessions/';
@@ -58,6 +61,8 @@ const PosPage = () => {
   const [card, setCard] = React.useState(null); // {barcode, customer} once a lookup finds the card
   const [cashUpOpen, setCashUpOpen] = React.useState(false);
   const [closed, setClosed] = React.useState(null);
+  const [scanProblem, setScanProblem] = React.useState('');
+  const { rules } = useBarcodeRules();
 
   const tills = useApiList('/tenants/tills/');
   const branches = useApiList('/tenants/branches/');
@@ -109,6 +114,14 @@ const PosPage = () => {
     lookup.mutate(barcode);
   };
 
+  // A scanned barcode or label: the line is shown from our own reading; the server reads the code again on Charge.
+  const scanProduct = (code) => {
+    const scan = readScan(code, { rules, products: products.data || [], today: ukToday() });
+    setScanProblem(scan.kind === 'error' ? scan.message : '');
+    if (scan.kind === 'product') cart.add(scan.product);
+    if (scan.kind === 'label') cart.addLabel(scan);
+  };
+
   const sell = useMutation({
     mutationFn: (payload) => axios.post('/sales/sales/', payload).then((r) => r.data),
     onSuccess: (sale, payload) => {
@@ -144,7 +157,7 @@ const PosPage = () => {
   const charge = (payment) => {
     const body = {
       session: current.id,
-      items: cart.lines.map((l) => ({ product: l.product, quantity: l.quantity })),
+      items: cart.lines.map((l) => (l.barcode ? { barcode: l.barcode } : { product: l.product, quantity: l.quantity })),
       ...payment,
       ...(card ? { loyalty_barcode: card.barcode } : {}),
     };
@@ -228,8 +241,13 @@ const PosPage = () => {
         <div className="grid gap-4 lg:grid-cols-3">
           <section className="lg:col-span-2" aria-label="Products">
             <QueryState query={products} emptyMessage="No products yet. Add some under Inventory.">
-              {(items) => <ProductPicker products={items} onAdd={cart.add} />}
+              {(items) => <ProductPicker products={items} onAdd={cart.add} onScan={scanProduct} />}
             </QueryState>
+            {scanProblem && (
+              <p role="status" className="mt-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-800">
+                {scanProblem}
+              </p>
+            )}
           </section>
           <Card className="space-y-4 self-start" aria-label="Basket">
             <h3 className="font-semibold">Basket</h3>
