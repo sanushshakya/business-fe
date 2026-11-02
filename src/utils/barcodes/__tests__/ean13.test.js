@@ -45,6 +45,25 @@ describe('scale-label parser (shared fixtures)', () => {
     expect(() => valueCheckDigit('123')).toThrow();
   });
 
+  const codeOf = (name) => FIXTURES.cases.find((c) => c.name === name).code;
+
+  it('an unusable rule never matches', () => {
+    const broken = ruleFromApi({ ...FIXTURES.rules[0], item_code_length: 9 });
+    expect(reasonOf(() => parseScaleLabel(codeOf('price'), [broken]))).toBe('unknown_prefix');
+  });
+
+  it('rule order does not matter', () => {
+    expect(parseScaleLabel(codeOf('overlap_specific_wins'), [...RULES].reverse()).rule.prefix).toBe('21');
+  });
+
+  it('a rule with missing or non-integer lengths is unusable, never read as NaN', () => {
+    for (const change of [{ item_code_length: undefined }, { item_code_length: 4.5 }, { decimals: 'two' }]) {
+      const rule = ruleFromApi({ ...FIXTURES.rules[0], ...change });
+      expect(layoutError(rule)).not.toBeNull();
+      expect(reasonOf(() => parseScaleLabel(codeOf('price'), [rule]))).toBe('unknown_prefix');
+    }
+  });
+
   it('reads API rows (snake_case, is_active defaulting to true)', () => {
     const row = { ...FIXTURES.rules[0] };
     delete row.is_active;

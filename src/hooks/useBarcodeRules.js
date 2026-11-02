@@ -6,21 +6,22 @@ import useMe from './useMe';
 
 export const RULES_URL = '/inventory/barcode-rules/?active=true';
 
-const storageKey = (company) => `barcodeRules:${company}`;
+// Per user: /auth/me/ gives the company's name, which is not unique, and a user always belongs to one company.
+const storageKey = (userId) => `barcodeRules:user-${userId}`;
 
 // Storage can be full, blocked or hold junk; the rules are then simply not cached.
-function readSaved(company) {
+function readSaved(userId) {
   try {
-    const rows = JSON.parse(localStorage.getItem(storageKey(company)));
-    return Array.isArray(rows) ? rows : undefined;
+    const rows = JSON.parse(localStorage.getItem(storageKey(userId)));
+    return Array.isArray(rows) ? rows.filter((row) => row !== null && typeof row === 'object') : undefined;
   } catch {
     return undefined;
   }
 }
 
-function save(company, rows) {
+function save(userId, rows) {
   try {
-    localStorage.setItem(storageKey(company), JSON.stringify(rows));
+    localStorage.setItem(storageKey(userId), JSON.stringify(rows));
   } catch {
     /* not cached this time */
   }
@@ -28,22 +29,23 @@ function save(company, rows) {
 
 /**
  * The company's active scale-label rules (`/inventory/barcode-rules/?active=true`) in the parser's shape, for
- * `parseScaleLabel`. The last good copy is kept in localStorage per company, so a till that starts while the server is
+ * `parseScaleLabel`. The last good copy is kept in localStorage per user, so a till that starts while the server is
  * unreachable still reads labels; it is refetched straight away. Rules are layouts, not personal data.
  *
  * @returns {{rules: Array, fromCache: boolean, isLoading: boolean, error: unknown}}
  */
 export default function useBarcodeRules() {
-  const company = useMe().data?.company;
+  const userId = useMe().data?.id;
   const query = useQuery({
-    queryKey: ['barcodeRules', company],
-    enabled: Boolean(company),
+    queryKey: ['barcodeRules', userId],
+    enabled: userId !== undefined && userId !== null,
     queryFn: async () => {
       const rows = await fetchAllPages(RULES_URL);
-      save(company, rows);
+      if (!Array.isArray(rows)) throw new Error('Unexpected barcode rules response');
+      save(userId, rows);
       return rows;
     },
-    initialData: () => (company ? readSaved(company) : undefined),
+    initialData: () => (userId !== undefined && userId !== null ? readSaved(userId) : undefined),
     initialDataUpdatedAt: 0, // a saved copy is always stale, so it is refetched
   });
   const rules = useMemo(() => (query.data ?? []).map(ruleFromApi), [query.data]);

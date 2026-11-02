@@ -26,7 +26,7 @@ const RULE = {
   valueCheckDigit: false,
   isActive: true,
 };
-const KEY = 'barcodeRules:Fake Foods Ltd';
+const KEY = 'barcodeRules:user-7';
 
 const serve = ({ rules = [ROW], fail = false } = {}) =>
   axios.get.mockImplementation((url) => {
@@ -67,6 +67,14 @@ describe('useBarcodeRules', () => {
     expect(result.current.fromCache).toBe(true);
   });
 
+  it('skips saved rows that are not rules', async () => {
+    localStorage.setItem(KEY, JSON.stringify([null, 'x', ROW]));
+    serve({ fail: true });
+    const { result } = render();
+    await waitFor(() => expect(result.current.error).toBeTruthy());
+    expect(result.current.rules).toEqual([RULE]);
+  });
+
   it('ignores a corrupt saved copy', async () => {
     localStorage.setItem(KEY, '{not json');
     serve();
@@ -74,8 +82,8 @@ describe('useBarcodeRules', () => {
     await waitFor(() => expect(result.current.rules).toEqual([RULE]));
   });
 
-  it("never uses another company's saved copy", async () => {
-    localStorage.setItem('barcodeRules:Other Fake Co', JSON.stringify([{ ...ROW, prefix: '29' }]));
+  it("never uses another user's saved copy (company names are not unique)", async () => {
+    localStorage.setItem('barcodeRules:user-8', JSON.stringify([{ ...ROW, prefix: '29' }]));
     serve({ fail: true });
     const { result } = render();
     await waitFor(() => expect(result.current.error).toBeTruthy());
@@ -94,7 +102,7 @@ describe('useBarcodeRules', () => {
     const { result } = render();
     expect(result.current.rules).toEqual([]);
     expect(axios.get).not.toHaveBeenCalledWith(RULES_URL, expect.anything());
-    answerMe({ data: { company: 'Fake Foods Ltd' } });
+    answerMe({ data: { id: 7, company: 'Fake Foods Ltd' } });
     await waitFor(() => expect(result.current.rules).toEqual([RULE]));
   });
 

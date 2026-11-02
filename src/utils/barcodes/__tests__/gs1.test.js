@@ -31,6 +31,12 @@ describe('GS1 element-string parser (shared fixtures)', () => {
     }).toEqual(c.result);
   });
 
+  it('refuses a today that is not YYYY-MM-DD (string order would give wrong answers)', () => {
+    for (const today of ['2026-11-2', '02/11/2026', new Date(2026, 10, 2), undefined]) {
+      expect(() => parseGs1('17261115', today)).toThrow(TypeError);
+    }
+  });
+
   it.each(FIXTURES.gs1_check_digits.map((c) => [c.digits, c]))('GTIN check digit %s', (_digits, c) => {
     expect(gtinCheckDigit(c.digits)).toBe(c.check);
   });

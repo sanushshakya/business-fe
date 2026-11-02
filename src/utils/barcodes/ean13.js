@@ -45,7 +45,8 @@ export const valueLength = (rule) => 12 - rule.prefix.length - rule.itemCodeLeng
 /** Why this layout can't describe a 13-digit code (`"<field>: message"`), or null. */
 export function layoutError(rule) {
   if (!/^2[0-9]{0,2}$/.test(rule.prefix)) return 'prefix: 1 to 3 digits starting with 2 (the in-store range).';
-  if (rule.itemCodeLength < 1) return 'item_code_length: at least 1 digit.';
+  // A missing or fractional number would be NaN here (Python's int() raises instead); never treat it as usable.
+  if (!Number.isInteger(rule.itemCodeLength) || rule.itemCodeLength < 1) return 'item_code_length: at least 1 digit.';
   const length = valueLength(rule);
   if (length < 4 || length > 6) {
     return `item_code_length: the value would be ${length} digits; a 13-digit code leaves room for 4 to 6.`;
@@ -54,7 +55,7 @@ export function layoutError(rule) {
     return `value_check_digit: GS1 defines it for 4- or 5-digit values, not ${length}.`;
   }
   if (rule.valueType !== PRICE && rule.valueType !== WEIGHT) return 'value_type: price or weight.';
-  if (!(rule.decimals >= 0 && rule.decimals <= 3)) return 'decimals: 0 to 3.';
+  if (!Number.isInteger(rule.decimals) || rule.decimals < 0 || rule.decimals > 3) return 'decimals: 0 to 3.';
   return null;
 }
 

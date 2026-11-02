@@ -50,6 +50,10 @@ export function gtinCheckDigit(digits) {
  * throws `GS1Error`.
  */
 export function parseGs1(rawCode, today) {
+  // Dates are compared as strings, so today must be exactly YYYY-MM-DD (the UK date, not toISOString()'s UTC one).
+  if (typeof today !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(today)) {
+    throw new TypeError("parseGs1: today must be 'YYYY-MM-DD'");
+  }
   let code = String(rawCode).replace(EDGE_SPACE, '');
   const identifier = SYMBOLOGY_IDS.find((id) => code.startsWith(id));
   if (identifier) code = code.slice(identifier.length);
