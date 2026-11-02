@@ -12,16 +12,19 @@ export default function useApiList(url, options = {}) {
   return useQuery({
     ...options,
     queryKey: ['list', url],
-    queryFn: async () => {
-      const items = [];
-      let page = 1;
-      for (;;) {
-        const { data } = await axios.get(url, { params: { page, page_size: 100 } });
-        if (!Array.isArray(data.results)) return data;
-        items.push(...data.results);
-        if (!data.next) return items;
-        page += 1;
-      }
-    },
+    queryFn: () => fetchAllPages(url),
   });
+}
+
+/** Every page of a paginated DRF list, as one array (a non-paginated response is returned as it came). */
+export async function fetchAllPages(url) {
+  const items = [];
+  let page = 1;
+  for (;;) {
+    const { data } = await axios.get(url, { params: { page, page_size: 100 } });
+    if (!Array.isArray(data.results)) return data;
+    items.push(...data.results);
+    if (!data.next) return items;
+    page += 1;
+  }
 }
