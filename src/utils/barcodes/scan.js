@@ -3,7 +3,7 @@
  * products, or something the cashier is told about. The till uses this only to show the line; the server reads the
  * same raw code again on Charge (`sales/labels.py`) and its price is the one charged. Messages mirror the server's.
  */
-import { divideHalfUp, scaled, toUnits } from './decimal';
+import { divideHalfUp, scaled, toUnits, withDecimals } from './decimal';
 import { BarcodeError, parseScaleLabel } from './ean13';
 import { GS1Error, parseGs1 } from './gs1';
 
@@ -64,7 +64,12 @@ function gs1Label(code, products, today) {
   return { product: matches[0], weightKg: parsed.weightKg, labelPrice: parsed.price };
 }
 
-function priced({ product, weightKg, labelPrice }) {
+function priced({ product, weightKg, labelPrice: printed }) {
+  // A 3-decimal price rule: never charge part of a penny (the server refuses it too).
+  if (printed !== null && /[1-9]/.test((printed.split('.')[1] ?? '').slice(2))) {
+    refuse('The label price is in fractions of a penny. Check the label rule, or ring it up.');
+  }
+  const labelPrice = printed === null ? null : withDecimals(printed, 2);
   if (!isWeighed(product)) {
     if (weightKg !== null)
       refuse(`${product.name} is sold by each, but this is a weight label. Ring it up as a product.`);

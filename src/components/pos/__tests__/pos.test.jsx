@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Cart from '../Cart';
 import CashUpForm from '../CashUpForm';
@@ -239,6 +239,9 @@ describe('scale labels at the till', () => {
     expect(screen.queryByRole('button', { name: 'Increase Mince' })).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole('button', { name: 'Remove Mince' })[0]);
     expect(onRemove).toHaveBeenCalledWith('label-1');
+    cleanup();
+    render(<Cart lines={[{ ...lines[1], key: 'label-3', labelPrice: null, unitCents: 200 }]} totalCents={200} />);
+    expect(screen.getByText('£2.00 each')).toBeInTheDocument(); // a GTIN-only label is charged the product price
   });
 
   it('Receipt prints weight × £/kg for a weighed item', () => {

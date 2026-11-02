@@ -7,9 +7,13 @@ import { lineKey } from '../../hooks/useCart';
  * The basket: one row per product with a quantity stepper, and one row per scanned label (weight × £/kg or the label's
  * price, no stepper). `lines` come from `useCart`; `onQuantity`/`onRemove` get the line's `lineKey`.
  */
-// A scanned label's line: its weight × £/kg when the kg is known, else that the label's price is charged.
-const labelDetail = (line) =>
-  line.weightKg !== null && line.labelPrice === null ? weightTimesPrice(line.weightKg, line.pricePerKg) : 'Label price';
+// A scanned label's line: the label's price when it has one, else weight × £/kg, else (a GS1 label with only the
+// product number) the product's own price.
+const labelDetail = (line) => {
+  if (line.labelPrice !== null) return 'Label price';
+  if (line.weightKg !== null) return weightTimesPrice(line.weightKg, line.pricePerKg);
+  return `${formatCents(line.unitCents)} each`;
+};
 
 const Cart = ({ lines = [], totalCents = 0, onQuantity, onRemove }) => (
   <div>

@@ -68,6 +68,16 @@ describe('readScan', () => {
     expect(read('4006381333931\n')).toEqual({ kind: 'product', product: PRODUCTS[1] });
   });
 
+  it('refuses a label price in fractions of a penny, like the server', () => {
+    const rules = [
+      ...RULES,
+      ruleFromApi({ prefix: '22', item_code_length: 5, value_type: 'price', decimals: 3, value_check_digit: false }),
+    ];
+    const at = (value) => readScan(scale('22', '00077', value), { rules, products: PRODUCTS, today: '2026-11-02' });
+    expect(at('01234')).toMatchObject({ kind: 'error', message: expect.stringMatching(/fractions of a penny/) });
+    expect(at('01230')).toMatchObject({ kind: 'label', labelPrice: '1.23', cents: 123 });
+  });
+
   it('says why a scan cannot be used', () => {
     const good = scale('21', '0042', '00512', true);
     const tampered = good.slice(0, 9) + ((Number(good[9]) + 1) % 10) + good.slice(10); // a changed weight digit
