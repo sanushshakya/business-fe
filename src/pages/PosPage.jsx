@@ -12,6 +12,7 @@ import OpenTillForm from '../components/pos/OpenTillForm';
 import PaymentPanel from '../components/pos/PaymentPanel';
 import ProductPicker from '../components/pos/ProductPicker';
 import Receipt from '../components/pos/Receipt';
+import WeightEntry from '../components/pos/WeightEntry';
 import QueryState from '../components/QueryState';
 import useApiList from '../hooks/useApiList';
 import useBarcodeRules from '../hooks/useBarcodeRules';
@@ -51,6 +52,15 @@ const storeTill = (id) => {
   }
 };
 
+// What Charge sends for a basket line: a label as its raw barcode, a typed weight as the product and its kg (and
+// pieces for catch-weight), anything else as the product and quantity. The server prices all of them.
+const chargeLine = (line) => {
+  if (line.barcode) return { barcode: line.barcode };
+  if (line.manual)
+    return { product: line.product, weight_kg: line.weightKg, ...(line.pieces ? { quantity: line.pieces } : {}) };
+  return { product: line.product, quantity: line.quantity };
+};
+
 const PosPage = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useOffline();
@@ -62,6 +72,7 @@ const PosPage = () => {
   const [cashUpOpen, setCashUpOpen] = React.useState(false);
   const [closed, setClosed] = React.useState(null);
   const [scanProblem, setScanProblem] = React.useState('');
+  const [weighing, setWeighing] = React.useState(null); // a weighed product with no label: the cashier types its kg
   const { rules } = useBarcodeRules();
 
   const tills = useApiList('/tenants/tills/');
@@ -154,10 +165,16 @@ const PosPage = () => {
     resetSale();
   }, [cart.lines, resetSale]);
 
+  // A tapped product: counted ones go straight in, weighed ones ask for their kg first.
+  const pickProduct = (product) => {
+    if (product.sold_by === 'weight') setWeighing(product);
+    else cart.add(product);
+  };
+
   const charge = (payment) => {
     const body = {
       session: current.id,
-      items: cart.lines.map((l) => (l.barcode ? { barcode: l.barcode } : { product: l.product, quantity: l.quantity })),
+      items: cart.lines.map(chargeLine),
       ...payment,
       ...(card ? { loyalty_barcode: card.barcode } : {}),
     };
@@ -241,8 +258,21 @@ const PosPage = () => {
         <div className="grid gap-4 lg:grid-cols-3">
           <section className="lg:col-span-2" aria-label="Products">
             <QueryState query={products} emptyMessage="No products yet. Add some under Inventory.">
-              {(items) => <ProductPicker products={items} onAdd={cart.add} onScan={scanProduct} />}
+              {(items) => <ProductPicker products={items} onAdd={pickProduct} onScan={scanProduct} />}
             </QueryState>
+            {weighing && (
+              <div className="mt-2">
+                <WeightEntry
+                  key={weighing.id}
+                  product={weighing}
+                  onAdd={({ weightKg, pieces }) => {
+                    cart.addWeighed(weighing, weightKg, pieces);
+                    setWeighing(null);
+                  }}
+                  onCancel={() => setWeighing(null)}
+                />
+              </div>
+            )}
             {scanProblem && (
               <p role="status" className="mt-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-800">
                 {scanProblem}

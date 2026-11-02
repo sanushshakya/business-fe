@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input } from '@/components/ui';
-import { formatMoney } from '../../utils/money';
+import { formatMoney, formatPerKg } from '../../utils/money';
 
 const MAX_SHOWN = 60;
 
@@ -10,6 +10,9 @@ const MAX_SHOWN = 60;
  */
 // What a scanner types rather than a person: 8+ digits, a symbology id (]e0) or a bracketed GS1 code ((01)...).
 const looksScanned = (text) => /^\s*(\]|\(|[0-9]{8,})/.test(text);
+// Weighed products keep their stock in kg, which the list does not carry: the server checks it when charging.
+const isWeighed = (product) => product.sold_by === 'weight';
+const canAdd = (product) => isWeighed(product) || product.stock_quantity > 0;
 
 const ProductPicker = ({ products = [], onAdd, onScan }) => {
   const [query, setQuery] = React.useState('');
@@ -26,7 +29,7 @@ const ProductPicker = ({ products = [], onAdd, onScan }) => {
       setQuery('');
       return;
     }
-    const first = matches.find((p) => p.stock_quantity > 0);
+    const first = matches.find(canAdd);
     if (first) {
       onAdd(first);
       setQuery('');
@@ -49,7 +52,8 @@ const ProductPicker = ({ products = [], onAdd, onScan }) => {
       ) : (
         <ul className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
           {matches.slice(0, MAX_SHOWN).map((product) => {
-            const out = product.stock_quantity < 1;
+            const weighed = isWeighed(product);
+            const out = !canAdd(product);
             return (
               <li key={product.id}>
                 <button
@@ -59,9 +63,11 @@ const ProductPicker = ({ products = [], onAdd, onScan }) => {
                   className="h-full w-full rounded-lg border border-gray-200 bg-white p-3 text-left shadow-sm hover:border-primary hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="block text-sm font-medium">{product.name}</span>
-                  <span className="mt-1 block text-sm text-gray-700">{formatMoney(product.price)}</span>
+                  <span className="mt-1 block text-sm text-gray-700">
+                    {weighed ? formatPerKg(product.price_per_kg || '0') : formatMoney(product.price)}
+                  </span>
                   <span className={`mt-1 block text-xs ${out ? 'text-red-600' : 'text-gray-500'}`}>
-                    {out ? 'Out of stock' : `${product.stock_quantity} in stock`}
+                    {weighed ? 'Sold by weight' : out ? 'Out of stock' : `${product.stock_quantity} in stock`}
                   </span>
                 </button>
               </li>

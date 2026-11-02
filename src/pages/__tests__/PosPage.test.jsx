@@ -194,6 +194,38 @@ describe('PosPage', () => {
     });
   });
 
+  describe('typed weights (G19)', () => {
+    it('weighs a product by hand and charges its product, kg and nothing else', async () => {
+      localStorage.setItem('pos_till', '3');
+      axios.post.mockResolvedValue({ data: sale });
+      renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: /Mince/ }));
+      fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '0.512' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Add Mince' }));
+      expect(await screen.findByText('0.512 kg × £8.99/kg · manual weight')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Weight (kg)')).not.toBeInTheDocument();
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('£4.60');
+      fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Charge £4.60' }));
+      await screen.findByText('Receipt S-000001');
+      expect(axios.post.mock.calls[0][1].items).toEqual([{ product: 4, weight_kg: '0.512' }]);
+    });
+
+    it('shows the server refusing a weight over the limit and keeps the basket', async () => {
+      localStorage.setItem('pos_till', '3');
+      const message = 'Mince: 30.000 kg is over the 25 kg limit for a typed weight. Check it, or weigh it in parts.';
+      axios.post.mockRejectedValue({ response: { status: 400, data: { items: [message] } } });
+      renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: /Mince/ }));
+      fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '30' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Add Mince' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Card' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Charge £269.70' }));
+      expect(await screen.findByText(new RegExp('over the 25 kg limit'))).toBeInTheDocument();
+      expect(screen.getByText('30.000 kg × £8.99/kg · manual weight')).toBeInTheDocument();
+    });
+  });
+
   it('pauses charging while offline', async () => {
     online = false;
     localStorage.setItem('pos_till', '3');

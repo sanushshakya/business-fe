@@ -279,3 +279,43 @@ describe('scale labels at the till', () => {
     expect(screen.getByText(/Mince/)).toBeInTheDocument();
   });
 });
+
+describe('typed weights at the till (G19)', () => {
+  const mince = { id: 4, name: 'Mince', price: '0.00', stock_quantity: 0, sold_by: 'weight', price_per_kg: '8.9900' };
+
+  it('ProductPicker shows a weighed product by £/kg and lets it be tapped', () => {
+    const onAdd = vi.fn();
+    render(<ProductPicker products={[mince]} onAdd={onAdd} />);
+    const button = screen.getByRole('button', { name: /Mince/ });
+    expect(button).toBeEnabled();
+    expect(screen.getByText('£8.99/kg')).toBeInTheDocument();
+    expect(screen.getByText('Sold by weight')).toBeInTheDocument();
+    expect(screen.queryByText('Out of stock')).not.toBeInTheDocument();
+    fireEvent.click(button);
+    expect(onAdd).toHaveBeenCalledWith(mince);
+    const search = screen.getByLabelText('Search products');
+    fireEvent.change(search, { target: { value: 'min' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(onAdd).toHaveBeenCalledTimes(2);
+  });
+
+  it('Cart marks a typed weight as manual, with its pieces', () => {
+    const line = {
+      key: 'weight-1',
+      product: 4,
+      name: 'Mince',
+      weightKg: '0.512',
+      pricePerKg: '8.9900',
+      labelPrice: null,
+      manual: true,
+      pieces: null,
+      unitCents: 460,
+      quantity: 1,
+      max: 1,
+    };
+    render(<Cart lines={[line, { ...line, key: 'weight-2', pieces: 2 }]} totalCents={920} />);
+    expect(screen.getByText('0.512 kg × £8.99/kg · manual weight')).toBeInTheDocument();
+    expect(screen.getByText('2 pieces, 0.512 kg × £8.99/kg · manual weight')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Increase Mince' })).not.toBeInTheDocument();
+  });
+});
