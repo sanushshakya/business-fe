@@ -211,6 +211,19 @@ describe('PosPage', () => {
       expect(axios.post.mock.calls[0][1].items).toEqual([{ product: 4, weight_kg: '0.512' }]);
     });
 
+    it('closes a weight panel left open once the sale is charged', async () => {
+      localStorage.setItem('pos_till', '3');
+      axios.post.mockResolvedValue({ data: sale });
+      renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: /Rice/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Mince/ }));
+      expect(screen.getByLabelText('Weight (kg)')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
+      await screen.findByText('Receipt S-000001');
+      expect(screen.queryByLabelText('Weight (kg)')).not.toBeInTheDocument();
+    });
+
     it('shows the server refusing a weight over the limit and keeps the basket', async () => {
       localStorage.setItem('pos_till', '3');
       const message = 'Mince: 30.000 kg is over the 25 kg limit for a typed weight. Check it, or weigh it in parts.';

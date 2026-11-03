@@ -39,6 +39,15 @@ describe('WeightEntry', () => {
     expect(onAdd).not.toHaveBeenCalled();
   });
 
+  it('refuses more than 100 kg in one weighing', () => {
+    const onAdd = vi.fn();
+    render(<WeightEntry product={mince} onAdd={onAdd} onCancel={() => {}} />);
+    fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '150' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add Mince' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Over 100 kg');
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
   it('asks for pieces on a catch-weight product', () => {
     const onAdd = vi.fn();
     render(<WeightEntry product={legs} onAdd={onAdd} onCancel={() => {}} />);

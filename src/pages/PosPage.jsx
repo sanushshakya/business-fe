@@ -138,6 +138,7 @@ const PosPage = () => {
     onSuccess: (sale, payload) => {
       setReceipt({ sale, loyalty: payload.loyalty_barcode ? (attempt.current?.customer ?? null) : null });
       cart.clear();
+      setWeighing(null);
       clearCard();
       attempt.current = null;
       refresh();
@@ -154,6 +155,7 @@ const PosPage = () => {
       setClosed(data);
       setCashUpOpen(false);
       cart.clear();
+      setWeighing(null);
       clearCard();
       refresh();
     },

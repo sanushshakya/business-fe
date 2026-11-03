@@ -12,7 +12,12 @@ const MAX_SHOWN = 60;
 const looksScanned = (text) => /^\s*(\]|\(|[0-9]{8,})/.test(text);
 // Weighed products keep their stock in kg, which the list does not carry: the server checks it when charging.
 const isWeighed = (product) => product.sold_by === 'weight';
-const canAdd = (product) => isWeighed(product) || product.stock_quantity > 0;
+const hasPerKg = (product) => Number(product.price_per_kg) > 0;
+const canAdd = (product) => (isWeighed(product) ? hasPerKg(product) : product.stock_quantity > 0);
+const stockNote = (product) => {
+  if (isWeighed(product)) return hasPerKg(product) ? 'Sold by weight' : 'No price per kg';
+  return product.stock_quantity < 1 ? 'Out of stock' : `${product.stock_quantity} in stock`;
+};
 
 const ProductPicker = ({ products = [], onAdd, onScan }) => {
   const [query, setQuery] = React.useState('');
@@ -67,7 +72,7 @@ const ProductPicker = ({ products = [], onAdd, onScan }) => {
                     {weighed ? formatPerKg(product.price_per_kg || '0') : formatMoney(product.price)}
                   </span>
                   <span className={`mt-1 block text-xs ${out ? 'text-red-600' : 'text-gray-500'}`}>
-                    {weighed ? 'Sold by weight' : out ? 'Out of stock' : `${product.stock_quantity} in stock`}
+                    {stockNote(product)}
                   </span>
                 </button>
               </li>

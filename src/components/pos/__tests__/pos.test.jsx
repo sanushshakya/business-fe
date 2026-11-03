@@ -299,6 +299,17 @@ describe('typed weights at the till (G19)', () => {
     expect(onAdd).toHaveBeenCalledTimes(2);
   });
 
+  it('ProductPicker will not offer a weighed product with no price per kg', () => {
+    const onAdd = vi.fn();
+    render(<ProductPicker products={[{ ...mince, price_per_kg: null }]} onAdd={onAdd} />);
+    expect(screen.getByRole('button', { name: /Mince/ })).toBeDisabled();
+    expect(screen.getByText('No price per kg')).toBeInTheDocument();
+    const search = screen.getByLabelText('Search products');
+    fireEvent.change(search, { target: { value: 'min' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
   it('Cart marks a typed weight as manual, with its pieces', () => {
     const line = {
       key: 'weight-1',
