@@ -7,7 +7,8 @@ import { initRxDB } from '../offlineDB';
 import useSyncManager from '../hooks/useSyncManager';
 import axios from '../utils/axios';
 import { isRejection } from '../utils/http';
-import { sendOfflineSales } from './sendQueue';
+import useAuthStore from '../stores/authStore';
+import { retrySalesWithErrors, sendOfflineSales } from './sendQueue';
 
 const SEND_EVERY_MS = 60_000;
 
@@ -84,8 +85,8 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
             throw error; // offline or server trouble: stop and keep the rest queued
           }
         }
-        // Then the till's offline sales (G28); what the server recorded leaves this browser.
-        sent += (await sendOfflineSales(db, axios.post)).sent;
+        // Then the till's offline sales (G28), once someone is signed in; what the server recorded leaves here.
+        if (useAuthStore.getState().accessToken) sent += (await sendOfflineSales(db, axios.post)).sent;
       } finally {
         flushing.current = null;
         if (sent > 0) queryClient.invalidateQueries({ queryKey: ['list'] });
@@ -117,6 +118,7 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
     if (!db) return;
     const docs = await db.stockReceipts.find({ selector: { synced: false } }).exec();
     await Promise.all(docs.filter((doc) => doc.error).map((doc) => doc.patch({ error: undefined })));
+    await retrySalesWithErrors(db);
     flush().catch(() => {});
   }, [db, flush]);
 

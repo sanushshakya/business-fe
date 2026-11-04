@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { initRxDB } from '../../offlineDB';
 import { listQueued, queueSale, voidQueued } from '../salesQueue';
-import { OFFLINE_SALES_URL, sendOfflineSales, toPayload } from '../sendQueue';
+import { OFFLINE_SALES_URL, retrySalesWithErrors, sendOfflineSales, toPayload } from '../sendQueue';
 
 let db;
 beforeEach(async () => {
@@ -94,6 +94,22 @@ describe('sending the offline queue (G28)', () => {
     expect(await listQueued(db, 3)).toHaveLength(1);
     post.mockRejectedValue({ response: { status: 502 } });
     await expect(sendOfflineSales(db, post)).rejects.toEqual({ response: { status: 502 } });
+    expect((await listQueued(db, 3))[0].error).toBeUndefined();
+  });
+
+  it('keeps sales unmarked when the sender is not signed in (401/403): that is no fault of the sale', async () => {
+    await queueSale(db, { sale: sale(1), ...where });
+    for (const status of [401, 403]) {
+      const post = vi.fn().mockRejectedValue({ response: { status } });
+      await expect(sendOfflineSales(db, post)).rejects.toEqual({ response: { status } });
+      expect((await listQueued(db, 3))[0].error).toBeUndefined();
+    }
+  });
+
+  it('retrySalesWithErrors clears the marks so they are sent again', async () => {
+    await queueSale(db, { sale: sale(1), ...where });
+    await sendOfflineSales(db, vi.fn().mockRejectedValue({ response: { status: 400 } }));
+    await retrySalesWithErrors(db);
     expect((await listQueued(db, 3))[0].error).toBeUndefined();
   });
 

@@ -58,7 +58,9 @@ export async function sendOfflineSales(db, post) {
         })
       ).data);
     } catch (error) {
-      if (!isRejection(error)) throw error; // offline or server trouble: keep everything for next time
+      // Offline, server trouble, or not signed in (401/403: the sender's problem, not the sales'): keep everything
+      // unmarked for next time.
+      if (!isRejection(error) || [401, 403].includes(error.response.status)) throw error;
       await Promise.all(batch.map((doc) => markError(doc, `Refused by the server (${error.response.status})`)));
       failed += batch.length;
       continue;
@@ -76,4 +78,18 @@ export async function sendOfflineSales(db, post) {
     }
   }
   return { sent, failed };
+}
+
+/** Clear the error marks so those sales are sent again (after the problem has been fixed, e.g. a VAT rate added). */
+export async function retrySalesWithErrors(db) {
+  const docs = await db.offlineSales.find().exec();
+  await Promise.all(
+    docs
+      .filter((doc) => doc.toJSON().data.error)
+      .map((doc) => {
+        const data = { ...doc.toJSON().data };
+        delete data.error;
+        return doc.patch({ data });
+      })
+  );
 }

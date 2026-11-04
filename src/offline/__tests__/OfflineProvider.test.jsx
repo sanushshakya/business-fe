@@ -9,6 +9,7 @@ import { initRxDB, stockReceiptSchemaV0, stockReceiptSchemaV1 } from '../../offl
 import axios from '../../utils/axios';
 import { OfflineProvider, useOffline } from '../OfflineProvider';
 import { listQueued, queueSale } from '../salesQueue';
+import useAuthStore from '../../stores/authStore';
 import { OFFLINE_SALES_URL } from '../sendQueue';
 
 vi.mock('../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
@@ -173,8 +174,35 @@ describe('OfflineProvider', () => {
 });
 
 describe('sending offline sales (G28)', () => {
+  const queueOne = async (database) =>
+    queueSale(database, {
+      sale: {
+        client_ref: 'ref-1',
+        created_at: '2026-11-04T12:00:00.000Z',
+        session: 9,
+        cashier: 7,
+        body: { session: 9, payment_method: 'card', client_ref: 'ref-1', items: [{ product: 1, quantity: 1 }] },
+        receipt: { items: [{ product: 1, quantity: 1, line_total: '2.50' }] },
+      },
+      tillId: 3,
+      branchCode: 'HS',
+      tillNumber: 1,
+    });
+
+  it('sends nothing while nobody is signed in', async () => {
+    setOnline(true);
+    useAuthStore.getState().clearTokens();
+    await setup();
+    await queueOne(db);
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(axios.post).not.toHaveBeenCalledWith(OFFLINE_SALES_URL, expect.anything());
+  });
+
   it('sends queued sales on start when online, and clears them once recorded', async () => {
     setOnline(true);
+    useAuthStore.getState().setTokens({ access_token: 'x.y.z', refresh_token: 'r' });
     db = await initRxDB({ name: `t${Math.random().toString(36).slice(2)}`, storage: getRxStorageMemory() });
     await queueSale(db, {
       sale: {
