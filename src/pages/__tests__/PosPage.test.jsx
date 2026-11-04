@@ -11,6 +11,15 @@ vi.mock('../../offline/OfflineProvider', () => ({ useOffline: () => ({ isOnline:
 vi.mock('../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 let catalogue;
 vi.mock('../../hooks/useTillCatalogue', () => ({ default: () => catalogue }));
+let offlineSales;
+vi.mock('../../hooks/useOfflineSales', () => ({ default: () => offlineSales }));
+const makeOfflineSales = (overrides = {}) => ({
+  available: true,
+  sales: [],
+  queue: vi.fn(async ({ sale }) => ({ ...sale, offline_number: 'HS-T01-QK-000001', status: 'queued' })),
+  voidSale: vi.fn().mockResolvedValue(),
+  ...overrides,
+});
 
 const page = (results) => ({ data: { count: results.length, next: null, results } });
 const session = {
@@ -57,9 +66,9 @@ const makeCatalogue = (overrides = {}) => ({
   ready: true,
   products: PRODUCTS,
   rules: [ruleFromApi(RULE)],
-  vatRates: [],
+  vatRates: [{ id: 1, code: 'zero', rate: '0.00', valid_from: '1973-04-01' }],
   tills: [{ id: 3, branch: 1, number: 1, is_active: true }],
-  branches: [{ id: 1, name: 'High Street' }],
+  branches: [{ id: 1, name: 'High Street', code: 'HS' }],
   settings: { manual_weight_max_kg: '25', offline_warn_hours: 4, offline_confirm_hours: 24, offline_stop_hours: 72 },
   refreshedAt: Date.now(),
   refresh: vi.fn(),
@@ -89,6 +98,7 @@ const renderPage = () =>
 beforeEach(() => {
   vi.clearAllMocks();
   catalogue = makeCatalogue();
+  offlineSales = makeOfflineSales();
   localStorage.clear();
   online = true;
   openSession = session;
@@ -229,6 +239,8 @@ describe('PosPage', () => {
       localStorage.setItem('pos_till', '3');
       const message = 'Mince: 30.000 kg is over the 25 kg limit for a typed weight. Check it, or weigh it in parts.';
       axios.post.mockRejectedValue({ response: { status: 400, data: { items: [message] } } });
+      // The till's copy of the limit is older (50): the server's answer still wins.
+      catalogue = makeCatalogue({ settings: { ...makeCatalogue().settings, manual_weight_max_kg: '50' } });
       renderPage();
       fireEvent.click(await screen.findByRole('button', { name: /Mince/ }));
       fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '30' } });
@@ -238,16 +250,25 @@ describe('PosPage', () => {
       expect(await screen.findByText(new RegExp('over the 25 kg limit'))).toBeInTheDocument();
       expect(screen.getByText('30.000 kg × £8.99/kg · manual weight')).toBeInTheDocument();
     });
+
+    it("refuses a typed weight over the till's copy of the limit (G27: also offline)", async () => {
+      localStorage.setItem('pos_till', '3');
+      renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: /Mince/ }));
+      fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '30' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Add Mince' }));
+      expect(screen.getByText(/Over the 25 kg limit for a typed weight/)).toBeInTheDocument();
+      expect(screen.getByTestId('cart-total')).toHaveTextContent('£0.00');
+    });
   });
 
-  it('pauses charging while offline', async () => {
+  it('says sales are kept on the till while offline (G27)', async () => {
     online = false;
     localStorage.setItem('pos_till', '3');
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /^Rice £12\.50/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Card' }));
-    expect(screen.getByRole('alert')).toHaveTextContent(/offline/i);
-    expect(screen.getByRole('button', { name: 'Charge £12.50' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Offline: sales are kept on this till');
+    expect(screen.getByRole('button', { name: 'Charge £12.50' })).toBeDisabled(); // cash: nothing tendered yet
   });
 
   it('cashes up and reports the variance', async () => {
@@ -422,5 +443,147 @@ describe('PosPage from the cached catalogue (G26)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
     await screen.findByText('Receipt S-000001');
     expect(catalogue.refresh).toHaveBeenCalled();
+  });
+});
+
+describe('selling offline (G27)', () => {
+  const HOUR = 3_600_000;
+  const addRice = async () => fireEvent.click(await screen.findByRole('button', { name: /Rice/ }));
+  const payCash = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Exact' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
+  };
+
+  beforeEach(() => localStorage.setItem('pos_till', '3'));
+
+  it("queues with the online attempt's client_ref when the server can't be reached", async () => {
+    axios.post.mockRejectedValue(new Error('Network Error'));
+    renderPage();
+    await addRice();
+    payCash();
+    expect(await screen.findByText('Receipt HS-T01-QK-000001')).toBeInTheDocument();
+    expect(screen.getByText(/Offline sale: the receipt number will change/)).toBeInTheDocument();
+    const [{ sale, tillId, branchCode, tillNumber }] = offlineSales.queue.mock.calls[0];
+    expect(sale.client_ref).toBe(axios.post.mock.calls[0][1].client_ref);
+    expect([tillId, branchCode, tillNumber]).toEqual(['3', 'HS', 1]);
+    expect(sale.body).toEqual(
+      expect.objectContaining({ session: 9, payment_method: 'cash', amount_tendered: '12.50' })
+    );
+    expect(sale.body.items).toEqual([{ product: 1, quantity: 1 }]);
+    expect(sale.receipt).toEqual(expect.objectContaining({ total: '12.50', offline: true }));
+    expect(screen.getByTestId('cart-total')).toHaveTextContent('£0.00');
+  });
+
+  it('queues straight away when the browser is offline', async () => {
+    online = false;
+    renderPage();
+    await addRice();
+    payCash();
+    await screen.findByText('Receipt HS-T01-QK-000001');
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it('shows a refusal (4xx) and does not queue it', async () => {
+    axios.post.mockRejectedValue({
+      response: { status: 400, data: { items: ['Rice: only 0 in date, 1 requested.'] } },
+    });
+    renderPage();
+    await addRice();
+    payCash();
+    expect(await screen.findByText(/only 0 in date/)).toBeInTheDocument();
+    expect(offlineSales.queue).not.toHaveBeenCalled();
+  });
+
+  it('needs the terminal auth code for a card sale once the server is unreachable', async () => {
+    axios.post.mockRejectedValue(new Error('Network Error'));
+    renderPage();
+    await addRice();
+    fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
+    expect(await screen.findByText(/enter the terminal's auth code/i)).toBeInTheDocument();
+    expect(offlineSales.queue).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'a1b2c3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
+    await screen.findByText('Receipt HS-T01-QK-000001');
+    const [{ sale }] = offlineSales.queue.mock.calls[0];
+    expect([sale.card_auth_code, sale.client_ref]).toEqual(['A1B2C3', axios.post.mock.calls[0][1].client_ref]);
+  });
+
+  it('refuses offline sales after offline_stop_hours', async () => {
+    online = false;
+    catalogue = makeCatalogue({ refreshedAt: Date.now() - 73 * HOUR });
+    renderPage();
+    await addRice();
+    payCash();
+    expect(await screen.findByText(/Reconnect to keep selling/)).toBeInTheDocument();
+    expect(offlineSales.queue).not.toHaveBeenCalled();
+  });
+
+  it('asks once an hour after offline_confirm_hours, and records the confirmation', async () => {
+    online = false;
+    catalogue = makeCatalogue({ refreshedAt: Date.now() - 25 * HOUR });
+    renderPage();
+    await addRice();
+    payCash();
+    fireEvent.click(await screen.findByRole('button', { name: 'Keep selling offline' }));
+    await screen.findByText('Receipt HS-T01-QK-000001');
+    expect(offlineSales.queue.mock.calls[0][0].sale.confirmed_at).toEqual(expect.any(String));
+    fireEvent.click(screen.getByRole('button', { name: 'New sale' }));
+    await addRice();
+    payCash();
+    await waitFor(() => expect(offlineSales.queue).toHaveBeenCalledTimes(2)); // no second question within the hour
+  });
+
+  it('lists the waiting sales, voids one with a reason and reprints', async () => {
+    offlineSales = makeOfflineSales({
+      sales: [
+        {
+          client_ref: 'r1',
+          offline_number: 'HS-T01-QK-000004',
+          created_at: '2026-11-04T12:00:00Z',
+          status: 'queued',
+          receipt: { offline: true, total: '12.50', items: [], vat_summary: [], payment_method: 'cash' },
+        },
+      ],
+    });
+    renderPage();
+    expect(await screen.findByText('Waiting to send (1)')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Void' }));
+    fireEvent.change(screen.getByLabelText('Why void HS-T01-QK-000004?'), { target: { value: 'Fake: wrong item' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm void' }));
+    expect(offlineSales.voidSale).toHaveBeenCalledWith('r1', 'Fake: wrong item');
+    fireEvent.click(screen.getByRole('button', { name: 'Reprint' }));
+    expect(await screen.findByText('Receipt HS-T01-QK-000004')).toBeInTheDocument();
+  });
+
+  it('lets out-of-stock products be sold offline', async () => {
+    online = false;
+    catalogue = makeCatalogue({ products: [{ ...PRODUCTS[0], stock_quantity: 0 }, PRODUCTS[1]] });
+    renderPage();
+    await addRice();
+    expect(screen.getByTestId('cart-total')).toHaveTextContent('£12.50');
+  });
+
+  it('keeps an unchecked loyalty card with an offline sale', async () => {
+    axios.post.mockImplementation((url) =>
+      Promise.reject(url === '/sync/loyalty/lookup/' ? { response: { status: 503 } } : new Error('Network Error'))
+    );
+    renderPage();
+    const box = await screen.findByLabelText(/loyalty card/i);
+    fireEvent.change(box, { target: { value: '9900012345' } });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    await addRice();
+    payCash();
+    await screen.findByText('Receipt HS-T01-QK-000001');
+    expect(offlineSales.queue.mock.calls[0][0].sale.body.loyalty_barcode).toBe('9900012345');
+  });
+
+  it("says so when this browser can't keep offline sales", async () => {
+    online = false;
+    offlineSales = makeOfflineSales({ available: false });
+    renderPage();
+    await addRice();
+    payCash();
+    expect(await screen.findByText(/can't keep offline sales/)).toBeInTheDocument();
   });
 });

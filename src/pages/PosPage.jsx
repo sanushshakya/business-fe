@@ -15,13 +15,20 @@ import Receipt from '../components/pos/Receipt';
 import WeightEntry from '../components/pos/WeightEntry';
 import QueryState from '../components/QueryState';
 import useCart from '../hooks/useCart';
+import useOfflineSales from '../hooks/useOfflineSales';
 import useTillCatalogue from '../hooks/useTillCatalogue';
 import CacheAge from '../components/pos/CacheAge';
+import OfflineQueue from '../components/pos/OfflineQueue';
+import { askPersistentStorage, branchPrefix } from '../offline/salesQueue';
+import useAuthStore from '../stores/authStore';
+import { tokenUserId } from '../utils/jwt';
+import { offlineReceipt } from '../utils/offlineReceipt';
 import { readScan } from '../utils/barcodes';
 import { ukToday } from '../utils/dateUtils';
 import { useOffline } from '../offline/OfflineProvider';
 
 const SESSIONS = '/sales/sessions/';
+const HOUR_MS = 3_600_000;
 const LOOKUP = '/sync/loyalty/lookup/';
 
 // What the card box says about a lookup. Only a found card is sent with the charge; anything else sells without points.
@@ -88,6 +95,15 @@ const PosPage = () => {
   // Products, rules and tills come from the till's own copy (G26), so it keeps finding and pricing while offline.
   const catalogue = useTillCatalogue();
   const { rules } = catalogue;
+  const cashierId = tokenUserId(useAuthStore((state) => state.accessToken));
+  // Selling offline (G27, ADR 0001): the server could not be reached on the last charge, or the browser is offline.
+  const [serverDown, setServerDown] = React.useState(false);
+  const [offlineProblem, setOfflineProblem] = React.useState('');
+  const [confirming, setConfirming] = React.useState(null); // a charge waiting for "keep selling offline?"
+  const [confirmedAt, setConfirmedAt] = React.useState(null);
+  const [storageWarning, setStorageWarning] = React.useState(false);
+  const [scannedCard, setScannedCard] = React.useState(''); // the last card scanned, for when the lookup can't run
+  const askedStorage = React.useRef(false);
 
   const branchNames = Object.fromEntries(catalogue.branches.map((b) => [b.id, b.name]));
   const tillOptions = catalogue.tills
@@ -121,6 +137,13 @@ const PosPage = () => {
     refetchInterval: (data) => (data?.fromCache ? 30_000 : false),
   });
   const current = session.data;
+  const offline = useOfflineSales(till);
+  const sellingOffline = !isOnline || serverDown;
+
+  // A refresh that reached the server again means charges can be tried online again.
+  React.useEffect(() => {
+    if (catalogue.refreshedAt && !catalogue.error) setServerDown(false);
+  }, [catalogue.refreshedAt, catalogue.error]);
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['list', SESSIONS] });
@@ -144,6 +167,7 @@ const PosPage = () => {
   }, [resetLookup]);
   const scanCard = (barcode) => {
     setCard(null);
+    setScannedCard(barcode);
     lookup.mutate(barcode);
   };
 
@@ -151,7 +175,7 @@ const PosPage = () => {
   const scanProduct = (code) => {
     const scan = readScan(code, { rules, products: catalogue.products, today: ukToday() });
     setScanProblem(scan.kind === 'error' ? scan.message : '');
-    if (scan.kind === 'product') cart.add(scan.product);
+    if (scan.kind === 'product') cart.add(scan.product, { unlimited: sellingOffline });
     if (scan.kind === 'label') cart.addLabel(scan);
   };
 
@@ -163,11 +187,18 @@ const PosPage = () => {
       setWeighing(null);
       clearCard();
       attempt.current = null;
+      setServerDown(false);
       refresh();
     },
-    onError: (error) => {
+    onError: (error, payload) => {
       // Stock or the session moved under us: show the truth before the next attempt.
       if (error?.response?.status === 400) refresh();
+      if (isRejection(error)) return;
+      // No answer, a 5xx or a timeout: the server may not have it, so the sale is kept here with the same
+      // client_ref (if it did arrive, sending it again later cannot book it twice). Card sales first need the
+      // terminal's auth code, which the payment panel now asks for.
+      setServerDown(true);
+      if (payload.payment_method === 'cash') chargeOffline(payload);
     },
   });
 
@@ -192,21 +223,101 @@ const PosPage = () => {
   // A tapped product: counted ones go straight in, weighed ones ask for their kg first.
   const pickProduct = (product) => {
     if (product.sold_by === 'weight') setWeighing(product);
-    else cart.add(product);
+    else cart.add(product, { unlimited: sellingOffline });
   };
 
-  const charge = (payment) => {
+  const finishSale = () => {
+    cart.clear();
+    setWeighing(null);
+    clearCard();
+    setScannedCard('');
+    attempt.current = null;
+  };
+
+  // Keep a charge on this till until G28 sends it: numbered, priced from the cached catalogue, receipt shown.
+  const chargeOffline = async (payload, cardAuthCode = null, confirmed = false) => {
+    setOfflineProblem('');
+    if (!offline.available) {
+      setOfflineProblem("This browser can't keep offline sales (its storage is blocked). Reconnect to keep selling.");
+      return;
+    }
+    const settings = catalogue.settings ?? {};
+    const hours = catalogue.refreshedAt ? (Date.now() - catalogue.refreshedAt) / HOUR_MS : Infinity;
+    if (hours > (settings.offline_stop_hours ?? 72)) {
+      setOfflineProblem('Prices on this till are too old to sell offline. Reconnect to keep selling.');
+      return;
+    }
+    let confirmation = confirmedAt;
+    if (hours > (settings.offline_confirm_hours ?? 24)) {
+      if (confirmed) {
+        confirmation = Date.now();
+        setConfirmedAt(confirmation);
+      } else if (!confirmedAt || Date.now() - confirmedAt > HOUR_MS) {
+        setConfirming({ payload, cardAuthCode });
+        return;
+      }
+    }
+    const { client_ref: clientRef, ...charged } = payload;
+    const unchecked = !card && scannedCard && lookup.isError ? scannedCard : '';
+    const createdAt = new Date().toISOString();
+    const printed = offlineReceipt({
+      lines: cart.lines,
+      products: catalogue.products,
+      vatRates: catalogue.vatRates,
+      payment: { ...charged, ...(cardAuthCode ? { card_auth_code: cardAuthCode } : {}) },
+      number: '',
+      createdAt,
+      ukDate: ukToday(),
+      branchName: current.branch_name,
+      tillNumber: current.till_number,
+    });
+    const tillRow = catalogue.tills.find((t) => String(t.id) === till);
+    const branch = catalogue.branches.find((b) => b.id === tillRow?.branch);
+    try {
+      const queued = await offline.queue({
+        sale: {
+          client_ref: clientRef,
+          created_at: createdAt,
+          session: current.id,
+          cashier: cashierId,
+          body: { ...charged, client_ref: clientRef, ...(unchecked ? { loyalty_barcode: unchecked } : {}) },
+          ...(cardAuthCode ? { card_auth_code: cardAuthCode } : {}),
+          ...(hours > (settings.offline_confirm_hours ?? 24)
+            ? { confirmed_at: new Date(confirmation).toISOString() }
+            : {}),
+          receipt: printed,
+        },
+        tillId: till,
+        branchCode: branchPrefix(branch),
+        tillNumber: current.till_number,
+      });
+      setReceipt({ sale: { ...printed, receipt_number: queued.offline_number }, loyalty: null });
+      finishSale();
+    } catch (error) {
+      setOfflineProblem(`Could not keep the sale on this till: ${error.message}`);
+      return;
+    }
+    if (!askedStorage.current) {
+      askedStorage.current = true;
+      if ((await askPersistentStorage()) === false) setStorageWarning(true);
+    }
+  };
+
+  const charge = ({ card_auth_code: cardAuthCode, ...payment }) => {
     const body = {
       session: current.id,
       items: cart.lines.map(chargeLine),
       ...payment,
       ...(card ? { loyalty_barcode: card.barcode } : {}),
     };
-    // The same basket and payment keeps its reference, so resending after a lost response cannot charge twice.
+    // The same basket and payment keeps its reference, so resending after a lost response cannot charge twice
+    // (online or offline: the auth code is not part of it).
     const key = JSON.stringify(body);
     if (attempt.current?.key !== key) attempt.current = { key, ref: uuidv4() };
     attempt.current.customer = card?.customer ?? null; // named on the receipt, as charged
-    sell.mutate({ ...body, client_ref: attempt.current.ref });
+    const payload = { ...body, client_ref: attempt.current.ref };
+    if (sellingOffline) chargeOffline(payload, cardAuthCode ?? null);
+    else sell.mutate(payload);
   };
 
   const catalogueQuery = {
@@ -286,9 +397,15 @@ const PosPage = () => {
             date.
           </p>
         )}
-        {!isOnline && (
+        {sellingOffline && (
           <p role="alert" className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800">
-            You are offline. Sales need a connection to the server, so charging is paused until you are back online.
+            Offline: sales are kept on this till and sent when it reconnects.
+            {serverDown && isOnline && " The server can't be reached; for a card sale, enter the terminal's auth code."}
+          </p>
+        )}
+        {storageWarning && (
+          <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+            This browser may clear offline sales if it runs short of space. Reconnect soon.
           </p>
         )}
 
@@ -298,7 +415,14 @@ const PosPage = () => {
               query={{ ...catalogueQuery, data: catalogue.products }}
               emptyMessage="No products yet. Add some under Inventory."
             >
-              {(items) => <ProductPicker products={items} onAdd={pickProduct} onScan={scanProduct} />}
+              {(items) => (
+                <ProductPicker
+                  products={items}
+                  onAdd={pickProduct}
+                  onScan={scanProduct}
+                  allowOutOfStock={sellingOffline}
+                />
+              )}
             </QueryState>
             {weighing && (
               <div className="mt-2">
@@ -310,6 +434,7 @@ const PosPage = () => {
                     setWeighing(null);
                   }}
                   onCancel={() => setWeighing(null)}
+                  maxKg={catalogue.settings?.manual_weight_max_kg ?? null}
                 />
               </div>
             )}
@@ -343,9 +468,14 @@ const PosPage = () => {
               totalCents={cart.totalCents}
               onCharge={charge}
               submitting={sell.isLoading}
-              disabled={!isOnline}
+              offline={sellingOffline}
             />
-            {sell.isError && (
+            {offlineProblem && (
+              <p role="alert" className="text-sm text-red-600">
+                {offlineProblem}
+              </p>
+            )}
+            {sell.isError && isRejection(sell.error) && (
               <p role="alert" className="text-sm text-red-600">
                 {apiErrorMessage(sell.error, 'Could not complete the sale. Check the connection and try again.')}
               </p>
@@ -367,6 +497,46 @@ const PosPage = () => {
         />
       </div>
       {body}
+
+      <OfflineQueue
+        sales={offline.sales}
+        onReprint={(sale) =>
+          setReceipt({
+            sale: {
+              ...sale.receipt,
+              receipt_number: sale.offline_number,
+              status: sale.status,
+              void_reason: sale.void_reason,
+            },
+            loyalty: null,
+          })
+        }
+        onVoid={(sale, reason) =>
+          offline.voidSale(sale.client_ref, reason).catch((error) => setOfflineProblem(error.message))
+        }
+      />
+
+      <Modal open={Boolean(confirming)} onClose={() => setConfirming(null)} title="Keep selling offline?">
+        {confirming && (
+          <div className="space-y-3 text-sm">
+            <p>
+              This till has not reached the server since{' '}
+              {new Date(catalogue.refreshedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}.
+              Prices may be out of date. You will be asked again in an hour.
+            </p>
+            <Button
+              className="w-full"
+              onClick={() => {
+                const { payload, cardAuthCode } = confirming;
+                setConfirming(null);
+                chargeOffline(payload, cardAuthCode, true);
+              }}
+            >
+              Keep selling offline
+            </Button>
+          </div>
+        )}
+      </Modal>
 
       <Modal open={Boolean(receipt)} onClose={() => setReceipt(null)} title="Sale complete">
         {receipt && (
