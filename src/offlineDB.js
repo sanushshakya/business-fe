@@ -70,6 +70,35 @@ export const catalogueMetaSchema = {
 };
 
 /**
+ * Offline sales (G27): one document per sale queued while the server could not be reached, id = its `client_ref`.
+ * `data` is the sale as kept for sending and reprinting; kept apart from the catalogue, which a user switch wipes.
+ */
+export const offlineSaleSchema = {
+  title: 'offlineSales',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 64 },
+    till: { type: 'number' },
+    createdAt: { type: 'string' },
+    status: { type: 'string' },
+    data: { type: 'object' },
+  },
+  required: ['id', 'till', 'createdAt', 'status', 'data'],
+};
+
+/** Per till: the next offline receipt counter and this device's run letters (G27). Never reset. */
+export const tillCounterSchema = {
+  title: 'tillCounters',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: { id: { type: 'string', maxLength: 20 }, next: { type: 'number' }, run: { type: 'string' } },
+  required: ['id', 'next', 'run'],
+};
+
+/**
  * Creates the database and its collections.
  *
  * @param {{name?: string, storage?: object}} [options] - `storage` defaults to Dexie/IndexedDB; tests pass the memory storage.
@@ -81,6 +110,8 @@ export async function initRxDB({ name = 'iq_fe_db', storage = getRxStorageDexie(
     stockReceipts: { schema: stockReceiptSchema, migrationStrategies: stockReceiptMigrations },
     catalogueProducts: { schema: catalogueProductSchema },
     catalogueMeta: { schema: catalogueMetaSchema },
+    offlineSales: { schema: offlineSaleSchema },
+    tillCounters: { schema: tillCounterSchema },
   });
   return db;
 }

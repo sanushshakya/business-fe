@@ -21,7 +21,13 @@ const receipt = (overrides = {}) => ({
 describe('offlineDB', () => {
   it('creates the stockReceipts collection and stores records', async () => {
     db = await initRxDB({ name: `t${Math.random().toString(36).slice(2)}`, storage: getRxStorageMemory() });
-    expect(Object.keys(db.collections).sort()).toEqual(['catalogueMeta', 'catalogueProducts', 'stockReceipts']);
+    expect(Object.keys(db.collections).sort()).toEqual([
+      'catalogueMeta',
+      'catalogueProducts',
+      'offlineSales',
+      'stockReceipts',
+      'tillCounters',
+    ]);
 
     await db.stockReceipts.insert(receipt());
     const found = await db.stockReceipts.findOne('r1').exec();
