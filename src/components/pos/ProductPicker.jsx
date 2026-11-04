@@ -13,13 +13,14 @@ const looksScanned = (text) => /^\s*(\]|\(|[0-9]{8,})/.test(text);
 // Weighed products keep their stock in kg, which the list does not carry: the server checks it when charging.
 const isWeighed = (product) => product.sold_by === 'weight';
 const hasPerKg = (product) => Number(product.price_per_kg) > 0;
-const canAdd = (product) => (isWeighed(product) ? hasPerKg(product) : product.stock_quantity > 0);
-const stockNote = (product) => {
-  if (isWeighed(product)) return hasPerKg(product) ? 'Sold by weight' : 'No price per kg';
-  return product.stock_quantity < 1 ? 'Out of stock' : `${product.stock_quantity} in stock`;
-};
-
-const ProductPicker = ({ products = [], onAdd, onScan }) => {
+const ProductPicker = ({ products = [], onAdd, onScan, allowOutOfStock = false }) => {
+  // Offline (G27) the till can't check stock: anything priced can be sold; the server sorts out shortfalls on sync.
+  const canAdd = (product) => (isWeighed(product) ? hasPerKg(product) : allowOutOfStock || product.stock_quantity > 0);
+  const stockNote = (product) => {
+    if (isWeighed(product)) return hasPerKg(product) ? 'Sold by weight' : 'No price per kg';
+    if (allowOutOfStock) return 'Stock not checked offline';
+    return product.stock_quantity < 1 ? 'Out of stock' : `${product.stock_quantity} in stock`;
+  };
   const [query, setQuery] = React.useState('');
   const needle = query.trim().toLowerCase();
   const matches = products.filter(

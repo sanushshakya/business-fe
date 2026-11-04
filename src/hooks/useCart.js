@@ -7,6 +7,7 @@ import { divideHalfUp, toUnits } from '../utils/barcodes/decimal';
  * weight's line.
  */
 export const lineKey = (line) => line.key ?? line.product;
+const UNLIMITED = 999;
 
 // One counter for every keyed line (`label-1`, `weight-2`, ...), so keys never repeat.
 const nextKey = (lines, kind) =>
@@ -25,8 +26,9 @@ export const weighedCents = (weightKg, pricePerKg) =>
 export const cartReducer = (lines, action) => {
   switch (action.type) {
     case 'add': {
-      const { product } = action;
-      const max = Math.max(Number(product.stock_quantity) || 0, 0);
+      const { product, unlimited = false } = action;
+      // `unlimited`: sold offline (G27), where the stock count can't be checked.
+      const max = unlimited ? UNLIMITED : Math.max(Number(product.stock_quantity) || 0, 0);
       const existing = lines.find((line) => line.product === product.id && !line.key);
       if (existing) {
         return lines.map((line) =>
@@ -104,7 +106,7 @@ export default function useCart() {
       lines,
       totalCents: cartTotalCents(lines),
       itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
-      add: (product) => dispatch({ type: 'add', product }),
+      add: (product, { unlimited = false } = {}) => dispatch({ type: 'add', product, unlimited }),
       addLabel: (label) => dispatch({ type: 'addLabel', label }),
       addWeighed: (product, weightKg, pieces) => dispatch({ type: 'addWeighed', product, weightKg, pieces }),
       setQuantity: (product, quantity) => dispatch({ type: 'setQuantity', product, quantity }),

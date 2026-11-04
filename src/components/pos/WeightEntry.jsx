@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Form, Input } from '@/components/ui';
 import { formatCents, weightTimesPrice } from '../../utils/money';
 import { weighedCents } from '../../hooks/useCart';
+import { toUnits } from '../../utils/barcodes/decimal';
 
 // The serializer's ceiling for any one weighing; the company's lower limit for typed weights is checked on Charge.
 const MAX_KG = 100;
@@ -21,7 +22,7 @@ export const normaliseKg = (text) => {
  * Type the weight of a weighed product that has no label (G19: until the scale agent exists). Catch-weight products
  * also ask for pieces. Calls `onAdd({weightKg, pieces})`; the server marks the line "manual weight" for audit.
  */
-const WeightEntry = ({ product, onAdd, onCancel }) => {
+const WeightEntry = ({ product, onAdd, onCancel, maxKg = null }) => {
   const [kgText, setKgText] = React.useState('');
   const [piecesText, setPiecesText] = React.useState('1');
   const [problem, setProblem] = React.useState('');
@@ -32,6 +33,9 @@ const WeightEntry = ({ product, onAdd, onCancel }) => {
     event.preventDefault();
     if (weightKg === null) return setProblem('Type the weight in kg, up to 3 decimals (e.g. 0.512).');
     if (Number(weightKg) > MAX_KG) return setProblem(`Over ${MAX_KG} kg: check the weight, or weigh it in parts.`);
+    // The company's limit for a typed weight (cached, G26/G27): the server checks it too, but not while offline.
+    if (maxKg && toUnits(weightKg, 3) > toUnits(maxKg, 3))
+      return setProblem(`Over the ${maxKg} kg limit for a typed weight. Check it, or weigh it in parts.`);
     const pieces = catchWeight ? Number(piecesText) : null;
     if (catchWeight && !(Number.isInteger(pieces) && pieces >= 1)) return setProblem('Say how many pieces.');
     setProblem('');

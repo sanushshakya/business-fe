@@ -18,6 +18,11 @@ const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-base font-semibold">Receipt {sale.receipt_number}</p>
+            {sale.offline && (
+              <p className="text-xs font-medium">
+                Offline sale: the receipt number will change when the till reconnects.
+              </p>
+            )}
             <p className="text-gray-600">{new Date(sale.created_at).toLocaleString()}</p>
             <p className="text-gray-600">
               {sale.branch_name} · Till {sale.till_number} · {sale.cashier_name ?? sale.cashier_email}
@@ -61,6 +66,7 @@ const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
               <span>{formatMoney(sale.change_due)}</span>
             </div>
           )}
+          {sale.card_auth_code && <p className="text-gray-600">Auth code {sale.card_auth_code}</p>}
           {voided && sale.void_reason && <p className="text-gray-600">Void reason: {sale.void_reason}</p>}
           {loyalty && <p className="text-gray-600">Loyalty: {loyalty.first_name} · points will be added</p>}
         </div>
