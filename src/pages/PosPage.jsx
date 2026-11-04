@@ -52,6 +52,18 @@ const storeTill = (id) => {
   }
 };
 
+// What the till keeps of an open session for when the server can't be reached: no staff names or emails.
+const sessionCopy = (found) =>
+  found && {
+    id: found.id,
+    till: found.till,
+    till_number: found.till_number,
+    branch_name: found.branch_name,
+    opened_at: found.opened_at,
+    opening_float: found.opening_float,
+    summary: found.summary,
+  };
+
 // What Charge sends for a basket line: a label as its raw barcode, a typed weight as the product and its kg (and
 // pieces for catch-weight), anything else as the product and quantity. The server prices all of them.
 const chargeLine = (line) => {
@@ -92,18 +104,21 @@ const PosPage = () => {
     queryKey: ['list', SESSIONS, 'open-for', till],
     enabled: Boolean(till),
     queryFn: async () => {
+      let found;
       try {
         const { data } = await axios.get(SESSIONS, { params: { till, status: 'open' } });
-        const found = data.results[0] ?? null;
-        await catalogue.saveSession(till, found);
-        return found;
+        found = data.results[0] ?? null;
       } catch (error) {
         // The server can't be reached: carry on with the session this till last saw open (ADR 0001).
         const cached = isRejection(error) ? undefined : await catalogue.readSession(till);
         if (cached === undefined) throw error;
-        return cached;
+        return cached && { ...cached, fromCache: true };
       }
+      await Promise.resolve(catalogue.saveSession(till, sessionCopy(found))).catch(() => {}); // only a convenience
+      return found;
     },
+    // A cached session is only the last known one: keep asking until the server answers again.
+    refetchInterval: (data) => (data?.fromCache ? 30_000 : false),
   });
   const current = session.data;
 
@@ -195,7 +210,7 @@ const PosPage = () => {
   };
 
   const catalogueQuery = {
-    isLoading: !catalogue.ready || (catalogue.refreshedAt === null && catalogue.isRefreshing),
+    isLoading: !catalogue.ready || (catalogue.refreshedAt === null && !catalogue.error),
     isError: catalogue.refreshedAt === null && Boolean(catalogue.error),
     error: catalogue.error,
   };
@@ -249,8 +264,10 @@ const PosPage = () => {
               {current.branch_name} – Till {current.till_number}
             </p>
             <p className="text-gray-600">
-              Open since {new Date(current.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} by{' '}
-              {current.opened_by_name ?? current.opened_by_email} · float {formatMoney(current.opening_float)}
+              Open since {new Date(current.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {(current.opened_by_name ?? current.opened_by_email) &&
+                ` by ${current.opened_by_name ?? current.opened_by_email}`}{' '}
+              · float {formatMoney(current.opening_float)}
             </p>
           </div>
           <div className="flex items-center gap-4 text-sm">
@@ -263,6 +280,12 @@ const PosPage = () => {
           </div>
         </Card>
 
+        {current.fromCache && (
+          <p role="status" className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800">
+            Last known state of this till: the server can&apos;t be reached, so the session and its totals may be out of
+            date.
+          </p>
+        )}
         {!isOnline && (
           <p role="alert" className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800">
             You are offline. Sales need a connection to the server, so charging is paused until you are back online.

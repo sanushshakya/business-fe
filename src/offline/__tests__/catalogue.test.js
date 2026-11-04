@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { initRxDB } from '../../offlineDB';
-import { applyCatalogue, clearCatalogue, readCatalogue, readSession, saveSession } from '../catalogue';
+import { applyCatalogue, clearCatalogue, readCatalogue, readMeta, readSession, saveSession } from '../catalogue';
 
 let db;
 beforeEach(async () => {
@@ -90,6 +90,22 @@ describe('till catalogue in RxDB', () => {
     expect(await readSession(db, 9)).toEqual({ id: 40, status: 'open' });
     expect(await readSession(db, 10)).toBeNull();
     expect(await readSession(db, 11)).toBeUndefined(); // never seen here
+  });
+
+  it('applies answers one at a time, so a slower older answer cannot win', async () => {
+    await applyCatalogue(db, body());
+    const newer = body({ full: false, cursor: '2026-11-04T12:02:00+00:00', products: [{ ...rice, price: '3.00' }] });
+    const older = body({ full: false, cursor: '2026-11-04T12:01:00+00:00', products: [{ ...rice, price: '1.00' }] });
+    await Promise.all([applyCatalogue(db, newer), applyCatalogue(db, older)]);
+    expect((await readCatalogue(db)).products.find((p) => p.id === 1).price).toBe('3.00');
+  });
+
+  it('remembers when the last full load was', async () => {
+    await applyCatalogue(db, body());
+    const { lastFullAt } = await readMeta(db);
+    expect(lastFullAt).toEqual(expect.any(Number));
+    await applyCatalogue(db, body({ full: false, cursor: '2026-11-04T12:01:00+00:00', products: [] }));
+    expect((await readMeta(db)).lastFullAt).toBe(lastFullAt);
   });
 
   it('clears everything', async () => {

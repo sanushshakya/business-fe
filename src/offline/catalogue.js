@@ -8,15 +8,30 @@
  * - An answer whose cursor is older than the one stored is ignored (a slow refresh must not roll the cache back).
  * - The cache belongs to one user of one company (`owner`): an answer for anyone else wipes it first, and a delta
  *   that can't be applied (wiped, or nothing cached) returns `needsFull` so the caller asks for everything.
+ * - Answers are applied one at a time per database (a refresh can overlap another), so the cursor check holds.
  */
 
 const META = 'catalogue';
 const sessionKey = (tillId) => `session:${tillId}`;
 const time = (cursor) => Date.parse(cursor);
 
-async function readMeta(db, key) {
+async function readMetaKey(db, key) {
   const doc = await db.catalogueMeta.findOne(key).exec();
   return doc ? (doc.toJSON().value ?? null) : null;
+}
+
+/** The catalogue's bookkeeping (cursor, owner, `lastFullAt`, the small lists) without reading every product. */
+export const readMeta = (db) => readMetaKey(db, META);
+
+const queues = new WeakMap();
+/** Run `task` after every earlier one on this database has finished. */
+function oneAtATime(db, task) {
+  const next = (queues.get(db) ?? Promise.resolve()).then(task, task);
+  queues.set(
+    db,
+    next.catch(() => {})
+  );
+  return next;
 }
 
 /** Drop the whole catalogue and the cached sessions. */
@@ -26,9 +41,11 @@ export async function clearCatalogue(db) {
 }
 
 /** @returns {Promise<{applied: boolean, needsFull: boolean}>} */
-export async function applyCatalogue(db, body) {
+export const applyCatalogue = (db, body) => oneAtATime(db, () => apply(db, body));
+
+async function apply(db, body) {
   const owner = { user: body.user, company: body.company };
-  let meta = await readMeta(db, META);
+  let meta = await readMeta(db);
   if (meta && (meta.owner?.user !== owner.user || meta.owner?.company !== owner.company)) {
     await clearCatalogue(db);
     meta = null;
@@ -50,6 +67,7 @@ export async function applyCatalogue(db, body) {
     value: {
       cursor: body.cursor,
       refreshedAt: Date.now(),
+      lastFullAt: body.full ? Date.now() : (meta.lastFullAt ?? null),
       owner,
       vatRates: body.vat_rates,
       barcodeRules: body.barcode_rules,
@@ -64,7 +82,7 @@ export async function applyCatalogue(db, body) {
 /** @returns {Promise<{products: object[], meta: object|null}>} */
 export async function readCatalogue(db) {
   const docs = await db.catalogueProducts.find().exec();
-  return { products: docs.map((doc) => doc.toJSON().data), meta: await readMeta(db, META) };
+  return { products: docs.map((doc) => doc.toJSON().data), meta: await readMeta(db) };
 }
 
 /** The open session last seen for a till (null: none open), for when the server can't be asked. */

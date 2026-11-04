@@ -102,6 +102,48 @@ describe('useTillCatalogue', () => {
     expect(axios.get).toHaveBeenLastCalledWith(CATALOGUE_URL, { params: {} });
   });
 
+  it('loads everything again when the last full load is over 6 hours old (a safety net for missed changes)', async () => {
+    db = await initRxDB({ name: `h${Math.random().toString(36).slice(2)}`, storage: getRxStorageMemory() });
+    const realNow = Date.now;
+    Date.now = () => realNow() - 7 * 3_600_000;
+    await applyCatalogue(db, body());
+    Date.now = realNow;
+    const cached = db;
+    axios.get.mockResolvedValue({ data: body({ cursor: '2026-11-04T19:00:00+00:00' }) });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <OfflineProvider createDb={async () => cached}>
+          <Probe />
+        </OfflineProvider>
+      </QueryClientProvider>
+    );
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+    expect(axios.get).toHaveBeenCalledWith(CATALOGUE_URL, { params: {} });
+  });
+
+  it('ignores an answer meant for another user', async () => {
+    axios.get.mockResolvedValue({ data: body({ user: 8, company: 4 }) });
+    await setup();
+    await waitFor(() => expect(axios.get).toHaveBeenCalled());
+    await waitFor(() => expect(catalogue.isRefreshing).toBe(false));
+    expect(catalogue.products).toEqual([]);
+  });
+
+  it('works from memory when the browser database cannot open', async () => {
+    axios.get.mockResolvedValue({ data: body() });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <OfflineProvider createDb={() => Promise.reject(new Error('IndexedDB blocked'))}>
+          <Probe />
+        </OfflineProvider>
+      </QueryClientProvider>
+    );
+    await waitFor(() => expect(catalogue.products.map((p) => p.name)).toEqual(['Fake Rice']));
+    expect(catalogue.ready).toBe(true);
+    expect(catalogue.tills).toHaveLength(1);
+    expect(axios.get).toHaveBeenCalledWith(CATALOGUE_URL, { params: {} });
+  });
+
   it("drops another user's cache before anything is shown", async () => {
     db = await initRxDB({ name: `h${Math.random().toString(36).slice(2)}`, storage: getRxStorageMemory() });
     await applyCatalogue(db, body({ user: 8, company: 4 }));

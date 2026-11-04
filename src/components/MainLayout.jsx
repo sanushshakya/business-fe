@@ -13,7 +13,7 @@ import useStorefrontSync from '../hooks/useStorefrontSync';
 import { canOpen, navItemsFor, ROLE_HOME } from '../roles';
 import { logout } from '../services/authService';
 import useAuthStore from '../stores/authStore';
-import { refreshTokens } from '../utils/axios';
+import { refreshOrSignOut } from '../utils/axios';
 
 const linkClass = ({ isActive }) =>
   `block rounded-md px-3 py-2 text-sm font-medium ${
@@ -21,7 +21,7 @@ const linkClass = ({ isActive }) =>
   }`;
 
 // The status socket was refused (expired token): refresh it like a 401 would; the new token reopens the socket.
-const signInAgain = () => refreshTokens().catch(() => useAuthStore.getState().clearTokens());
+const signInAgain = () => refreshOrSignOut().catch(() => {});
 
 const MainLayout = () => {
   const navigate = useNavigate();

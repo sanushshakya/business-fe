@@ -28,6 +28,7 @@ const BATCH_URL = '/inventory/batches/';
 export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
   const queryClient = useQueryClient();
   const [db, setDb] = useState(null);
+  const [dbFailed, setDbFailed] = useState(false);
   const [pending, setPending] = useState(0);
   const [failed, setFailed] = useState(0);
   const flushing = useRef(null);
@@ -36,7 +37,10 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
     let cancelled = false;
     createDb()
       .then((database) => !cancelled && setDb(database))
-      .catch((error) => console.error('Offline database unavailable:', error));
+      .catch((error) => {
+        console.error('Offline database unavailable:', error);
+        if (!cancelled) setDbFailed(true); // e.g. IndexedDB blocked: screens that can work without it say so
+      });
     return () => {
       cancelled = true;
     };
@@ -108,8 +112,19 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
   }, [db, flush]);
 
   const value = useMemo(
-    () => ({ db, ready: Boolean(db), isOnline, isSyncing, pending, failed, queueReceipt, flush, retryFailed }),
-    [db, isOnline, isSyncing, pending, failed, queueReceipt, flush, retryFailed]
+    () => ({
+      db,
+      dbFailed,
+      ready: Boolean(db),
+      isOnline,
+      isSyncing,
+      pending,
+      failed,
+      queueReceipt,
+      flush,
+      retryFailed,
+    }),
+    [db, dbFailed, isOnline, isSyncing, pending, failed, queueReceipt, flush, retryFailed]
   );
 
   return <OfflineContext.Provider value={value}>{children}</OfflineContext.Provider>;

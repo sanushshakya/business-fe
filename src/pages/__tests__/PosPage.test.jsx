@@ -370,11 +370,40 @@ describe('PosPage from the cached catalogue (G26)', () => {
     expect(await screen.findByRole('option', { name: 'High Street – Till 1' })).toBeInTheDocument();
   });
 
-  it('remembers the open session it found, for later', async () => {
+  it('remembers the open session it found, without staff names or emails', async () => {
     localStorage.setItem('pos_till', '3');
     renderPage();
     await screen.findByLabelText('Search products');
-    expect(catalogue.saveSession).toHaveBeenCalledWith('3', session);
+    const [, saved] = catalogue.saveSession.mock.calls[0];
+    expect(saved).toEqual(expect.objectContaining({ id: 9, till: 3, opening_float: '50.00' }));
+    expect(JSON.stringify(saved)).not.toMatch(/a@b\.test|opened_by|closed_by/);
+  });
+
+  it('says a cached session is only the last known one', async () => {
+    unreachable();
+    catalogue = makeCatalogue({ readSession: vi.fn().mockResolvedValue({ ...session, opened_by_email: undefined }) });
+    localStorage.setItem('pos_till', '3');
+    renderPage();
+    expect(await screen.findByText(/Last known state of this till/)).toBeInTheDocument();
+  });
+
+  it('trusts the server when saving the session copy fails', async () => {
+    localStorage.setItem('pos_till', '3');
+    catalogue = makeCatalogue({
+      saveSession: vi.fn().mockRejectedValue(new Error('quota')),
+      readSession: vi.fn().mockResolvedValue({ ...session, id: 1 }),
+    });
+    renderPage();
+    await screen.findByLabelText('Search products');
+    expect(catalogue.readSession).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Last known state/)).toBeNull();
+  });
+
+  it('shows loading, not "no products", before the first catalogue load', async () => {
+    catalogue = makeCatalogue({ products: [], tills: [], refreshedAt: null, isRefreshing: false });
+    renderPage();
+    await waitFor(() => expect(axios.get).not.toHaveBeenCalledWith('/sales/sessions/', expect.anything()));
+    expect(screen.queryByText(/No tills yet/)).toBeNull();
   });
 
   it('says when it has never seen the session of this till', async () => {

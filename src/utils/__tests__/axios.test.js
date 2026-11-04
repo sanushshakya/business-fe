@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import useAuthStore from '../../stores/authStore';
-import instance from '../axios';
+import instance, { refreshOrSignOut } from '../axios';
 
 const respond = (status, data = {}) => Promise.resolve({ status, data, statusText: '', headers: {}, config: {} });
 const reject = (config, status) =>
@@ -51,6 +51,21 @@ describe('axios instance', () => {
     instance.defaults.adapter = async (config) => reject(config, 401);
     await expect(instance.get('/a')).rejects.toThrow('Network Error');
     expect(useAuthStore.getState().refreshToken).toBe('r1');
+  });
+
+  it('refreshOrSignOut (the status socket) follows the same rule', async () => {
+    vi.spyOn(axios, 'post').mockRejectedValueOnce(new Error('Network Error'));
+    await expect(refreshOrSignOut()).rejects.toThrow('Network Error');
+    expect(useAuthStore.getState().refreshToken).toBe('r1');
+    vi.spyOn(axios, 'post').mockRejectedValueOnce(Object.assign(new Error('gone'), { response: { status: 401 } }));
+    await expect(refreshOrSignOut()).rejects.toThrow('gone');
+    expect(useAuthStore.getState().refreshToken).toBeNull();
+  });
+
+  it('gives up on a refresh that hangs', async () => {
+    const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: { access_token: 'new', refresh_token: 'r2' } });
+    await refreshOrSignOut();
+    expect(post.mock.calls[0][2]).toEqual(expect.objectContaining({ timeout: expect.any(Number) }));
   });
 
   it('keeps the session when the refresh gets a server error', async () => {

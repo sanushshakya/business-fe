@@ -11,12 +11,14 @@ const instance = axios.create({ baseURL, timeout: 10000 });
 // Refresh tokens are single use, so concurrent 401s must share one refresh request.
 let refreshPromise = null;
 
+const REFRESH_TIMEOUT_MS = 10000; // a server that accepts and then hangs must not hold every later request
+
 export const refreshTokens = () => {
   if (!refreshPromise) {
     const { refreshToken, setTokens } = useAuthStore.getState();
     if (!refreshToken) return Promise.reject(new Error('No refresh token'));
     refreshPromise = axios
-      .post(`${baseURL}/auth/token/refresh/`, { refresh_token: refreshToken })
+      .post(`${baseURL}/auth/token/refresh/`, { refresh_token: refreshToken }, { timeout: REFRESH_TIMEOUT_MS })
       .then((response) => {
         setTokens(response.data);
         return response.data.access_token;
@@ -27,6 +29,16 @@ export const refreshTokens = () => {
   }
   return refreshPromise;
 };
+
+/**
+ * Refresh the tokens; only the server refusing the refresh (a 4xx) ends the session. No answer or a 5xx is an
+ * outage: a till keeps its session (and its queued sales) and refreshes again when the server is back (ADR 0001).
+ */
+export const refreshOrSignOut = () =>
+  refreshTokens().catch((error) => {
+    if (isRejection(error)) useAuthStore.getState().clearTokens();
+    throw error;
+  });
 
 instance.interceptors.request.use((config) => {
   const { accessToken } = useAuthStore.getState();
@@ -48,16 +60,9 @@ instance.interceptors.response.use(
     }
     original._retry = true;
 
-    try {
-      const accessToken = await refreshTokens();
-      original.headers.Authorization = `Bearer ${accessToken}`;
-      return instance(original);
-    } catch (refreshError) {
-      // Only the server refusing the refresh ends the session. No answer or a 5xx is an outage: a till keeps its
-      // session (and its queued sales) and refreshes again when the server is back (ADR 0001).
-      if (isRejection(refreshError)) useAuthStore.getState().clearTokens();
-      return Promise.reject(refreshError);
-    }
+    const accessToken = await refreshOrSignOut();
+    original.headers.Authorization = `Bearer ${accessToken}`;
+    return instance(original);
   }
 );
 
