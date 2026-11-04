@@ -61,8 +61,13 @@ export default function useTillCatalogue() {
     let cancelled = false;
     const subscriptions = [];
     (async () => {
-      const cached = await readMeta(db);
-      if (cached && cached.owner?.user !== userId) await clearCatalogue(db);
+      try {
+        const cached = await readMeta(db);
+        if (cached && cached.owner?.user !== userId) await clearCatalogue(db);
+      } catch (error) {
+        // Never leave the till loading: the next refresh's owner check wipes another user's copy anyway.
+        console.error('Could not check the till catalogue:', error);
+      }
       if (cancelled) return;
       subscriptions.push(
         db.catalogueProducts.find().$.subscribe((docs) => setProducts(docs.map((doc) => doc.toJSON().data))),

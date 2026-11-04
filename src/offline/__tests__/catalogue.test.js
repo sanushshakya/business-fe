@@ -108,6 +108,12 @@ describe('till catalogue in RxDB', () => {
     expect((await readMeta(db)).lastFullAt).toBe(lastFullAt);
   });
 
+  it('clears safely when two wipes run at once (React mounts the till twice in development)', async () => {
+    await applyCatalogue(db, body());
+    await expect(Promise.all([clearCatalogue(db), clearCatalogue(db)])).resolves.toBeDefined();
+    expect(await readCatalogue(db)).toEqual({ products: [], meta: null });
+  });
+
   it('clears everything', async () => {
     await applyCatalogue(db, body());
     await clearCatalogue(db);

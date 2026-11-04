@@ -34,11 +34,13 @@ function oneAtATime(db, task) {
   return next;
 }
 
-/** Drop the whole catalogue and the cached sessions. */
-export async function clearCatalogue(db) {
+async function clear(db) {
   await db.catalogueProducts.find().remove();
   await db.catalogueMeta.find().remove();
 }
+
+/** Drop the whole catalogue and the cached sessions (in turn with every other catalogue write). */
+export const clearCatalogue = (db) => oneAtATime(db, () => clear(db));
 
 /** @returns {Promise<{applied: boolean, needsFull: boolean}>} */
 export const applyCatalogue = (db, body) => oneAtATime(db, () => apply(db, body));
@@ -47,7 +49,7 @@ async function apply(db, body) {
   const owner = { user: body.user, company: body.company };
   let meta = await readMeta(db);
   if (meta && (meta.owner?.user !== owner.user || meta.owner?.company !== owner.company)) {
-    await clearCatalogue(db);
+    await clear(db); // already in turn
     meta = null;
   }
   if (meta && time(body.cursor) < time(meta.cursor)) return { applied: false, needsFull: false };
