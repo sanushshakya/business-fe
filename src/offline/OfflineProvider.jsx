@@ -7,6 +7,9 @@ import { initRxDB } from '../offlineDB';
 import useSyncManager from '../hooks/useSyncManager';
 import axios from '../utils/axios';
 import { isRejection } from '../utils/http';
+import { sendOfflineSales } from './sendQueue';
+
+const SEND_EVERY_MS = 60_000;
 
 const OfflineContext = createContext(null);
 
@@ -81,6 +84,8 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
             throw error; // offline or server trouble: stop and keep the rest queued
           }
         }
+        // Then the till's offline sales (G28); what the server recorded leaves this browser.
+        sent += (await sendOfflineSales(db, axios.post)).sent;
       } finally {
         flushing.current = null;
         if (sent > 0) queryClient.invalidateQueries({ queryKey: ['list'] });
@@ -91,9 +96,13 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
 
   const { isOnline, isSyncing } = useSyncManager({ processBatch: flush });
 
-  // Send anything left over from an earlier session as soon as the database is ready.
+  // Send anything left over from an earlier session as soon as the database is ready, then every minute: an
+  // outage of the server alone fires no `online` event.
   useEffect(() => {
-    if (db && navigator.onLine) flush().catch(() => {});
+    if (!db) return undefined;
+    if (navigator.onLine) flush().catch(() => {});
+    const timer = setInterval(() => navigator.onLine && flush().catch(() => {}), SEND_EVERY_MS);
+    return () => clearInterval(timer);
   }, [db, flush]);
 
   const queueReceipt = useCallback(

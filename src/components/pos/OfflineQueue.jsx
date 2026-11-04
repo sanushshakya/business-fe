@@ -47,6 +47,7 @@ const OfflineQueue = ({ sales = [], me = {}, onVoid, onReprint }) => {
                 Reprint
               </Button>
             </span>
+            {sale.error && <span className="w-full text-xs text-red-600">Not sent: {sale.error}</span>}
             {voiding === sale.client_ref && (
               <span className="flex w-full items-center gap-2">
                 <Input
