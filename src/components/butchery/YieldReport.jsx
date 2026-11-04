@@ -1,5 +1,6 @@
 import React from 'react';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
+import { formatGrams, toGrams } from '../../utils/kg';
 import { formatMoney } from '../../utils/money';
 
 /**
@@ -10,7 +11,7 @@ const worse = (kind, variance) => (kind === 'product' ? Number(variance) < 0 : N
 const varianceClass = (kind, variance) =>
   Number(variance) === 0 ? '' : worse(kind, variance) ? 'font-medium text-red-600' : 'text-green-700';
 const signed = (kg) => (Number(kg) > 0 ? `+${kg}` : kg);
-const lossVariance = (row) => (Number(row.loss_kg) - Number(row.expected_loss_kg)).toFixed(3);
+const lossVariance = (row) => formatGrams((toGrams(row.loss_kg) ?? 0) - (toGrams(row.expected_loss_kg) ?? 0));
 
 /** The yield report (`GET /inventory/reports/yield/`): per group, each output's actual kg against the template's. */
 const YieldReport = ({ report }) => {
@@ -24,6 +25,7 @@ const YieldReport = ({ report }) => {
             <span className="text-sm font-normal text-gray-600">
               · {row.breakdowns} breakdown{row.breakdowns === 1 ? '' : 's'} · {row.input_kg} kg in
               {row.input_cost != null && ` · cost ${formatMoney(row.input_cost)}`}
+              {row.uncosted > 0 && row.input_cost != null && ` (${row.uncosted} with no cost)`}
             </span>
           </h3>
           <Table>

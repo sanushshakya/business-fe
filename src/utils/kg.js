@@ -2,14 +2,16 @@
  * Kilograms as whole grams, so sums and differences are exact (the server works in 3-dp Decimals). Text in, text
  * out: `toGrams('1.25')` is 1250 and `formatGrams(1250)` is `'1.250'`.
  */
-import { normaliseKg } from '../components/pos/WeightEntry';
 
-/** Grams from kg text the API sent (`'1.250'`) or a person typed (`'1,25'`); null when it is not a weight above 0. */
+/**
+ * Grams from kg text the API sent (`'1250.500'`) or a person typed (`'1,25'`); null when it is not a weight above 0
+ * with at most 3 decimals. No upper limit (the till's typed-weight ceiling does not apply to bulk batches).
+ */
 export const toGrams = (text) => {
-  const kg = normaliseKg(text);
-  if (kg === null) return null;
-  const [whole, fraction] = kg.split('.');
-  return Number(whole) * 1000 + Number(fraction);
+  const match = /^([0-9]*)(?:[.,]([0-9]{0,3}))?$/.exec(String(text ?? '').trim());
+  if (!match || !(match[1] || match[2])) return null;
+  const grams = Number(match[1] || '0') * 1000 + Number((match[2] || '').padEnd(3, '0'));
+  return grams > 0 ? grams : null;
 };
 
 /** Grams as 3-dp kg text (`-350` → `'-0.350'`). */

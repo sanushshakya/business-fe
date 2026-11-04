@@ -8,6 +8,9 @@ describe('kg', () => {
     expect(toGrams('0,512')).toBe(512);
     expect(toGrams('')).toBeNull();
     expect(toGrams('0')).toBeNull();
+    expect(toGrams('1250.500')).toBe(1250500); // bulk batches: no till ceiling here
+    expect(toGrams('1.2345')).toBeNull();
+    expect(toGrams('-1')).toBeNull();
   });
 
   it('formats grams as 3-dp kg', () => {

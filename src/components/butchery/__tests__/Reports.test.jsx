@@ -15,6 +15,7 @@ const YIELD = {
       breakdowns: 2,
       input_kg: '15.000',
       input_cost: '50.00',
+      uncosted: 1,
       loss_kg: '0.350',
       expected_loss_kg: '0.450',
       outputs: [
@@ -63,7 +64,7 @@ const WASTE = {
 describe('YieldReport', () => {
   it('shows each output against the template, with bad variances in red', () => {
     render(<YieldReport report={YIELD} />);
-    expect(screen.getByText(/2 breakdowns · 15.000 kg in · cost £50.00/)).toBeInTheDocument();
+    expect(screen.getByText(/2 breakdowns · 15.000 kg in · cost £50.00 \(1 with no cost\)/)).toBeInTheDocument();
     const steak = screen.getByText('Fake Rump Steak').closest('tr');
     expect(within(steak).getByText('-0.100')).toHaveClass('text-red-600'); // less product than expected
     const bone = screen.getByText('Bone').closest('tr');
