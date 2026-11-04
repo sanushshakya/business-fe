@@ -61,9 +61,10 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
       try {
         for (const doc of docs) {
           if (doc.error) continue;
-          const { product, batch_number, quantity, expiration_date, location } = doc.toJSON();
+          const { product, batch_number, quantity, expiration_date, location, supplier } = doc.toJSON();
           const body = { product, batch_number, quantity, expiration_date };
           if (location != null) body.location = location; // receipts queued before G13 have none
+          if (supplier != null) body.supplier = supplier; // optional (G24)
           try {
             await axios.post(BATCH_URL, body);
             await doc.patch({ synced: true });

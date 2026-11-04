@@ -15,6 +15,7 @@ const InventoryListPage = () => {
   const queryClient = useQueryClient();
   const products = useApiList('/inventory/products/');
   const locations = useApiList('/inventory/locations/');
+  const suppliers = useApiList('/inventory/suppliers/');
   const [stockAt, setStockAt] = React.useState('');
   const batches = useApiList(`/inventory/batches/?location=${stockAt}`, { enabled: stockAt !== '' });
   const { queueReceipt } = useOffline();
@@ -144,6 +145,7 @@ const InventoryListPage = () => {
         onSubmit={submitReceipt}
         submitting={receive.isLoading}
         locations={locations.data}
+        suppliers={suppliers.data}
         defaultLocation={defaultLocation}
         error={receive.isError ? apiErrorMessage(receive.error, 'Could not record the stock.') : null}
       />

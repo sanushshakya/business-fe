@@ -5,8 +5,9 @@ import ProductSelect from './ProductSelect';
 import LocationSelect from './stock/LocationSelect';
 
 /**
- * Records a stock batch; `onSubmit` gets `{product, batch_number, quantity, expiration_date, location}`
- * (the shape POST /inventory/batches/ expects). `locations` are the company's; `defaultLocation` is picked
+ * Records a stock batch; `onSubmit` gets `{product, batch_number, quantity, expiration_date, location[, supplier]}`
+ * (the shape POST /inventory/batches/ expects; `supplier` only when one is picked). `locations` and `suppliers` are
+ * the company's; `defaultLocation` is picked
  * each time the form opens (the page's chosen location, or the only shop floor). `error` is the server's answer
  * to the last save, shown in the form.
  */
@@ -16,6 +17,7 @@ const StockReceiptModal = ({
   onSubmit,
   submitting = false,
   locations = [],
+  suppliers = [],
   defaultLocation = '',
   error = null,
 }) => {
@@ -45,6 +47,7 @@ const StockReceiptModal = ({
         quantity: Number(values.quantity),
         expiration_date: values.expiration_date,
         location: Number(values.location),
+        ...(values.supplier ? { supplier: Number(values.supplier) } : {}),
       });
     } catch {
       return; // the page shows the error; keep what was typed
@@ -99,6 +102,23 @@ const StockReceiptModal = ({
               {errors.location.message}
             </p>
           )}
+        </div>
+        <div>
+          <label htmlFor="receive-supplier" className="mb-1 block text-sm font-medium">
+            Supplier (optional)
+          </label>
+          <select
+            id="receive-supplier"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+            {...register('supplier')}
+          >
+            <option value="">Not recorded</option>
+            {suppliers.map((supplier) => (
+              <option key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </option>
+            ))}
+          </select>
         </div>
         {field('batch_number', 'Batch number', 'text', { required: 'Batch number is required' })}
         {field('quantity', 'Quantity', 'number', {

@@ -31,13 +31,20 @@ export const stockReceiptSchemaV0 = {
  * v1 (G13) adds `location`, where the stock is received. Receipts queued before it have none and are sent
  * without one (the backend then uses the company's only shop floor).
  */
-export const stockReceiptSchema = {
+export const stockReceiptSchemaV1 = {
   ...stockReceiptSchemaV0,
   version: 1,
   properties: { ...stockReceiptSchemaV0.properties, location: { type: 'number' } },
 };
 
-const stockReceiptMigrations = { 1: (doc) => doc };
+/** v2 (G24) adds `supplier`, who the stock came from (optional; earlier receipts have none). */
+export const stockReceiptSchema = {
+  ...stockReceiptSchemaV1,
+  version: 2,
+  properties: { ...stockReceiptSchemaV1.properties, supplier: { type: 'number' } },
+};
+
+const stockReceiptMigrations = { 1: (doc) => doc, 2: (doc) => doc };
 
 /**
  * Creates the database and its collections.

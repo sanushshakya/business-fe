@@ -5,7 +5,7 @@ import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SyncStatus from '../../components/SyncStatus';
 import { createRxDatabase } from 'rxdb';
-import { initRxDB, stockReceiptSchemaV0 } from '../../offlineDB';
+import { initRxDB, stockReceiptSchemaV0, stockReceiptSchemaV1 } from '../../offlineDB';
 import axios from '../../utils/axios';
 import { OfflineProvider, useOffline } from '../OfflineProvider';
 
@@ -60,6 +60,19 @@ describe('OfflineProvider', () => {
       window.dispatchEvent(new Event('online'));
     });
     await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/inventory/batches/', { ...receipt(1), location: 7 }));
+  });
+
+  it('sends the supplier a receipt was queued with (G24)', async () => {
+    axios.post.mockResolvedValue({});
+    await setup();
+    await act(() => offline.queueReceipt({ ...receipt(1), location: 7, supplier: 3 }));
+    setOnline(true);
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+    });
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith('/inventory/batches/', { ...receipt(1), location: 7, supplier: 3 })
+    );
   });
 
   it('queues receipts and shows how many are waiting', async () => {
@@ -180,6 +193,23 @@ describe('offlineDB', () => {
       expect.objectContaining({ id: 'r1', ...receipt(1), synced: false }),
     ]);
     expect(docs[0].location).toBeUndefined();
+    await upgraded.destroy();
+  });
+
+  it('migrates v1 receipts (G24 adds the supplier)', async () => {
+    const name = `m${Math.random().toString(36).slice(2)}`;
+    const storage = getRxStorageMemory();
+    const old = await createRxDatabase({ name, storage, multiInstance: false });
+    await old.addCollections({
+      stockReceipts: { schema: stockReceiptSchemaV1, migrationStrategies: { 1: (doc) => doc } },
+    });
+    await old.stockReceipts.insert({ id: 'r1', ...receipt(1), location: 7, synced: false });
+    await old.destroy();
+
+    const upgraded = await initRxDB({ name, storage });
+    const [doc] = await upgraded.stockReceipts.find().exec();
+    expect(doc.toJSON()).toEqual(expect.objectContaining({ id: 'r1', ...receipt(1), location: 7, synced: false }));
+    expect(doc.supplier).toBeUndefined();
     await upgraded.destroy();
   });
 });

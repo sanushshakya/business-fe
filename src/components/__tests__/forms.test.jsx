@@ -131,6 +131,21 @@ describe('StockReceiptModal', () => {
       })
     );
   });
+
+  it('sends the supplier when one is picked (G24)', async () => {
+    const onSubmit = vi.fn().mockResolvedValue();
+    const locations = [{ id: 7, code: 'SHOP-1', name: 'Fake shop floor', type: 'shop_floor', is_active: true }];
+    const suppliers = [{ id: 3, name: 'Fake Farms Ltd' }];
+    renderModal({ onSubmit, locations, suppliers, defaultLocation: 7 });
+    await screen.findByRole('option', { name: 'Dates' });
+    fireEvent.change(screen.getByLabelText('Product'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('Supplier (optional)'), { target: { value: '3' } });
+    type('Batch number', 'B-1');
+    type('Quantity', '12');
+    type('Expiration date', '2027-01-31');
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ location: 7, supplier: 3 })));
+  });
 });
 
 describe('forms keep their values when saving fails', () => {

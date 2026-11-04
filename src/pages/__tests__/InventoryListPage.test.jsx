@@ -19,6 +19,7 @@ const page = (results) => ({ data: { results, next: null } });
 const serve = (locations = LOCATIONS) =>
   axios.get.mockImplementation((url) => {
     if (url.startsWith('/inventory/locations/')) return Promise.resolve(page(locations));
+    if (url.startsWith('/inventory/suppliers/')) return Promise.resolve(page([]));
     if (url.startsWith('/inventory/batches/?location=9')) return Promise.resolve(page(BATCHES_AT_WH));
     if (url.startsWith('/inventory/batches/')) return Promise.resolve(page([]));
     return Promise.resolve(page(products));
