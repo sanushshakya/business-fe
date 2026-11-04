@@ -47,6 +47,29 @@ export const stockReceiptSchema = {
 const stockReceiptMigrations = { 1: (doc) => doc, 2: (doc) => doc };
 
 /**
+ * The till catalogue (G26): one document per product, as the server sent it (`data`), so a new product field needs
+ * no schema change.
+ */
+export const catalogueProductSchema = {
+  title: 'catalogueProducts',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: { id: { type: 'string', maxLength: 20 }, data: { type: 'object' } },
+  required: ['id', 'data'],
+};
+
+/** Catalogue bookkeeping by key: `catalogue` (cursor, owner, the small lists) and `session:<till id>`. */
+export const catalogueMetaSchema = {
+  title: 'catalogueMeta',
+  version: 0,
+  primaryKey: 'key',
+  type: 'object',
+  properties: { key: { type: 'string', maxLength: 40 }, value: { type: ['object', 'null'] } },
+  required: ['key'],
+};
+
+/**
  * Creates the database and its collections.
  *
  * @param {{name?: string, storage?: object}} [options] - `storage` defaults to Dexie/IndexedDB; tests pass the memory storage.
@@ -56,6 +79,8 @@ export async function initRxDB({ name = 'iq_fe_db', storage = getRxStorageDexie(
   const db = await createRxDatabase({ name, storage, multiInstance: false });
   await db.addCollections({
     stockReceipts: { schema: stockReceiptSchema, migrationStrategies: stockReceiptMigrations },
+    catalogueProducts: { schema: catalogueProductSchema },
+    catalogueMeta: { schema: catalogueMetaSchema },
   });
   return db;
 }
