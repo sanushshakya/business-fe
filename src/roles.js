@@ -23,6 +23,9 @@ const ITEMS = {
   inventory: { to: '/dashboard/inventory', label: 'Inventory' },
   transfers: { to: '/dashboard/transfers', label: 'Transfers' },
   requisitions: { to: '/dashboard/requisitions', label: 'Requisitions' },
+  breakdowns: { to: '/dashboard/breakdowns', label: 'Breakdowns' },
+  writeOffs: { to: '/dashboard/write-offs', label: 'Write-offs' },
+  yieldWaste: { to: '/dashboard/yield-waste', label: 'Yield & waste' },
   events: { to: '/dashboard/events', label: 'Events' },
   freight: { to: '/dashboard/freight', label: 'Freight' },
   demand: { to: '/dashboard/demand', label: 'Demand' },
@@ -40,7 +43,16 @@ const ROLE_ITEMS = {
   demand: [ITEMS.demandView, ITEMS.demand, ITEMS.events, ITEMS.stockAlerts],
   freight: [ITEMS.freightView, ITEMS.freight],
   supplier: [ITEMS.supplierView, ITEMS.suppliers],
-  stock: [ITEMS.stockAlerts, ITEMS.inventory, ITEMS.transfers, ITEMS.requisitions, ITEMS.waste],
+  stock: [
+    ITEMS.stockAlerts,
+    ITEMS.inventory,
+    ITEMS.transfers,
+    ITEMS.requisitions,
+    ITEMS.breakdowns,
+    ITEMS.writeOffs,
+    ITEMS.yieldWaste,
+    ITEMS.waste,
+  ],
 };
 
 /** Where an operator lands after signing in, and where they are sent from a screen that is not theirs. */

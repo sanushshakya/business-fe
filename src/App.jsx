@@ -19,6 +19,9 @@ import SettingsPage from './pages/SettingsPage';
 import StockAlertsPage from './pages/StockAlertsPage';
 import TransfersPage from './pages/TransfersPage';
 import RequisitionsPage from './pages/RequisitionsPage';
+import BreakdownsPage from './pages/BreakdownsPage';
+import WriteOffsPage from './pages/WriteOffsPage';
+import YieldWastePage from './pages/YieldWastePage';
 import SuppliersListPage from './pages/SuppliersListPage';
 import SupplierPovPage from './pages/SupplierPovPage';
 import TeamPage from './components/TeamPage';
@@ -46,6 +49,9 @@ const App = () => (
           <Route path="inventory" element={<InventoryListPage />} />
           <Route path="transfers" element={<TransfersPage />} />
           <Route path="requisitions" element={<RequisitionsPage />} />
+          <Route path="breakdowns" element={<BreakdownsPage />} />
+          <Route path="write-offs" element={<WriteOffsPage />} />
+          <Route path="yield-waste" element={<YieldWastePage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="freight" element={<FreightAlertsPage />} />
           <Route path="demand" element={<DemandAlertsPage />} />
