@@ -4,11 +4,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from '../../utils/axios';
 import PosPage from '../PosPage';
-import { ean13CheckDigit, valueCheckDigit } from '../../utils/barcodes';
+import { ean13CheckDigit, ruleFromApi, valueCheckDigit } from '../../utils/barcodes';
 
 let online = true;
 vi.mock('../../offline/OfflineProvider', () => ({ useOffline: () => ({ isOnline: online }) }));
 vi.mock('../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+let catalogue;
+vi.mock('../../hooks/useTillCatalogue', () => ({ default: () => catalogue }));
 
 const page = (results) => ({ data: { count: results.length, next: null, results } });
 const session = {
@@ -45,31 +47,32 @@ const sale = {
   items: [{ id: 1, product: 1, product_name: 'Rice', quantity: 2, unit_price: '12.50', line_total: '25.00' }],
 };
 
+const PRODUCTS = [
+  { id: 1, name: 'Rice', price: '12.50', stock_quantity: 5, barcode: '4006381333931' },
+  { id: 4, name: 'Mince', price: '0.00', stock_quantity: 0, sold_by: 'weight', price_per_kg: '8.9900', plu: '42' },
+];
+const RULE = { id: 1, prefix: '21', item_code_length: 4, value_type: 'weight', decimals: 3, value_check_digit: true };
+// The till's cached catalogue (G26): products, rules and tills come from here, not from live requests.
+const makeCatalogue = (overrides = {}) => ({
+  ready: true,
+  products: PRODUCTS,
+  rules: [ruleFromApi(RULE)],
+  vatRates: [],
+  tills: [{ id: 3, branch: 1, number: 1, is_active: true }],
+  branches: [{ id: 1, name: 'High Street' }],
+  settings: { manual_weight_max_kg: '25', offline_warn_hours: 4, offline_confirm_hours: 24, offline_stop_hours: 72 },
+  refreshedAt: Date.now(),
+  refresh: vi.fn(),
+  isRefreshing: false,
+  error: null,
+  saveSession: vi.fn().mockResolvedValue(),
+  readSession: vi.fn().mockResolvedValue(undefined),
+  ...overrides,
+});
+
 let openSession;
 const serve = () =>
   axios.get.mockImplementation((url) => {
-    if (url === '/tenants/tills/') return Promise.resolve(page([{ id: 3, branch: 1, number: 1, is_active: true }]));
-    if (url === '/tenants/branches/') return Promise.resolve(page([{ id: 1, name: 'High Street' }]));
-    if (url === '/inventory/products/')
-      return Promise.resolve(
-        page([
-          { id: 1, name: 'Rice', price: '12.50', stock_quantity: 5, barcode: '4006381333931' },
-          {
-            id: 4,
-            name: 'Mince',
-            price: '0.00',
-            stock_quantity: 0,
-            sold_by: 'weight',
-            price_per_kg: '8.9900',
-            plu: '42',
-          },
-        ])
-      );
-    if (url === '/auth/me/') return Promise.resolve({ data: { id: 7, company: 'Fake Foods Ltd' } });
-    if (url === '/inventory/barcode-rules/?active=true')
-      return Promise.resolve(
-        page([{ id: 1, prefix: '21', item_code_length: 4, value_type: 'weight', decimals: 3, value_check_digit: true }])
-      );
     if (url === '/sales/sessions/') return Promise.resolve(page(openSession ? [openSession] : []));
     return Promise.reject(new Error(`unexpected GET ${url}`));
   });
@@ -85,6 +88,7 @@ const renderPage = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  catalogue = makeCatalogue();
   localStorage.clear();
   online = true;
   openSession = session;
@@ -154,9 +158,6 @@ describe('PosPage', () => {
     })();
     const scan = async (code) => {
       const search = await screen.findByLabelText('Search products');
-      await waitFor(() =>
-        expect(axios.get).toHaveBeenCalledWith('/inventory/barcode-rules/?active=true', expect.anything())
-      );
       fireEvent.change(search, { target: { value: code } });
       fireEvent.keyDown(search, { key: 'Enter' });
     };
@@ -341,5 +342,56 @@ describe('PosPage', () => {
       scan('0000000000000');
       expect(await screen.findByText('Card not recognised')).toBeInTheDocument();
     });
+  });
+});
+
+describe('PosPage from the cached catalogue (G26)', () => {
+  const unreachable = () => axios.get.mockRejectedValue(new Error('Network Error'));
+
+  it('finds and prices products by name and by barcode with every request failing', async () => {
+    unreachable();
+    catalogue = makeCatalogue({ readSession: vi.fn().mockResolvedValue(session), error: new Error('Network Error') });
+    localStorage.setItem('pos_till', '3');
+    renderPage();
+    const search = await screen.findByLabelText('Search products');
+    fireEvent.change(search, { target: { value: 'ric' } });
+    fireEvent.click(await screen.findByRole('button', { name: /Rice/ }));
+    expect(screen.getByTestId('cart-total')).toHaveTextContent('£12.50');
+    fireEvent.change(search, { target: { value: '4006381333931' } });
+    fireEvent.keyDown(search, { key: 'Enter' });
+    await waitFor(() => expect(screen.getByTestId('cart-total')).toHaveTextContent('£25.00'));
+    expect(catalogue.readSession).toHaveBeenCalledWith('3');
+    expect(screen.getByText(/server not reachable, using this copy/)).toBeInTheDocument();
+  });
+
+  it('lists the cached tills when the server cannot be reached', async () => {
+    unreachable();
+    renderPage();
+    expect(await screen.findByRole('option', { name: 'High Street – Till 1' })).toBeInTheDocument();
+  });
+
+  it('remembers the open session it found, for later', async () => {
+    localStorage.setItem('pos_till', '3');
+    renderPage();
+    await screen.findByLabelText('Search products');
+    expect(catalogue.saveSession).toHaveBeenCalledWith('3', session);
+  });
+
+  it('says when it has never seen the session of this till', async () => {
+    unreachable();
+    localStorage.setItem('pos_till', '3');
+    renderPage();
+    expect(await screen.findByText('Could not check this till.')).toBeInTheDocument();
+  });
+
+  it('refreshes the catalogue after a sale', async () => {
+    localStorage.setItem('pos_till', '3');
+    axios.post.mockResolvedValue({ data: sale });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /Rice/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
+    await screen.findByText('Receipt S-000001');
+    expect(catalogue.refresh).toHaveBeenCalled();
   });
 });

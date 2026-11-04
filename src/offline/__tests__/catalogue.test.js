@@ -77,7 +77,7 @@ describe('till catalogue in RxDB', () => {
     const other = body({ full: false, user: 8, company: 4, cursor: '2026-11-04T12:05:00+00:00', products: [] });
     expect(await applyCatalogue(db, other)).toEqual({ applied: false, needsFull: true });
     expect(await readCatalogue(db)).toEqual({ products: [], meta: null });
-    expect(await readSession(db, 9)).toBeNull();
+    expect(await readSession(db, 9)).toBeUndefined();
   });
 
   it('asks for a full load when a delta arrives with nothing cached', async () => {
@@ -89,7 +89,7 @@ describe('till catalogue in RxDB', () => {
     await saveSession(db, 10, null);
     expect(await readSession(db, 9)).toEqual({ id: 40, status: 'open' });
     expect(await readSession(db, 10)).toBeNull();
-    expect(await readSession(db, 11)).toBeNull();
+    expect(await readSession(db, 11)).toBeUndefined(); // never seen here
   });
 
   it('clears everything', async () => {

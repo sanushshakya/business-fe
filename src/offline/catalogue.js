@@ -72,4 +72,8 @@ export async function saveSession(db, tillId, session) {
   await db.catalogueMeta.upsert({ key: sessionKey(tillId), value: session ?? null });
 }
 
-export const readSession = (db, tillId) => readMeta(db, sessionKey(tillId));
+/** The session saved for a till: an object, null (none was open) or undefined (never seen on this device). */
+export async function readSession(db, tillId) {
+  const doc = await db.catalogueMeta.findOne(sessionKey(tillId)).exec();
+  return doc ? (doc.toJSON().value ?? null) : undefined;
+}

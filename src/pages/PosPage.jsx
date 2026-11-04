@@ -2,7 +2,7 @@ import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import axios from '../utils/axios';
-import { apiErrorMessage } from '../utils/http';
+import { apiErrorMessage, isRejection } from '../utils/http';
 import { formatMoney } from '../utils/money';
 import { Button, Card, Modal } from '@/components/ui';
 import Cart from '../components/pos/Cart';
@@ -14,9 +14,9 @@ import ProductPicker from '../components/pos/ProductPicker';
 import Receipt from '../components/pos/Receipt';
 import WeightEntry from '../components/pos/WeightEntry';
 import QueryState from '../components/QueryState';
-import useApiList from '../hooks/useApiList';
-import useBarcodeRules from '../hooks/useBarcodeRules';
 import useCart from '../hooks/useCart';
+import useTillCatalogue from '../hooks/useTillCatalogue';
+import CacheAge from '../components/pos/CacheAge';
 import { readScan } from '../utils/barcodes';
 import { ukToday } from '../utils/dateUtils';
 import { useOffline } from '../offline/OfflineProvider';
@@ -73,14 +73,12 @@ const PosPage = () => {
   const [closed, setClosed] = React.useState(null);
   const [scanProblem, setScanProblem] = React.useState('');
   const [weighing, setWeighing] = React.useState(null); // a weighed product with no label: the cashier types its kg
-  const { rules } = useBarcodeRules();
+  // Products, rules and tills come from the till's own copy (G26), so it keeps finding and pricing while offline.
+  const catalogue = useTillCatalogue();
+  const { rules } = catalogue;
 
-  const tills = useApiList('/tenants/tills/');
-  const branches = useApiList('/tenants/branches/');
-  const products = useApiList('/inventory/products/');
-
-  const branchNames = Object.fromEntries((branches.data || []).map((b) => [b.id, b.name]));
-  const tillOptions = (tills.data || [])
+  const branchNames = Object.fromEntries(catalogue.branches.map((b) => [b.id, b.name]));
+  const tillOptions = catalogue.tills
     .filter((t) => t.is_active)
     .map((t) => ({ id: t.id, label: `${branchNames[t.branch] ?? 'Branch'} – Till ${t.number}` }));
   const till = tillOptions.some((t) => String(t.id) === String(tillId)) ? String(tillId) : '';
@@ -94,8 +92,17 @@ const PosPage = () => {
     queryKey: ['list', SESSIONS, 'open-for', till],
     enabled: Boolean(till),
     queryFn: async () => {
-      const { data } = await axios.get(SESSIONS, { params: { till, status: 'open' } });
-      return data.results[0] ?? null;
+      try {
+        const { data } = await axios.get(SESSIONS, { params: { till, status: 'open' } });
+        const found = data.results[0] ?? null;
+        await catalogue.saveSession(till, found);
+        return found;
+      } catch (error) {
+        // The server can't be reached: carry on with the session this till last saw open (ADR 0001).
+        const cached = isRejection(error) ? undefined : await catalogue.readSession(till);
+        if (cached === undefined) throw error;
+        return cached;
+      }
     },
   });
   const current = session.data;
@@ -103,7 +110,7 @@ const PosPage = () => {
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['list', SESSIONS] });
     queryClient.invalidateQueries({ queryKey: ['list', '/sales/sales/'] });
-    queryClient.invalidateQueries({ queryKey: ['list', '/inventory/products/'] });
+    catalogue.refresh();
   };
 
   const open = useMutation({
@@ -127,7 +134,7 @@ const PosPage = () => {
 
   // A scanned barcode or label: the line is shown from our own reading; the server reads the code again on Charge.
   const scanProduct = (code) => {
-    const scan = readScan(code, { rules, products: products.data || [], today: ukToday() });
+    const scan = readScan(code, { rules, products: catalogue.products, today: ukToday() });
     setScanProblem(scan.kind === 'error' ? scan.message : '');
     if (scan.kind === 'product') cart.add(scan.product);
     if (scan.kind === 'label') cart.addLabel(scan);
@@ -187,9 +194,14 @@ const PosPage = () => {
     sell.mutate({ ...body, client_ref: attempt.current.ref });
   };
 
+  const catalogueQuery = {
+    isLoading: !catalogue.ready || (catalogue.refreshedAt === null && catalogue.isRefreshing),
+    isError: catalogue.refreshedAt === null && Boolean(catalogue.error),
+    error: catalogue.error,
+  };
   const tillSelector = (
     <QueryState
-      query={tills}
+      query={{ ...catalogueQuery, data: catalogue.tills }}
       emptyMessage="No tills yet. A staff member can add one under Branches."
       empty={<p className="text-sm text-gray-500">No tills yet. A staff member can add one under Branches.</p>}
     >
@@ -259,7 +271,10 @@ const PosPage = () => {
 
         <div className="grid gap-4 lg:grid-cols-3">
           <section className="lg:col-span-2" aria-label="Products">
-            <QueryState query={products} emptyMessage="No products yet. Add some under Inventory.">
+            <QueryState
+              query={{ ...catalogueQuery, data: catalogue.products }}
+              emptyMessage="No products yet. Add some under Inventory."
+            >
               {(items) => <ProductPicker products={items} onAdd={pickProduct} onScan={scanProduct} />}
             </QueryState>
             {weighing && (
@@ -320,7 +335,14 @@ const PosPage = () => {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold">Till</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xl font-semibold">Till</h2>
+        <CacheAge
+          refreshedAt={catalogue.refreshedAt}
+          warnHours={catalogue.settings?.offline_warn_hours}
+          failing={Boolean(catalogue.error)}
+        />
+      </div>
       {body}
 
       <Modal open={Boolean(receipt)} onClose={() => setReceipt(null)} title="Sale complete">
