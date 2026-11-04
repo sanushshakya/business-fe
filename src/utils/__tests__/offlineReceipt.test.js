@@ -84,8 +84,9 @@ describe('offlineReceipt', () => {
       ['Fake Mince', 1, '4.50', 'zero'],
     ]);
     expect(sale.vat_summary).toEqual([
-      { vat_code: 'standard', rate: '20.00', net: '0.87', vat: '0.18', gross: '1.05' },
+      // lowest rate first, as the server's vat_by_rate
       { vat_code: 'zero', rate: '0.00', net: '14.10', vat: '0.00', gross: '14.10' },
+      { vat_code: 'standard', rate: '20.00', net: '0.87', vat: '0.18', gross: '1.05' },
     ]);
     expect(sale.vat_recorded).toBe(true);
   });

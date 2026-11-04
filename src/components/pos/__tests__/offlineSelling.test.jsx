@@ -137,7 +137,7 @@ describe('OfflineQueue (G27)', () => {
   it('lists sales waiting to be sent, with reprint and a void that needs a reason', () => {
     const onVoid = vi.fn();
     const onReprint = vi.fn();
-    render(<OfflineQueue sales={queued} onVoid={onVoid} onReprint={onReprint} />);
+    render(<OfflineQueue sales={queued} me={{ id: 1, is_staff: true }} onVoid={onVoid} onReprint={onReprint} />);
     expect(screen.getByText('Waiting to send (2)')).toBeInTheDocument();
     const first = screen.getByText('HS-T02-QK-000002').closest('li');
     expect(within(first).getByText('£4.00')).toBeInTheDocument();
@@ -154,6 +154,24 @@ describe('OfflineQueue (G27)', () => {
     const second = screen.getByText('HS-T02-QK-000001').closest('li');
     expect(within(second).getByText('Voided')).toBeInTheDocument();
     expect(within(second).queryByRole('button', { name: 'Void' })).toBeNull();
+  });
+
+  it("offers Void only on the cashier's own sales, unless staff", () => {
+    const mine = { ...queued[0], cashier: 7 };
+    const theirs = { ...queued[0], client_ref: 'r3', offline_number: 'HS-T02-QK-000003', cashier: 8 };
+    const { rerender } = render(
+      <OfflineQueue sales={[mine, theirs]} me={{ id: 7 }} onVoid={vi.fn()} onReprint={vi.fn()} />
+    );
+    expect(
+      within(screen.getByText('HS-T02-QK-000002').closest('li')).getByRole('button', { name: 'Void' })
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByText('HS-T02-QK-000003').closest('li')).queryByRole('button', { name: 'Void' })
+    ).toBeNull();
+    rerender(
+      <OfflineQueue sales={[mine, theirs]} me={{ id: 9, is_staff: true }} onVoid={vi.fn()} onReprint={vi.fn()} />
+    );
+    expect(screen.getAllByRole('button', { name: 'Void' })).toHaveLength(2);
   });
 
   it('shows nothing when the queue is empty', () => {

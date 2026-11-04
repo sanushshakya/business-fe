@@ -3,8 +3,8 @@
 /**
  * Sales made while the server could not be reached (G27, ADR 0001), kept in RxDB until G28 sends them.
  *
- * Each gets an offline receipt number `<branch code>-T<till>-<run>-<counter>` (e.g. `HS-T02-QK-000417`): the
- * counter is per till and only goes up; the run is two letters chosen when this device first numbers sales for that
+ * Each gets an offline receipt number `<branch code>-T<till>-<run>-<counter>` (e.g. `HS-T02-QKM-000417`): the
+ * counter is per till and only goes up; the run is three letters chosen when this device first numbers sales for that
  * till, so a wiped browser never reuses a number. A sale is keyed by its `client_ref`, the same one its online
  * attempt used, so the server can never book it twice.
  */
@@ -22,7 +22,7 @@ function oneAtATime(db, task) {
 }
 
 const randomRun = () => {
-  const values = new Uint32Array(2);
+  const values = new Uint32Array(3); // 3 letters: a wiped browser repeats a run 1 time in 13,824
   crypto.getRandomValues(values);
   return Array.from(values, (value) => RUN_LETTERS[value % RUN_LETTERS.length]).join('');
 };
@@ -32,10 +32,13 @@ export const branchPrefix = (branch) => branch?.code || `B${branch?.id ?? 0}`;
 
 async function takeNumber(db, { tillId, branchCode, tillNumber }) {
   const id = String(tillId);
-  let counter = await db.tillCounters.findOne(id).exec();
-  if (!counter) counter = await db.tillCounters.insert({ id, next: 1, run: randomRun() });
-  const { next, run } = counter.toJSON();
-  await counter.patch({ next: next + 1 });
+  const counter =
+    (await db.tillCounters.findOne(id).exec()) ??
+    (await db.tillCounters.insert({ id, next: 1, run: randomRun() }).catch(() => db.tillCounters.findOne(id).exec()));
+  // incrementalModify re-reads and retries on a conflict, so another tab on the same till cannot take the same number.
+  const taken = await counter.incrementalModify((data) => ({ ...data, next: data.next + 1 }));
+  const { run } = taken.toJSON();
+  const next = taken.next - 1;
   return `${branchCode}-T${String(tillNumber).padStart(2, '0')}-${run}-${String(next).padStart(6, '0')}`;
 }
 
@@ -73,8 +76,11 @@ export async function listQueued(db, tillId) {
   return docs.map(asSale).sort((a, b) => b.created_at.localeCompare(a.created_at)); // ISO times sort as text
 }
 
-/** Void a sale still waiting to be sent: it stays in the queue, marked voided (G28 sends the sale, then the void). */
-export const voidQueued = (db, clientRef, reason) =>
+/**
+ * Void a sale still waiting to be sent: it stays in the queue, marked voided by `userId` (G28 sends the sale, then
+ * the void). Who may void is the till's call (the cashier who made it, or staff), as online.
+ */
+export const voidQueued = (db, clientRef, reason, userId) =>
   oneAtATime(db, async () => {
     if (!String(reason ?? '').trim()) throw new Error('Say why it is being voided (a reason is needed).');
     const doc = await db.offlineSales.findOne(clientRef).exec();
@@ -83,7 +89,7 @@ export const voidQueued = (db, clientRef, reason) =>
     const voided_at = new Date().toISOString();
     await doc.patch({
       status: 'voided',
-      data: { ...doc.toJSON().data, void_reason: String(reason).trim(), voided_at },
+      data: { ...doc.toJSON().data, void_reason: String(reason).trim(), voided_at, voided_by: userId ?? null },
     });
   });
 

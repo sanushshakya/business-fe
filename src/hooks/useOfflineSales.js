@@ -8,7 +8,7 @@ import { queueSale, voidQueued } from '../offline/salesQueue';
  * kept offline.
  */
 export default function useOfflineSales(tillId) {
-  const { db } = useOffline();
+  const { db, dbFailed } = useOffline();
   const [sales, setSales] = useState([]);
 
   useEffect(() => {
@@ -27,6 +27,6 @@ export default function useOfflineSales(tillId) {
   }, [db, tillId]);
 
   const queue = useCallback((args) => queueSale(db, args), [db]);
-  const voidSale = useCallback((clientRef, reason) => voidQueued(db, clientRef, reason), [db]);
-  return { available: Boolean(db), sales, queue, voidSale };
+  const voidSale = useCallback((clientRef, reason, userId) => voidQueued(db, clientRef, reason, userId), [db]);
+  return { available: Boolean(db), failed: Boolean(dbFailed), sales, queue, voidSale };
 }

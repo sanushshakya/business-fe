@@ -6,9 +6,11 @@ const time = (iso) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit
 
 /**
  * Sales this till made offline that are waiting to be sent (G27). Reprint shows the receipt again; Void needs a
- * reason and keeps the sale, marked voided (G28 sends the sale, then the void).
+ * reason and keeps the sale, marked voided (G28 sends the sale, then the void). As online, only the cashier who made
+ * a sale, or staff, may void it (`me`: `{id, is_staff}`).
  */
-const OfflineQueue = ({ sales = [], onVoid, onReprint }) => {
+const OfflineQueue = ({ sales = [], me = {}, onVoid, onReprint }) => {
+  const mayVoid = (sale) => Boolean(me.is_staff) || (me.id != null && sale.cashier === me.id);
   const [voiding, setVoiding] = React.useState(null);
   const [reason, setReason] = React.useState('');
   if (!sales.length) return null;
@@ -27,7 +29,8 @@ const OfflineQueue = ({ sales = [], onVoid, onReprint }) => {
               {sale.status === 'voided' ? (
                 <Badge color="gray">Voided</Badge>
               ) : (
-                voiding !== sale.client_ref && (
+                voiding !== sale.client_ref &&
+                mayVoid(sale) && (
                   <Button
                     variant="secondary"
                     className="px-3 py-1"

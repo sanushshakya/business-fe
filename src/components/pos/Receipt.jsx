@@ -25,7 +25,8 @@ const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
             )}
             <p className="text-gray-600">{new Date(sale.created_at).toLocaleString()}</p>
             <p className="text-gray-600">
-              {sale.branch_name} · Till {sale.till_number} · {sale.cashier_name ?? sale.cashier_email}
+              {sale.branch_name} · Till {sale.till_number}
+              {(sale.cashier_name || sale.cashier_email) && ` · ${sale.cashier_name || sale.cashier_email}`}
             </p>
           </div>
           {voided && <Badge color="red">Voided</Badge>}

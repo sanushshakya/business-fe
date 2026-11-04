@@ -15,6 +15,7 @@ import Receipt from '../components/pos/Receipt';
 import WeightEntry from '../components/pos/WeightEntry';
 import QueryState from '../components/QueryState';
 import useCart from '../hooks/useCart';
+import useMe from '../hooks/useMe';
 import useOfflineSales from '../hooks/useOfflineSales';
 import useTillCatalogue from '../hooks/useTillCatalogue';
 import CacheAge from '../components/pos/CacheAge';
@@ -96,6 +97,7 @@ const PosPage = () => {
   const catalogue = useTillCatalogue();
   const { rules } = catalogue;
   const cashierId = tokenUserId(useAuthStore((state) => state.accessToken));
+  const me = useMe(); // is_staff decides who may void offline sales (unknown offline: then only one's own)
   // Selling offline (G27, ADR 0001): the server could not be reached on the last charge, or the browser is offline.
   const [serverDown, setServerDown] = React.useState(false);
   const [offlineProblem, setOfflineProblem] = React.useState('');
@@ -131,6 +133,7 @@ const PosPage = () => {
         return cached && { ...cached, fromCache: true };
       }
       await Promise.resolve(catalogue.saveSession(till, sessionCopy(found))).catch(() => {}); // only a convenience
+      setServerDown(false); // the server answered: charges go online again
       return found;
     },
     // A cached session is only the last known one: keep asking until the server answers again.
@@ -173,6 +176,7 @@ const PosPage = () => {
 
   // A scanned barcode or label: the line is shown from our own reading; the server reads the code again on Charge.
   const scanProduct = (code) => {
+    if (inFlight.current || sell.isLoading) return; // the basket is locked while a charge waits for its answer
     const scan = readScan(code, { rules, products: catalogue.products, today: ukToday() });
     setScanProblem(scan.kind === 'error' ? scan.message : '');
     if (scan.kind === 'product') cart.add(scan.product, { unlimited: sellingOffline });
@@ -198,7 +202,9 @@ const PosPage = () => {
       // client_ref (if it did arrive, sending it again later cannot book it twice). Card sales first need the
       // terminal's auth code, which the payment panel now asks for.
       setServerDown(true);
-      if (payload.payment_method === 'cash') chargeOffline(payload);
+      // Only the attempt still on screen is kept offline, with the basket it was sent with.
+      if (payload.payment_method === 'cash' && attempt.current?.ref === payload.client_ref)
+        chargeOffline(payload, null, false, attempt.current.lines);
     },
   });
 
@@ -218,10 +224,17 @@ const PosPage = () => {
   const { reset: resetSale } = sell;
   React.useEffect(() => {
     resetSale();
-  }, [cart.lines, resetSale]);
+  }, [cart.lines, resetSale]); // (the basket can't change while a charge is in flight: it is locked)
 
   // A tapped product: counted ones go straight in, weighed ones ask for their kg first.
+  // While a charge is waiting for its answer the basket is locked: what is queued or charged is what was sent.
+  const [queueing, setQueueing] = React.useState(false);
+  const inFlight = React.useRef(false); // set the moment Charge is pressed, before React re-renders
+  const charging = sell.isLoading || queueing;
+  const locked = () => inFlight.current || charging;
+
   const pickProduct = (product) => {
+    if (locked()) return;
     if (product.sold_by === 'weight') setWeighing(product);
     else cart.add(product, { unlimited: sellingOffline });
   };
@@ -235,10 +248,14 @@ const PosPage = () => {
   };
 
   // Keep a charge on this till until G28 sends it: numbered, priced from the cached catalogue, receipt shown.
-  const chargeOffline = async (payload, cardAuthCode = null, confirmed = false) => {
+  const chargeOffline = async (payload, cardAuthCode = null, confirmed = false, lines = cart.lines) => {
     setOfflineProblem('');
     if (!offline.available) {
-      setOfflineProblem("This browser can't keep offline sales (its storage is blocked). Reconnect to keep selling.");
+      setOfflineProblem(
+        offline.failed
+          ? "This browser can't keep offline sales (its storage is blocked). Reconnect to keep selling."
+          : 'Offline storage is still opening. Try again in a moment.'
+      );
       return;
     }
     const settings = catalogue.settings ?? {};
@@ -253,15 +270,18 @@ const PosPage = () => {
         confirmation = Date.now();
         setConfirmedAt(confirmation);
       } else if (!confirmedAt || Date.now() - confirmedAt > HOUR_MS) {
-        setConfirming({ payload, cardAuthCode });
+        setConfirming({ payload, cardAuthCode, lines });
         return;
       }
     }
     const { client_ref: clientRef, ...charged } = payload;
-    const unchecked = !card && scannedCard && lookup.isError ? scannedCard : '';
+    // A card the server could not check (no answer, or still asking) goes with the sale and is checked at sync;
+    // one it said is unknown or invalid does not.
+    const status = loyaltyStatus(lookup, card);
+    const unchecked = !card && scannedCard && (status === 'unavailable' || status === 'loading') ? scannedCard : '';
     const createdAt = new Date().toISOString();
     const printed = offlineReceipt({
-      lines: cart.lines,
+      lines,
       products: catalogue.products,
       vatRates: catalogue.vatRates,
       payment: { ...charged, ...(cardAuthCode ? { card_auth_code: cardAuthCode } : {}) },
@@ -270,9 +290,16 @@ const PosPage = () => {
       ukDate: ukToday(),
       branchName: current.branch_name,
       tillNumber: current.till_number,
+      cashierName: me.data?.name || null,
     });
+    if (!printed.vat_recorded) {
+      const missing = printed.items.filter((item) => item.vat_rate === null).map((item) => item.product_name);
+      setOfflineProblem(`${missing.join(', ')}: no VAT rate on this till. Sell it when the till is back online.`);
+      return;
+    }
     const tillRow = catalogue.tills.find((t) => String(t.id) === till);
     const branch = catalogue.branches.find((b) => b.id === tillRow?.branch);
+    setQueueing(true);
     try {
       const queued = await offline.queue({
         sale: {
@@ -296,6 +323,8 @@ const PosPage = () => {
     } catch (error) {
       setOfflineProblem(`Could not keep the sale on this till: ${error.message}`);
       return;
+    } finally {
+      setQueueing(false);
     }
     if (!askedStorage.current) {
       askedStorage.current = true;
@@ -315,9 +344,18 @@ const PosPage = () => {
     const key = JSON.stringify(body);
     if (attempt.current?.key !== key) attempt.current = { key, ref: uuidv4() };
     attempt.current.customer = card?.customer ?? null; // named on the receipt, as charged
+    attempt.current.lines = cart.lines; // the basket as sent, for an offline receipt if the answer never comes
     const payload = { ...body, client_ref: attempt.current.ref };
-    if (sellingOffline) chargeOffline(payload, cardAuthCode ?? null);
-    else sell.mutate(payload);
+    if (locked()) return;
+    if (sellingOffline) chargeOffline(payload, cardAuthCode ?? null, false, cart.lines);
+    else {
+      inFlight.current = true;
+      sell.mutate(payload, {
+        onSettled: () => {
+          inFlight.current = false;
+        },
+      });
+    }
   };
 
   const catalogueQuery = {
@@ -367,6 +405,7 @@ const PosPage = () => {
     );
   } else {
     const { summary } = current;
+    const waiting = offline.sales.filter((sale) => sale.status === 'queued' && sale.session === current.id).length;
     body = (
       <div className="space-y-4">
         <Card className="flex flex-wrap items-center justify-between gap-3">
@@ -385,10 +424,16 @@ const PosPage = () => {
             <span>
               {summary.sales_count} sale{summary.sales_count === 1 ? '' : 's'} · {formatMoney(summary.sales_total)}
             </span>
-            <Button variant="secondary" onClick={() => setCashUpOpen(true)}>
+            <Button variant="secondary" onClick={() => setCashUpOpen(true)} disabled={waiting > 0}>
               Close till
             </Button>
           </div>
+          {waiting > 0 && (
+            <p className="w-full text-xs text-amber-700">
+              {waiting} offline sale{waiting === 1 ? ' is' : 's are'} waiting to be sent: close the till once they have
+              gone, so the cash-up counts them.
+            </p>
+          )}
         </Card>
 
         {current.fromCache && (
@@ -449,11 +494,11 @@ const PosPage = () => {
             <Cart
               lines={cart.lines}
               totalCents={cart.totalCents}
-              onQuantity={cart.setQuantity}
-              onRemove={cart.remove}
+              onQuantity={(...args) => !locked() && cart.setQuantity(...args)}
+              onRemove={(...args) => !locked() && cart.remove(...args)}
             />
             {cart.lines.length > 0 && (
-              <Button variant="secondary" className="w-full" onClick={cart.clear}>
+              <Button variant="secondary" className="w-full" onClick={cart.clear} disabled={charging}>
                 Clear basket
               </Button>
             )}
@@ -467,7 +512,7 @@ const PosPage = () => {
             <PaymentPanel
               totalCents={cart.totalCents}
               onCharge={charge}
-              submitting={sell.isLoading}
+              submitting={charging}
               offline={sellingOffline}
             />
             {offlineProblem && (
@@ -511,8 +556,9 @@ const PosPage = () => {
             loyalty: null,
           })
         }
+        me={{ id: cashierId, is_staff: Boolean(me.data?.is_staff) }}
         onVoid={(sale, reason) =>
-          offline.voidSale(sale.client_ref, reason).catch((error) => setOfflineProblem(error.message))
+          offline.voidSale(sale.client_ref, reason, cashierId).catch((error) => setOfflineProblem(error.message))
         }
       />
 
@@ -527,9 +573,9 @@ const PosPage = () => {
             <Button
               className="w-full"
               onClick={() => {
-                const { payload, cardAuthCode } = confirming;
+                const { payload, cardAuthCode, lines } = confirming;
                 setConfirming(null);
-                chargeOffline(payload, cardAuthCode, true);
+                chargeOffline(payload, cardAuthCode, true, lines);
               }}
             >
               Keep selling offline

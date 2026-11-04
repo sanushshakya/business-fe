@@ -60,7 +60,7 @@ export function offlineReceipt({
   ukDate,
   branchName = '',
   tillNumber = null,
-  cashierName = '',
+  cashierName = null,
 }) {
   const byId = Object.fromEntries((products ?? []).map((product) => [product.id, product]));
   const built = lines.map((line, index) => {
@@ -93,7 +93,8 @@ export function offlineReceipt({
     change_due: pounds(cash ? tendered - totalCents : 0),
     items: built.map(({ lineCents: _lineCents, ...item }) => item),
     vat_summary: [...groups.values()]
-      .sort((a, b) => a.vat_code.localeCompare(b.vat_code))
+      // As the server's vat_by_rate: lowest rate first, then code.
+      .sort((a, b) => toUnits(a.rate, 2) - toUnits(b.rate, 2) || a.vat_code.localeCompare(b.vat_code))
       .map((group) => ({
         vat_code: group.vat_code,
         rate: group.rate,
