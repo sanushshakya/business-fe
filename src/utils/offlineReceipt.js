@@ -91,7 +91,7 @@ export function offlineReceipt({
     total: pounds(totalCents),
     amount_tendered: pounds(tendered),
     change_due: pounds(cash ? tendered - totalCents : 0),
-    items: built.map(({ lineCents, ...item }) => item),
+    items: built.map(({ lineCents: _lineCents, ...item }) => item),
     vat_summary: [...groups.values()]
       .sort((a, b) => a.vat_code.localeCompare(b.vat_code))
       .map((group) => ({
