@@ -83,7 +83,7 @@ const chargeLine = (line) => {
 
 const PosPage = () => {
   const queryClient = useQueryClient();
-  const { isOnline } = useOffline();
+  const { isOnline, retryFailed } = useOffline();
   const cart = useCart();
   const attempt = React.useRef(null);
   const [tillId, setTillId] = React.useState(readStoredTill);
@@ -557,6 +557,7 @@ const PosPage = () => {
           })
         }
         me={{ id: cashierId, is_staff: Boolean(me.data?.is_staff) }}
+        onRetry={retryFailed}
         onVoid={(sale, reason) =>
           offline.voidSale(sale.client_ref, reason, cashierId).catch((error) => setOfflineProblem(error.message))
         }

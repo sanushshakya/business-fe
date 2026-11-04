@@ -16,7 +16,7 @@ export function toPayload(sale) {
   const { body, receipt } = sale;
   const items = body.items.map((item, index) => {
     const printed = receipt?.items?.[index] ?? {};
-    const line = { product: item.product ?? printed.product, ...item, charged: printed.line_total };
+    const line = { ...item, product: item.product ?? printed.product, charged: printed.line_total };
     if (item.barcode && printed.weight_kg) line.weight_kg = printed.weight_kg; // the kg the till read off the label
     return line;
   });
@@ -40,6 +40,36 @@ export function toPayload(sale) {
 
 const markError = (doc, error) => doc.patch({ data: { ...doc.toJSON().data, error } });
 
+async function post100(post, docs) {
+  return (
+    await post(OFFLINE_SALES_URL, {
+      sales: docs.map((doc) => toPayload({ ...doc.toJSON().data, status: doc.status })),
+    })
+  ).data.results;
+}
+
+/**
+ * Send ``docs`` (one batch); a 400 for several sales is retried one by one, so only the bad sale is marked.
+ * @returns {Promise<Array<{doc, result}>>} — each doc with its result, or with `refused` (the request's status).
+ */
+async function sendBatch(post, docs) {
+  try {
+    const results = await post100(post, docs);
+    const byRef = Object.fromEntries(results.map((result) => [result.client_ref, result]));
+    return docs.map((doc) => ({ doc, result: byRef[doc.id] }));
+  } catch (error) {
+    // Offline, server trouble, or not signed in (401/403: the sender's problem, not the sales'): keep everything
+    // unmarked for next time.
+    if (!isRejection(error) || [401, 403].includes(error.response.status)) throw error;
+    if (docs.length > 1) {
+      const answers = [];
+      for (const doc of docs) answers.push(...(await sendBatch(post, [doc])));
+      return answers;
+    }
+    return [{ doc: docs[0], refused: error.response.status }];
+  }
+}
+
 /** @returns {Promise<{sent: number, failed: number}>} — rejects when the server can't be reached (nothing lost). */
 export async function sendOfflineSales(db, post) {
   const docs = (await db.offlineSales.find().exec())
@@ -48,31 +78,20 @@ export async function sendOfflineSales(db, post) {
   let sent = 0;
   let failed = 0;
   for (let start = 0; start < docs.length; start += BATCH) {
-    const batch = docs.slice(start, start + BATCH);
-    const byRef = Object.fromEntries(batch.map((doc) => [doc.id, doc]));
-    let results;
-    try {
-      ({ results } = (
-        await post(OFFLINE_SALES_URL, {
-          sales: batch.map((doc) => toPayload({ ...doc.toJSON().data, status: doc.status })),
-        })
-      ).data);
-    } catch (error) {
-      // Offline, server trouble, or not signed in (401/403: the sender's problem, not the sales'): keep everything
-      // unmarked for next time.
-      if (!isRejection(error) || [401, 403].includes(error.response.status)) throw error;
-      await Promise.all(batch.map((doc) => markError(doc, `Refused by the server (${error.response.status})`)));
-      failed += batch.length;
-      continue;
-    }
-    for (const result of results) {
-      const doc = byRef[result.client_ref];
-      if (!doc) continue;
-      if (result.status === 'error') {
-        await markError(doc, result.detail || 'Not recorded');
+    for (const { doc, result, refused } of await sendBatch(post, docs.slice(start, start + BATCH))) {
+      // Re-read it: the cashier may have voided it while it was being sent. Then it stays, and the void goes next.
+      const now = await db.offlineSales.findOne(doc.id).exec();
+      if (!now) continue;
+      if (refused) {
+        await markError(now, `Refused by the server (${refused})`);
         failed += 1;
-      } else {
-        await doc.remove();
+      } else if (!result) {
+        continue; // no answer for it: sent again next time (a duplicate then)
+      } else if (result.status === 'error') {
+        await markError(now, result.detail || 'Not recorded');
+        failed += 1;
+      } else if (now.revision === doc.revision) {
+        await now.remove();
         sent += 1;
       }
     }

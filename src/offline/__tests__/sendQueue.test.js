@@ -123,6 +123,41 @@ describe('sending the offline queue (G28)', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it('on a 400 for a batch, sends its sales one by one so only the bad one is marked', async () => {
+    await queueSale(db, { sale: sale(1), ...where });
+    await queueSale(db, { sale: sale(2), ...where });
+    const post = vi.fn((url, { sales }) =>
+      sales.length > 1 || sales[0].client_ref === 'ref-2'
+        ? Promise.reject({ response: { status: 400 } })
+        : Promise.resolve(answer([{ client_ref: 'ref-1', status: 'recorded', exceptions: [] }]))
+    );
+    expect(await sendOfflineSales(db, post)).toEqual({ sent: 1, failed: 1 });
+    expect((await listQueued(db, 3)).map((s) => [s.client_ref, s.error])).toEqual([
+      ['ref-2', 'Refused by the server (400)'],
+    ]);
+  });
+
+  it('keeps a sale voided while it was being sent, so the void is sent too', async () => {
+    await queueSale(db, { sale: sale(1), ...where });
+    const post = vi.fn(async () => {
+      await voidQueued(db, 'ref-1', 'Fake: changed mind', 7); // the cashier voids it mid-send
+      return answer([{ client_ref: 'ref-1', status: 'recorded', exceptions: [] }]);
+    });
+    await sendOfflineSales(db, post);
+    const [kept] = await listQueued(db, 3);
+    expect(kept.status).toBe('voided'); // sent again next time, now with its void
+  });
+
+  it('keeps the product on a line even when the queued item has none set', () => {
+    const payload = toPayload({
+      ...sale(1),
+      offline_number: 'HS-T01-ABC-000001',
+      body: { ...sale(1).body, items: [{ product: undefined, barcode: '2100421005129' }] },
+      receipt: { items: [{ product: 4, line_total: '4.60', weight_kg: '0.512' }] },
+    });
+    expect(payload.items[0]).toEqual(expect.objectContaining({ product: 4, charged: '4.60' }));
+  });
+
   it('sends in batches of 100', async () => {
     for (let n = 1; n <= 101; n += 1) await queueSale(db, { sale: sale(n), ...where });
     const post = vi.fn((url, { sales }) =>

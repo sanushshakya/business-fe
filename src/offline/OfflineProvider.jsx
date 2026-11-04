@@ -101,7 +101,10 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
   // outage of the server alone fires no `online` event.
   useEffect(() => {
     if (!db) return undefined;
-    if (navigator.onLine) flush().catch(() => {});
+    // Sales the server could not record last time (e.g. a VAT rate missing then) are tried again once per start.
+    retrySalesWithErrors(db)
+      .catch(() => {})
+      .then(() => navigator.onLine && flush().catch(() => {}));
     const timer = setInterval(() => navigator.onLine && flush().catch(() => {}), SEND_EVERY_MS);
     return () => clearInterval(timer);
   }, [db, flush]);

@@ -174,6 +174,24 @@ describe('OfflineQueue (G27)', () => {
     expect(screen.getAllByRole('button', { name: 'Void' })).toHaveLength(2);
   });
 
+  it('offers Retry when a sale could not be sent, and caps the void reason', () => {
+    const onRetry = vi.fn();
+    render(
+      <OfflineQueue
+        sales={[{ ...queued[0], error: 'Fake: no VAT rate' }]}
+        me={{ id: 1, is_staff: true }}
+        onVoid={vi.fn()}
+        onReprint={vi.fn()}
+        onRetry={onRetry}
+      />
+    );
+    expect(screen.getByText('Not sent: Fake: no VAT rate')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry sending' }));
+    expect(onRetry).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Void' }));
+    expect(screen.getByLabelText('Why void HS-T02-QK-000002?')).toHaveAttribute('maxLength', '255');
+  });
+
   it('shows nothing when the queue is empty', () => {
     const { container } = render(<OfflineQueue sales={[]} onVoid={vi.fn()} onReprint={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();

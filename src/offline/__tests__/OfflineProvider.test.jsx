@@ -200,6 +200,25 @@ describe('sending offline sales (G28)', () => {
     expect(axios.post).not.toHaveBeenCalledWith(OFFLINE_SALES_URL, expect.anything());
   });
 
+  it('tries sales marked with an error again on start', async () => {
+    setOnline(true);
+    useAuthStore.getState().setTokens({ access_token: 'x.y.z', refresh_token: 'r' });
+    db = await initRxDB({ name: `t${Math.random().toString(36).slice(2)}`, storage: getRxStorageMemory() });
+    await queueOne(db);
+    const [doc] = await db.offlineSales.find().exec();
+    await doc.patch({ data: { ...doc.toJSON().data, error: 'Fake: no VAT rate' } });
+    axios.post.mockResolvedValue({ data: { results: [{ client_ref: 'ref-1', status: 'recorded', exceptions: [] }] } });
+    const ready = db;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <OfflineProvider createDb={async () => ready}>
+          <Probe />
+        </OfflineProvider>
+      </QueryClientProvider>
+    );
+    await waitFor(async () => expect(await listQueued(ready, 3)).toEqual([]));
+  });
+
   it('sends queued sales on start when online, and clears them once recorded', async () => {
     setOnline(true);
     useAuthStore.getState().setTokens({ access_token: 'x.y.z', refresh_token: 'r' });

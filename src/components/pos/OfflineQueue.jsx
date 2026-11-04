@@ -9,14 +9,21 @@ const time = (iso) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit
  * reason and keeps the sale, marked voided (G28 sends the sale, then the void). As online, only the cashier who made
  * a sale, or staff, may void it (`me`: `{id, is_staff}`).
  */
-const OfflineQueue = ({ sales = [], me = {}, onVoid, onReprint }) => {
+const OfflineQueue = ({ sales = [], me = {}, onVoid, onReprint, onRetry }) => {
   const mayVoid = (sale) => Boolean(me.is_staff) || (me.id != null && sale.cashier === me.id);
   const [voiding, setVoiding] = React.useState(null);
   const [reason, setReason] = React.useState('');
   if (!sales.length) return null;
   return (
     <Card className="space-y-2" aria-label="Offline sales">
-      <h3 className="font-semibold">Waiting to send ({sales.length})</h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-semibold">Waiting to send ({sales.length})</h3>
+        {onRetry && sales.some((sale) => sale.error) && (
+          <Button variant="secondary" className="px-3 py-1" onClick={onRetry}>
+            Retry sending
+          </Button>
+        )}
+      </div>
       <ul className="divide-y divide-gray-100 text-sm">
         {sales.map((sale) => (
           <li key={sale.client_ref} className="flex flex-wrap items-center justify-between gap-2 py-2">
@@ -52,6 +59,7 @@ const OfflineQueue = ({ sales = [], me = {}, onVoid, onReprint }) => {
               <span className="flex w-full items-center gap-2">
                 <Input
                   aria-label={`Why void ${sale.offline_number}?`}
+                  maxLength={255}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                 />
