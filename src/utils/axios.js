@@ -2,6 +2,7 @@
 
 import axios from 'axios';
 import useAuthStore from '../stores/authStore';
+import { isRejection } from './http';
 
 const baseURL = import.meta.env?.VITE_API_URL ?? '';
 
@@ -52,7 +53,9 @@ instance.interceptors.response.use(
       original.headers.Authorization = `Bearer ${accessToken}`;
       return instance(original);
     } catch (refreshError) {
-      useAuthStore.getState().clearTokens();
+      // Only the server refusing the refresh ends the session. No answer or a 5xx is an outage: a till keeps its
+      // session (and its queued sales) and refreshes again when the server is back (ADR 0001).
+      if (isRejection(refreshError)) useAuthStore.getState().clearTokens();
       return Promise.reject(refreshError);
     }
   }

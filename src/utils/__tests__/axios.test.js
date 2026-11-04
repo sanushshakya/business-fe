@@ -39,11 +39,25 @@ describe('axios instance', () => {
     expect(useAuthStore.getState().refreshToken).toBe('r2');
   });
 
-  it('clears the session when refreshing fails', async () => {
-    vi.spyOn(axios, 'post').mockRejectedValue(new Error('expired'));
+  it('clears the session when the server refuses the refresh', async () => {
+    vi.spyOn(axios, 'post').mockRejectedValue(Object.assign(new Error('expired'), { response: { status: 401 } }));
     instance.defaults.adapter = async (config) => reject(config, 401);
     await expect(instance.get('/a')).rejects.toThrow('expired');
     expect(useAuthStore.getState().accessToken).toBeNull();
+  });
+
+  it("keeps the session when the refresh can't reach the server (G26: a till must not lose its queue)", async () => {
+    vi.spyOn(axios, 'post').mockRejectedValue(new Error('Network Error'));
+    instance.defaults.adapter = async (config) => reject(config, 401);
+    await expect(instance.get('/a')).rejects.toThrow('Network Error');
+    expect(useAuthStore.getState().refreshToken).toBe('r1');
+  });
+
+  it('keeps the session when the refresh gets a server error', async () => {
+    vi.spyOn(axios, 'post').mockRejectedValue(Object.assign(new Error('HTTP 502'), { response: { status: 502 } }));
+    instance.defaults.adapter = async (config) => reject(config, 401);
+    await expect(instance.get('/a')).rejects.toThrow('HTTP 502');
+    expect(useAuthStore.getState().refreshToken).toBe('r1');
   });
 
   it('does not refresh for non-401 errors', async () => {

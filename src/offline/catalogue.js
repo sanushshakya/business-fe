@@ -16,7 +16,7 @@ const time = (cursor) => Date.parse(cursor);
 
 async function readMeta(db, key) {
   const doc = await db.catalogueMeta.findOne(key).exec();
-  return doc ? doc.toJSON().value ?? null : null;
+  return doc ? (doc.toJSON().value ?? null) : null;
 }
 
 /** Drop the whole catalogue and the cached sessions. */

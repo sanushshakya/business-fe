@@ -108,7 +108,7 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
   }, [db, flush]);
 
   const value = useMemo(
-    () => ({ ready: Boolean(db), isOnline, isSyncing, pending, failed, queueReceipt, flush, retryFailed }),
+    () => ({ db, ready: Boolean(db), isOnline, isSyncing, pending, failed, queueReceipt, flush, retryFailed }),
     [db, isOnline, isSyncing, pending, failed, queueReceipt, flush, retryFailed]
   );
 
