@@ -76,56 +76,60 @@ const SyncExceptionsPage = () => {
           {apiErrorMessage(resolve.error, 'Could not mark it handled.')}
         </p>
       )}
-      <QueryState
-        query={{ ...rows, data: rows.data?.results }}
-        emptyMessage={null}
-        empty={<EmptyState title="Nothing to review" description="Offline sales that differed will show up here." />}
-      >
-        {(items) => (
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>Kind</Th>
-                <Th>Sale</Th>
-                <Th>Offline receipt</Th>
-                <Th>Sold</Th>
-                <Th>Product</Th>
-                <Th>What</Th>
-                <Th />
-              </Tr>
-            </Thead>
-            <Tbody>
-              {items.map((row) => (
-                <Tr key={row.id}>
-                  <Td>{row.kind_label}</Td>
-                  <Td>{row.receipt_number}</Td>
-                  <Td>{row.offline_number}</Td>
-                  <Td>{when(row.sold_at)}</Td>
-                  <Td>{row.product_name}</Td>
-                  <Td>{what(row)}</Td>
-                  <Td>
-                    {row.resolved_at ? (
-                      <span className="text-xs text-gray-500">
-                        Handled {when(row.resolved_at)}
-                        {row.resolved_by_name ? ` by ${row.resolved_by_name}` : ''}
-                      </span>
-                    ) : (
-                      <Button
-                        variant="secondary"
-                        className="px-3 py-1"
-                        disabled={resolve.isLoading}
-                        onClick={() => resolve.mutate(row)}
-                      >
-                        Mark handled
-                      </Button>
-                    )}
-                  </Td>
+      {rows.error?.response?.status === 403 ? (
+        <p className="text-sm text-gray-600">Only managers can review sync exceptions.</p>
+      ) : (
+        <QueryState
+          query={{ ...rows, data: rows.data?.results }}
+          emptyMessage={null}
+          empty={<EmptyState title="Nothing to review" description="Offline sales that differed will show up here." />}
+        >
+          {(items) => (
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>Kind</Th>
+                  <Th>Sale</Th>
+                  <Th>Offline receipt</Th>
+                  <Th>Sold</Th>
+                  <Th>Product</Th>
+                  <Th>What</Th>
+                  <Th />
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        )}
-      </QueryState>
+              </Thead>
+              <Tbody>
+                {items.map((row) => (
+                  <Tr key={row.id}>
+                    <Td>{row.kind_label}</Td>
+                    <Td>{row.receipt_number}</Td>
+                    <Td>{row.offline_number}</Td>
+                    <Td>{when(row.sold_at)}</Td>
+                    <Td>{row.product_name}</Td>
+                    <Td>{what(row)}</Td>
+                    <Td>
+                      {row.resolved_at ? (
+                        <span className="text-xs text-gray-500">
+                          Handled {when(row.resolved_at)}
+                          {row.resolved_by_name ? ` by ${row.resolved_by_name}` : ''}
+                        </span>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          className="px-3 py-1"
+                          disabled={resolve.isLoading}
+                          onClick={() => resolve.mutate(row)}
+                        >
+                          Mark handled
+                        </Button>
+                      )}
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          )}
+        </QueryState>
+      )}
     </section>
   );
 };

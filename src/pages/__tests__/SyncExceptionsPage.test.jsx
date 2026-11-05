@@ -99,4 +99,10 @@ describe('SyncExceptionsPage (G29)', () => {
     renderPage();
     expect(await screen.findByText('Nothing to review')).toBeInTheDocument();
   });
+
+  it('says it is for managers when the server refuses (not staff)', async () => {
+    axios.get.mockRejectedValue({ response: { status: 403, data: { detail: 'Fake: no' } } });
+    renderPage();
+    expect(await screen.findByText(/Only managers can review sync exceptions/)).toBeInTheDocument();
+  });
 });
