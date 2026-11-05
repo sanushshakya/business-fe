@@ -36,6 +36,11 @@ describe('roles', () => {
     }
   });
 
+  it('keeps the sync exceptions review for staff (G29)', () => {
+    expect(canOpen('', '/dashboard/sync-exceptions')).toBe(true);
+    for (const { value } of ROLES) expect(canOpen(value, '/dashboard/sync-exceptions'), value).toBe(false);
+  });
+
   it('opens everything for users without a role', () => {
     expect(canOpen('', '/dashboard/team')).toBe(true);
     expect(canOpen(undefined, '/dashboard/pos')).toBe(true);

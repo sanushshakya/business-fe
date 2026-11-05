@@ -32,6 +32,7 @@ const ITEMS = {
   suppliers: { to: '/dashboard/suppliers', label: 'Suppliers' },
   branches: { to: '/dashboard/branches', label: 'Branches' },
   waste: { to: '/dashboard/waste', label: 'Waste' },
+  syncExceptions: { to: '/dashboard/sync-exceptions', label: 'Sync exceptions' },
   team: { to: '/dashboard/team', label: 'Team' },
   settings: { to: '/dashboard/settings', label: 'Settings' },
 };

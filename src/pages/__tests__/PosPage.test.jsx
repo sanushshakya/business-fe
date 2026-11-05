@@ -279,7 +279,7 @@ describe('PosPage', () => {
     localStorage.setItem('pos_till', '3');
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /^Rice £12\.50/ }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Offline: sales are kept on this till');
+    expect(screen.getByText('Sales are kept on this till and sent when it reconnects.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Charge £12.50' })).toBeDisabled(); // cash: nothing tendered yet
   });
 
@@ -634,10 +634,10 @@ describe('selling offline (G27)', () => {
     payCash();
     await screen.findByText('Receipt HS-T01-QK-000001');
     fireEvent.click(screen.getByRole('button', { name: 'New sale' }));
-    expect(screen.getByText(/Offline: sales are kept on this till/)).toBeInTheDocument();
+    expect(screen.getByText(/Sales are kept on this till/)).toBeInTheDocument();
     catalogue = makeCatalogue({ refreshedAt: Date.now() + 1000 }); // a later refresh reached the server
     fireEvent.click(screen.getByRole('button', { name: /Rice/ })); // re-render
-    await waitFor(() => expect(screen.queryByText(/Offline: sales are kept on this till/)).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/Sales are kept on this till/)).toBeNull());
   });
 
   it('refuses an offline line whose VAT rate this till does not have', async () => {

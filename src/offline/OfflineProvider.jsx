@@ -33,6 +33,7 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
   const queryClient = useQueryClient();
   const [db, setDb] = useState(null);
   const [dbFailed, setDbFailed] = useState(false);
+  const [sending, setSending] = useState(false); // a flush (receipts, then offline sales) is running
   const [pending, setPending] = useState(0);
   const [failed, setFailed] = useState(0);
   const flushing = useRef(null);
@@ -63,6 +64,7 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
     if (!db) return Promise.resolve();
     if (flushing.current) return flushing.current;
 
+    setSending(true);
     flushing.current = (async () => {
       const docs = await db.stockReceipts.find({ selector: { synced: false } }).exec();
       let sent = 0;
@@ -89,6 +91,7 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
         if (useAuthStore.getState().accessToken) sent += (await sendOfflineSales(db, axios.post)).sent;
       } finally {
         flushing.current = null;
+        setSending(false);
         if (sent > 0) queryClient.invalidateQueries({ queryKey: ['list'] });
       }
     })();
@@ -132,13 +135,14 @@ export const OfflineProvider = ({ children, createDb = getSharedDb }) => {
       ready: Boolean(db),
       isOnline,
       isSyncing,
+      sending,
       pending,
       failed,
       queueReceipt,
       flush,
       retryFailed,
     }),
-    [db, dbFailed, isOnline, isSyncing, pending, failed, queueReceipt, flush, retryFailed]
+    [db, dbFailed, isOnline, isSyncing, sending, pending, failed, queueReceipt, flush, retryFailed]
   );
 
   return <OfflineContext.Provider value={value}>{children}</OfflineContext.Provider>;

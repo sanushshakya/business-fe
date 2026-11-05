@@ -19,6 +19,7 @@ import useMe from '../hooks/useMe';
 import useOfflineSales from '../hooks/useOfflineSales';
 import useTillCatalogue from '../hooks/useTillCatalogue';
 import CacheAge from '../components/pos/CacheAge';
+import OfflineBanner from '../components/pos/OfflineBanner';
 import OfflineQueue from '../components/pos/OfflineQueue';
 import { askPersistentStorage, branchPrefix } from '../offline/salesQueue';
 import useAuthStore from '../stores/authStore';
@@ -83,7 +84,7 @@ const chargeLine = (line) => {
 
 const PosPage = () => {
   const queryClient = useQueryClient();
-  const { isOnline, retryFailed } = useOffline();
+  const { isOnline, retryFailed, sending } = useOffline();
   const cart = useCart();
   const attempt = React.useRef(null);
   const [tillId, setTillId] = React.useState(readStoredTill);
@@ -442,12 +443,15 @@ const PosPage = () => {
             date.
           </p>
         )}
-        {sellingOffline && (
-          <p role="alert" className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800">
-            Offline: sales are kept on this till and sent when it reconnects.
-            {serverDown && isOnline && " The server can't be reached; for a card sale, enter the terminal's auth code."}
-          </p>
-        )}
+        <OfflineBanner
+          online={!sellingOffline}
+          serverOnly={serverDown && isOnline}
+          since={catalogue.refreshedAt}
+          waiting={offline.sales.filter((sale) => !sale.error).length}
+          failed={offline.sales.filter((sale) => sale.error).length}
+          sending={sending}
+          onRetry={retryFailed}
+        />
         {storageWarning && (
           <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">
             This browser may clear offline sales if it runs short of space. Reconnect soon.
