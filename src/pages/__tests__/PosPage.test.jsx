@@ -528,20 +528,20 @@ describe('selling offline (G27)', () => {
     expect(offlineSales.queue).not.toHaveBeenCalled();
   });
 
-  it('needs the terminal auth code for a card sale once the server is unreachable', async () => {
+  it('keeps a card sale that got no answer, with the auth code already typed (G36)', async () => {
     axios.post.mockRejectedValue(new Error('Network Error'));
     renderPage();
     await addRice();
     fireEvent.click(screen.getByRole('button', { name: 'Card' }));
-    fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
-    expect(await screen.findByText(/enter the terminal's auth code/i)).toBeInTheDocument();
-    expect(offlineSales.queue).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'a1b2c3' } });
+    fireEvent.change(screen.getByLabelText('Card last 4 digits (optional)'), { target: { value: '4242' } });
     fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
     await screen.findByText('Receipt HS-T01-QK-000001');
+    expect(axios.post.mock.calls[0][1]).toMatchObject({ card_auth_code: 'A1B2C3', card_last4: '4242' });
     const [{ sale }] = offlineSales.queue.mock.calls[0];
     expect([sale.card_auth_code, sale.client_ref]).toEqual(['A1B2C3', axios.post.mock.calls[0][1].client_ref]);
+    expect(sale.body).not.toHaveProperty('card_auth_code'); // the queued body keeps its usual shape
+    expect(sale.body).not.toHaveProperty('card_last4');
   });
 
   it('refuses offline sales after offline_stop_hours', async () => {

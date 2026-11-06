@@ -31,7 +31,15 @@ const shift = {
   is_open: false,
   opening_float: '50.00',
   counted_cash: '74.00',
-  summary: { sales_count: 1, sales_total: '25.00', expected_cash: '75.00', variance: '-1.00' },
+  counted_card: '12.40',
+  summary: {
+    sales_count: 1,
+    sales_total: '25.00',
+    expected_cash: '75.00',
+    variance: '-1.00',
+    expected_card: '12.50',
+    card_variance: '-0.10',
+  },
 };
 
 const renderPage = () =>
@@ -97,5 +105,28 @@ describe('SalesPage', () => {
     expect(await screen.findByText('−£1.00')).toBeInTheDocument();
     expect(screen.getByText('£75.00')).toBeInTheDocument();
     expect(screen.getByText('£74.00')).toBeInTheDocument();
+  });
+
+  it('shows the card terminal total and card variance next to the cash (G36)', async () => {
+    const notEntered = {
+      ...shift,
+      id: 3,
+      counted_card: null,
+      summary: { ...shift.summary, card_variance: null },
+    };
+    axios.get.mockImplementation((url) =>
+      Promise.resolve({
+        data:
+          url === '/sales/sales/'
+            ? { count: 1, next: null, results: [sale] }
+            : { count: 2, next: null, results: [shift, notEntered] },
+      })
+    );
+    renderPage();
+    fireEvent.click(screen.getByRole('tab', { name: 'Till sessions' }));
+    const [entered, missing] = await screen.findAllByTestId('session-card-variance');
+    expect(entered).toHaveTextContent('−£0.10');
+    expect(missing).toHaveTextContent('—');
+    expect(screen.getByText('£12.40')).toBeInTheDocument();
   });
 });

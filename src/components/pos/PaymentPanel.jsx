@@ -33,7 +33,7 @@ const PaymentPanel = ({ totalCents, onCharge, submitting = false, disabled = fal
   const code = authCode.trim().toUpperCase();
   const digits = last4.trim();
   const needsCode = !cash && !AUTH_CODE.test(code);
-  const badLast4 = !cash && digits !== '' && !LAST4.test(digits);
+  const badLast4 = !cash && !offline && digits !== '' && !LAST4.test(digits); // only while the field is shown
   const canCharge = !disabled && !submitting && totalCents > 0 && !short && !needsCode && !badLast4;
   const quickAmounts = [totalCents, ...NOTES.filter((n) => n > totalCents)].filter((n) => n > 0);
 

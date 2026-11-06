@@ -36,7 +36,7 @@ const OfflineBanner = ({
       {!online && (
         <p>
           Sales are kept on this till and sent when it reconnects.
-          {serverOnly && " The server can't be reached; for a card sale, enter the terminal's auth code."}
+          {serverOnly && " The server can't be reached; card sales go on with the terminal's auth code."}
         </p>
       )}
       {failed > 0 && (

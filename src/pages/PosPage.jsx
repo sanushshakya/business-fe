@@ -200,12 +200,16 @@ const PosPage = () => {
       if (error?.response?.status === 400) refresh();
       if (isRejection(error)) return;
       // No answer, a 5xx or a timeout: the server may not have it, so the sale is kept here with the same
-      // client_ref (if it did arrive, sending it again later cannot book it twice). Card sales first need the
-      // terminal's auth code, which the payment panel now asks for.
+      // client_ref (if it did arrive, sending it again later cannot book it twice). A card sale already carries the
+      // terminal's auth code (G36); offline the queued sale keeps the code, not the last 4.
       setServerDown(true);
       // Only the attempt still on screen is kept offline, with the basket it was sent with.
-      if (payload.payment_method === 'cash' && attempt.current?.ref === payload.client_ref)
-        chargeOffline(payload, null, false, attempt.current.lines);
+      if (attempt.current?.ref !== payload.client_ref) return;
+      const { card_auth_code: cardAuthCode, ...rest } = payload;
+      const kept = { ...rest };
+      delete kept.card_last4; // the offline queue keeps the auth code only
+      if (payload.payment_method === 'cash') chargeOffline(kept, null, false, attempt.current.lines);
+      else if (cardAuthCode) chargeOffline(kept, cardAuthCode, false, attempt.current.lines);
     },
   });
 

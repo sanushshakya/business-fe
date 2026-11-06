@@ -44,6 +44,6 @@ describe('OfflineBanner (G29)', () => {
 
   it('adds the card note when the server, not the browser, is unreachable', () => {
     render(<OfflineBanner online={false} serverOnly since={null} waiting={0} failed={0} />);
-    expect(screen.getByRole('status')).toHaveTextContent("for a card sale, enter the terminal's auth code");
+    expect(screen.getByRole('status')).toHaveTextContent("card sales go on with the terminal's auth code");
   });
 });
