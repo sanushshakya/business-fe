@@ -5,21 +5,25 @@ import { formatCents, parseMoney } from '../../utils/money';
 const NOTES = [500, 1000, 2000, 5000];
 
 const AUTH_CODE = /^[A-Z0-9]{4,12}$/;
+const LAST4 = /^[0-9]{4}$/;
 
 /**
- * Takes payment for `totalCents`. Cash needs an amount tendered and shows the change; card charges
- * the total. Calls `onCharge({payment_method, amount_tendered?, card_auth_code?})`; the page does the posting.
- * `offline` (G27, ADR 0001): a card sale needs the standalone terminal's auth code, kept with the queued sale.
+ * Takes payment for `totalCents`. Cash needs an amount tendered and shows the change; card charges the total.
+ * Calls `onCharge({payment_method, amount_tendered?, card_auth_code?, card_last4?})`; the page does the posting.
+ * A card sale is taken on the standalone terminal (G36): it needs the terminal's auth code from its slip, and the
+ * card's last 4 digits may be added. `offline` (G27): the code is kept with the queued sale (the last 4 is not).
  */
 const PaymentPanel = ({ totalCents, onCharge, submitting = false, disabled = false, offline = false }) => {
   const [method, setMethod] = React.useState('cash');
   const [tendered, setTendered] = React.useState('');
   const [authCode, setAuthCode] = React.useState('');
+  const [last4, setLast4] = React.useState('');
 
   React.useEffect(() => {
     if (totalCents === 0) {
       setTendered('');
       setAuthCode('');
+      setLast4('');
     }
   }, [totalCents]);
 
@@ -27,8 +31,10 @@ const PaymentPanel = ({ totalCents, onCharge, submitting = false, disabled = fal
   const cash = method === 'cash';
   const short = cash && (tenderedCents === null || tenderedCents < totalCents);
   const code = authCode.trim().toUpperCase();
-  const needsCode = !cash && offline && !AUTH_CODE.test(code);
-  const canCharge = !disabled && !submitting && totalCents > 0 && !short && !needsCode;
+  const digits = last4.trim();
+  const needsCode = !cash && !AUTH_CODE.test(code);
+  const badLast4 = !cash && digits !== '' && !LAST4.test(digits);
+  const canCharge = !disabled && !submitting && totalCents > 0 && !short && !needsCode && !badLast4;
   const quickAmounts = [totalCents, ...NOTES.filter((n) => n > totalCents)].filter((n) => n > 0);
 
   const handleCharge = () => {
@@ -36,7 +42,11 @@ const PaymentPanel = ({ totalCents, onCharge, submitting = false, disabled = fal
     onCharge(
       cash
         ? { payment_method: 'cash', amount_tendered: (tenderedCents / 100).toFixed(2) }
-        : { payment_method: 'card', ...(offline ? { card_auth_code: code } : {}) }
+        : {
+            payment_method: 'card',
+            card_auth_code: code,
+            ...(digits && !offline ? { card_last4: digits } : {}),
+          }
     );
   };
 
@@ -91,13 +101,30 @@ const PaymentPanel = ({ totalCents, onCharge, submitting = false, disabled = fal
         </div>
       )}
 
-      {!cash && offline && (
-        <div className="space-y-1">
-          <label htmlFor="cardAuthCode" className="block text-sm font-medium">
-            Terminal auth code
-          </label>
-          <Input id="cardAuthCode" value={authCode} onChange={(e) => setAuthCode(e.target.value)} />
-          <p className="text-xs text-gray-600">From the card terminal&apos;s slip (4–12 letters or digits).</p>
+      {!cash && (
+        <div className="space-y-2">
+          <div className="space-y-1">
+            <label htmlFor="cardAuthCode" className="block text-sm font-medium">
+              Terminal auth code
+            </label>
+            <Input id="cardAuthCode" value={authCode} onChange={(e) => setAuthCode(e.target.value)} />
+            <p className="text-xs text-gray-600">From the card terminal&apos;s slip (4–12 letters or digits).</p>
+          </div>
+          {!offline && (
+            <div className="space-y-1">
+              <label htmlFor="cardLast4" className="block text-sm font-medium">
+                Card last 4 digits (optional)
+              </label>
+              <Input
+                id="cardLast4"
+                inputMode="numeric"
+                maxLength={4}
+                value={last4}
+                onChange={(e) => setLast4(e.target.value)}
+              />
+              {badLast4 && <p className="text-xs text-red-600">Exactly 4 digits, or leave it empty.</p>}
+            </div>
+          )}
         </div>
       )}
 

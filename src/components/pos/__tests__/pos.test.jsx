@@ -93,13 +93,28 @@ describe('PaymentPanel', () => {
     expect(onCharge).toHaveBeenCalledWith({ payment_method: 'cash', amount_tendered: '31.75' });
   });
 
-  it('charges a card without asking for cash', () => {
+  it('charges a card with the terminal auth code, not cash (G36)', () => {
     const onCharge = vi.fn();
     render(<PaymentPanel totalCents={500} onCharge={onCharge} />);
     fireEvent.click(screen.getByRole('button', { name: 'Card' }));
     expect(screen.queryByLabelText('Cash tendered')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Charge £5.00' })).toBeDisabled(); // no auth code yet
+    fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: ' a1b2c3 ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Charge £5.00' }));
-    expect(onCharge).toHaveBeenCalledWith({ payment_method: 'card' });
+    expect(onCharge).toHaveBeenCalledWith({ payment_method: 'card', card_auth_code: 'A1B2C3' });
+  });
+
+  it('adds the card last 4 digits when given, and only 4 digits', () => {
+    const onCharge = vi.fn();
+    render(<PaymentPanel totalCents={500} onCharge={onCharge} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+    fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'AUTH01' } });
+    fireEvent.change(screen.getByLabelText('Card last 4 digits (optional)'), { target: { value: '42a' } });
+    expect(screen.getByText('Exactly 4 digits, or leave it empty.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Charge £5.00' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Card last 4 digits (optional)'), { target: { value: '4242' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Charge £5.00' }));
+    expect(onCharge).toHaveBeenCalledWith({ payment_method: 'card', card_auth_code: 'AUTH01', card_last4: '4242' });
   });
 
   it('cannot charge when disabled, submitting or empty', () => {
@@ -150,7 +165,14 @@ describe('Receipt', () => {
 describe('CashUpForm', () => {
   const session = {
     opening_float: '50.00',
-    summary: { expected_cash: '81.75', cash_total: '31.75', card_total: '0.00', sales_count: 1, voided_count: 0 },
+    summary: {
+      expected_cash: '81.75',
+      cash_total: '31.75',
+      card_total: '20.10',
+      expected_card: '20.10',
+      sales_count: 3,
+      voided_count: 0,
+    },
   };
 
   it('previews the variance and submits the count', () => {
@@ -165,9 +187,23 @@ describe('CashUpForm', () => {
     fireEvent.change(screen.getByLabelText('Counted cash'), { target: { value: '81.75' } });
     expect(screen.getByTestId('variance')).toHaveTextContent('Drawer balances');
 
+    expect(screen.getByRole('button', { name: 'Close till' })).toBeDisabled(); // the terminal total too (G36)
+    fireEvent.change(screen.getByLabelText('Card terminal total'), { target: { value: '20.10' } });
+
     fireEvent.change(screen.getByLabelText('Note (optional)'), { target: { value: ' ok ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Close till' }));
-    expect(onSubmit).toHaveBeenCalledWith({ counted_cash: '81.75', note: 'ok' });
+    expect(onSubmit).toHaveBeenCalledWith({ counted_cash: '81.75', counted_card: '20.10', note: 'ok' });
+  });
+
+  it('previews the card terminal variance (G36)', () => {
+    render(<CashUpForm session={session} onSubmit={vi.fn()} />);
+    expect(screen.getByText(/Card sales on this till: £20\.10/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Card terminal total'), { target: { value: '20.05' } });
+    expect(screen.getByTestId('card-variance')).toHaveTextContent('Terminal short by £0.05');
+    fireEvent.change(screen.getByLabelText('Card terminal total'), { target: { value: '21' } });
+    expect(screen.getByTestId('card-variance')).toHaveTextContent('Terminal over by £0.90');
+    fireEvent.change(screen.getByLabelText('Card terminal total'), { target: { value: '20.10' } });
+    expect(screen.getByTestId('card-variance')).toHaveTextContent('Terminal balances');
   });
 });
 

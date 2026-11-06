@@ -28,10 +28,13 @@ describe('PaymentPanel offline (G27)', () => {
     expect(screen.getByRole('button', { name: 'Charge £2.50' })).toBeDisabled();
   });
 
-  it('does not ask for it online', () => {
-    render(<PaymentPanel totalCents={250} onCharge={vi.fn()} />);
+  it('asks for the last 4 digits online only (G36: the queue keeps just the auth code)', () => {
+    const { rerender } = render(<PaymentPanel totalCents={250} onCharge={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Card' }));
-    expect(screen.queryByLabelText('Terminal auth code')).toBeNull();
+    expect(screen.getByLabelText('Terminal auth code')).toBeInTheDocument();
+    expect(screen.getByLabelText('Card last 4 digits (optional)')).toBeInTheDocument();
+    rerender(<PaymentPanel totalCents={250} onCharge={vi.fn()} offline />);
+    expect(screen.queryByLabelText('Card last 4 digits (optional)')).toBeNull();
   });
 });
 

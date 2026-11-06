@@ -139,13 +139,19 @@ describe('PosPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Rice £12\.50/ }));
     expect(screen.getByTestId('cart-total')).toHaveTextContent('£25.00');
     fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+    fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
     fireEvent.click(screen.getByRole('button', { name: 'Charge £25.00' }));
 
     await screen.findByText('Receipt S-000001');
     expect(axios.post).toHaveBeenCalledTimes(1);
     const [url, body] = axios.post.mock.calls[0];
     expect(url).toBe('/sales/sales/');
-    expect(body).toMatchObject({ session: 9, payment_method: 'card', items: [{ product: 1, quantity: 2 }] });
+    expect(body).toMatchObject({
+      session: 9,
+      payment_method: 'card',
+      card_auth_code: 'AUTH01',
+      items: [{ product: 1, quantity: 2 }],
+    });
     expect(body.client_ref).toMatch(/^[0-9a-f-]{36}$/);
     expect(body).not.toHaveProperty('total');
 
@@ -162,6 +168,7 @@ describe('PosPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Rice £12\.50/ }));
     fireEvent.click(screen.getByRole('button', { name: /^Rice £12\.50/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+    fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
     fireEvent.click(screen.getByRole('button', { name: 'Charge £25.00' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Rice: only 1 in date, 2 requested.');
@@ -192,6 +199,7 @@ describe('PosPage', () => {
       expect(await screen.findByText('0.512 kg × £8.99/kg')).toBeInTheDocument();
       expect(screen.getByTestId('cart-total')).toHaveTextContent('£4.60');
       fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+      fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
       fireEvent.click(screen.getByRole('button', { name: 'Charge £4.60' }));
       await screen.findByText('Receipt S-000001');
       expect(axios.post.mock.calls[0][1].items).toEqual([{ barcode: LABEL }]);
@@ -229,6 +237,7 @@ describe('PosPage', () => {
       expect(screen.queryByLabelText('Weight (kg)')).not.toBeInTheDocument();
       expect(screen.getByTestId('cart-total')).toHaveTextContent('£4.60');
       fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+      fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
       fireEvent.click(screen.getByRole('button', { name: 'Charge £4.60' }));
       await screen.findByText('Receipt S-000001');
       expect(axios.post.mock.calls[0][1].items).toEqual([{ product: 4, weight_kg: '0.512' }]);
@@ -242,6 +251,7 @@ describe('PosPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Mince/ }));
       expect(screen.getByLabelText('Weight (kg)')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+      fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
       fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
       await screen.findByText('Receipt S-000001');
       expect(screen.queryByLabelText('Weight (kg)')).not.toBeInTheDocument();
@@ -258,6 +268,7 @@ describe('PosPage', () => {
       fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '30' } });
       fireEvent.click(screen.getByRole('button', { name: 'Add Mince' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Card' }));
+      fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
       fireEvent.click(screen.getByRole('button', { name: 'Charge £269.70' }));
       expect(await screen.findByText(new RegExp('over the 25 kg limit'))).toBeInTheDocument();
       expect(screen.getByText('30.000 kg × £8.99/kg · manual weight')).toBeInTheDocument();
@@ -290,18 +301,27 @@ describe('PosPage', () => {
         ...session,
         expected_cash: '50.00',
         counted_cash: '49.00',
-        summary: { ...session.summary, variance: '-1.00' },
+        counted_card: '12.40',
+        summary: { ...session.summary, variance: '-1.00', expected_card: '12.50', card_variance: '-0.10' },
       },
     });
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'Close till' }));
     fireEvent.change(screen.getByLabelText('Counted cash'), { target: { value: '49' } });
+    fireEvent.change(screen.getByLabelText('Card terminal total'), { target: { value: '12.40' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Close till' }).at(-1));
 
     await waitFor(() =>
-      expect(axios.post).toHaveBeenCalledWith('/sales/sessions/9/close/', { counted_cash: '49.00', note: '' })
+      expect(axios.post).toHaveBeenCalledWith('/sales/sessions/9/close/', {
+        counted_cash: '49.00',
+        counted_card: '12.40',
+        note: '',
+      })
     );
     expect(await screen.findByTestId('closed-variance')).toHaveTextContent('Short by £1.00.');
+    expect(screen.getByTestId('closed-card-variance')).toHaveTextContent(
+      'Card: expected £12.50, terminal £12.40. Short by £0.10.'
+    );
   });
 
   describe('loyalty cards', () => {
@@ -320,6 +340,7 @@ describe('PosPage', () => {
     const chargeCard = async () => {
       fireEvent.click(await screen.findByRole('button', { name: /^Rice £12\.50/ }));
       fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+      fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
       fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
       await screen.findByText('Receipt S-000001');
       return axios.post.mock.calls.find(([url]) => url === '/sales/sales/')[1];
@@ -452,6 +473,7 @@ describe('PosPage from the cached catalogue (G26)', () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /Rice/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+    fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
     fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
     await screen.findByText('Receipt S-000001');
     expect(catalogue.refresh).toHaveBeenCalled();
@@ -511,6 +533,7 @@ describe('selling offline (G27)', () => {
     renderPage();
     await addRice();
     fireEvent.click(screen.getByRole('button', { name: 'Card' }));
+    fireEvent.change(screen.getByLabelText('Terminal auth code'), { target: { value: 'auth01' } });
     fireEvent.click(screen.getByRole('button', { name: 'Charge £12.50' }));
     expect(await screen.findByText(/enter the terminal's auth code/i)).toBeInTheDocument();
     expect(offlineSales.queue).not.toHaveBeenCalled();

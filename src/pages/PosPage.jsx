@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import axios from '../utils/axios';
 import { apiErrorMessage, isRejection } from '../utils/http';
-import { formatMoney } from '../utils/money';
+import { formatMoney, varianceText } from '../utils/money';
 import { Button, Card, Modal } from '@/components/ui';
 import Cart from '../components/pos/Cart';
 import CashUpForm from '../components/pos/CashUpForm';
@@ -333,7 +333,7 @@ const PosPage = () => {
     }
   };
 
-  const charge = ({ card_auth_code: cardAuthCode, ...payment }) => {
+  const charge = ({ card_auth_code: cardAuthCode, card_last4: cardLast4, ...payment }) => {
     const body = {
       session: current.id,
       items: cart.lines.map(chargeLine),
@@ -351,11 +351,18 @@ const PosPage = () => {
     if (sellingOffline) chargeOffline(payload, cardAuthCode ?? null, false, cart.lines);
     else {
       inFlight.current = true;
-      sell.mutate(payload, {
-        onSettled: () => {
-          inFlight.current = false;
-        },
-      });
+      // Online the terminal's details go with the charge (G36); they are not part of the retry key above.
+      const terminal = cardAuthCode
+        ? { card_auth_code: cardAuthCode, ...(cardLast4 ? { card_last4: cardLast4 } : {}) }
+        : {};
+      sell.mutate(
+        { ...payload, ...terminal },
+        {
+          onSettled: () => {
+            inFlight.current = false;
+          },
+        }
+      );
     }
   };
 
@@ -630,6 +637,11 @@ const PosPage = () => {
               {Number(closed.summary.variance) === 0
                 ? 'Drawer balanced.'
                 : `${Number(closed.summary.variance) > 0 ? 'Over' : 'Short'} by ${formatMoney(Math.abs(closed.summary.variance))}.`}
+            </p>
+            <p data-testid="closed-card-variance">
+              {closed.counted_card === null || closed.counted_card === undefined
+                ? `Card: expected ${formatMoney(closed.summary.expected_card)}, terminal total not entered.`
+                : `Card: expected ${formatMoney(closed.summary.expected_card)}, terminal ${formatMoney(closed.counted_card)}. ${varianceText(closed.summary.card_variance, 'Terminal balanced.')}`}
             </p>
             <p>
               {closed.summary.sales_count} sale{closed.summary.sales_count === 1 ? '' : 's'},{' '}

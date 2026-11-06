@@ -25,3 +25,14 @@ export const formatPerKg = (value) => {
 
 /** `0.512 kg × £8.99/kg`: how a weighed line is shown on the basket and the receipt. */
 export const weightTimesPrice = (weightKg, pricePerKg) => `${weightKg} kg × ${formatPerKg(pricePerKg)}`;
+
+/**
+ * A variance as words: `'0.00'` → `balanced`, `'1.20'` → `Over by £1.20.`, `'-0.05'` → `Short by £0.05.`; `null` (not
+ * counted yet) → `''`. Used for the drawer and the card terminal (G36).
+ */
+export const varianceText = (value, balanced = 'Balanced.') => {
+  if (value === null || value === undefined) return '';
+  const cents = toCents(value);
+  if (cents === 0) return balanced;
+  return `${cents > 0 ? 'Over' : 'Short'} by ${formatCents(Math.abs(cents))}.`;
+};

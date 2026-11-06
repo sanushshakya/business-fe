@@ -4,21 +4,30 @@ import { formatCents, formatMoney, parseMoney, toCents } from '../../utils/money
 import VatSummary from './VatSummary';
 
 /**
- * Closing a till: shows what the drawer should hold, takes the counted cash and previews the variance.
- * Calls `onSubmit({counted_cash, note})`.
+ * Closing a till: shows what the drawer should hold, takes the counted cash and the card terminal's end-of-day total
+ * (G36), and previews both variances. Calls `onSubmit({counted_cash, counted_card, note})`.
  */
 const CashUpForm = ({ session, onSubmit, submitting = false }) => {
   const [counted, setCounted] = React.useState('');
+  const [terminal, setTerminal] = React.useState('');
   const [note, setNote] = React.useState('');
   const { summary } = session;
   const expectedCents = toCents(summary.expected_cash);
   const countedCents = parseMoney(counted);
   const variance = countedCents === null ? null : countedCents - expectedCents;
+  const expectedCardCents = toCents(summary.expected_card ?? summary.card_total);
+  const terminalCents = parseMoney(terminal);
+  const cardVariance = terminalCents === null ? null : terminalCents - expectedCardCents;
+  const ready = countedCents !== null && terminalCents !== null;
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (countedCents === null) return;
-    onSubmit({ counted_cash: (countedCents / 100).toFixed(2), note: note.trim() });
+    if (!ready) return;
+    onSubmit({
+      counted_cash: (countedCents / 100).toFixed(2),
+      counted_card: (terminalCents / 100).toFixed(2),
+      note: note.trim(),
+    });
   };
 
   return (
@@ -66,12 +75,40 @@ const CashUpForm = ({ session, onSubmit, submitting = false }) => {
         )}
       </div>
       <div>
+        <label htmlFor="terminalTotal" className="mb-1 block text-sm font-medium">
+          Card terminal total
+        </label>
+        <Input
+          id="terminalTotal"
+          inputMode="decimal"
+          placeholder="0.00"
+          value={terminal}
+          onChange={(e) => setTerminal(e.target.value)}
+          required
+        />
+        <p className="mt-1 text-xs text-gray-600">
+          From the terminal&apos;s end-of-day report. Card sales on this till: {formatCents(expectedCardCents)}.
+        </p>
+        {cardVariance !== null && (
+          <p
+            className={`mt-1 text-sm ${cardVariance === 0 ? 'text-green-700' : 'text-red-600'}`}
+            data-testid="card-variance"
+          >
+            {cardVariance === 0
+              ? 'Terminal balances'
+              : cardVariance > 0
+                ? `Terminal over by ${formatCents(cardVariance)}`
+                : `Terminal short by ${formatCents(-cardVariance)}`}
+          </p>
+        )}
+      </div>
+      <div>
         <label htmlFor="cashUpNote" className="mb-1 block text-sm font-medium">
           Note (optional)
         </label>
         <Input id="cashUpNote" value={note} maxLength={255} onChange={(e) => setNote(e.target.value)} />
       </div>
-      <Button type="submit" disabled={submitting || countedCents === null}>
+      <Button type="submit" disabled={submitting || !ready}>
         {submitting ? 'Closing…' : 'Close till'}
       </Button>
     </Form>

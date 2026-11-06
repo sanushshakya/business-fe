@@ -68,6 +68,7 @@ const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
             </div>
           )}
           {sale.card_auth_code && <p className="text-gray-600">Auth code {sale.card_auth_code}</p>}
+          {sale.card_last4 && <p className="text-gray-600">Card ending {sale.card_last4}</p>}
           {voided && sale.void_reason && <p className="text-gray-600">Void reason: {sale.void_reason}</p>}
           {loyalty && <p className="text-gray-600">Loyalty: {loyalty.first_name} · points will be added</p>}
         </div>

@@ -180,11 +180,17 @@ const ShiftsTab = () => {
                 <Th>Expected cash</Th>
                 <Th>Counted</Th>
                 <Th>Variance</Th>
+                <Th>Card terminal</Th>
+                <Th>Card variance</Th>
               </Tr>
             </Thead>
             <Tbody>
               {rows.map((s) => {
                 const variance = s.summary.variance === null ? null : Number(s.summary.variance);
+                const cardVariance =
+                  s.summary.card_variance === null || s.summary.card_variance === undefined
+                    ? null
+                    : Number(s.summary.card_variance);
                 return (
                   <Tr key={s.id}>
                     <Td>
@@ -207,6 +213,16 @@ const ShiftsTab = () => {
                         : variance === 0
                           ? 'Balanced'
                           : `${variance > 0 ? '+' : '−'}${formatMoney(Math.abs(variance))}`}
+                    </Td>
+                    <Td>
+                      {s.counted_card === null || s.counted_card === undefined ? '—' : formatMoney(s.counted_card)}
+                    </Td>
+                    <Td className={cardVariance ? 'text-red-600' : ''} data-testid="session-card-variance">
+                      {cardVariance === null
+                        ? '—'
+                        : cardVariance === 0
+                          ? 'Balanced'
+                          : `${cardVariance > 0 ? '+' : '−'}${formatMoney(Math.abs(cardVariance))}`}
                     </Td>
                   </Tr>
                 );
