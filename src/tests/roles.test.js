@@ -49,6 +49,28 @@ describe('roles', () => {
     }
   });
 
+  it('gives the stock role picking (G46b), its pick screens, and no runs', () => {
+    expect(canOpen('stock', '/dashboard/b2b/picking')).toBe(true);
+    expect(canOpen('stock', '/dashboard/b2b/picking/12')).toBe(true);
+    expect(canOpen('stock', '/dashboard/b2b/runs')).toBe(false);
+    expect(canOpen('stock', '/dashboard/b2b/orders')).toBe(false);
+  });
+
+  it('gives a driver only the driver screens (G46b)', () => {
+    expect(ROLES.map((role) => role.value)).toContain('driver');
+    expect(ROLE_HOME.driver).toBe('/dashboard/driver');
+    expect(navItemsFor('driver').map((item) => item.to)).toEqual(['/dashboard/driver']);
+    expect(canOpen('driver', '/dashboard/driver/5')).toBe(true);
+    for (const path of ['/dashboard/b2b/runs', '/dashboard/b2b/picking', '/dashboard/pos', '/dashboard']) {
+      expect(canOpen('driver', path), path).toBe(false);
+    }
+  });
+
+  it('keeps run planning for staff', () => {
+    expect(canOpen('', '/dashboard/b2b/runs')).toBe(true);
+    expect(canOpen('', '/dashboard/b2b/runs/3')).toBe(true);
+  });
+
   it('opens everything for users without a role', () => {
     expect(canOpen('', '/dashboard/team')).toBe(true);
     expect(canOpen(undefined, '/dashboard/pos')).toBe(true);
