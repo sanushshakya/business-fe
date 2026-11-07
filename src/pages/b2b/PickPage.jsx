@@ -36,7 +36,12 @@ const PickPage = () => {
   const quietly = (promise) => promise.catch(() => {});
 
   if (order.isLoading) return <p className="text-sm text-gray-500">Loading…</p>;
-  if (order.isError) return <p role="alert" className="text-sm text-red-600">Could not load the order.</p>;
+  if (order.isError)
+    return (
+      <p role="alert" className="text-sm text-red-600">
+        Could not load the order.
+      </p>
+    );
   const data = order.data;
 
   return (
@@ -55,12 +60,18 @@ const PickPage = () => {
             Pick list
           </Button>
           {data.status === 'confirmed' && (
-            <Button disabled={busy} onClick={() => quietly(call(() => axios.post(`${base}start-pick/`, {}), 'Could not start.'))}>
+            <Button
+              disabled={busy}
+              onClick={() => quietly(call(() => axios.post(`${base}start-pick/`, {}), 'Could not start.'))}
+            >
               Start picking
             </Button>
           )}
           {data.status === 'picking' && (
-            <Button disabled={busy} onClick={() => quietly(call(() => axios.post(`${base}finish-pick/`, {}), 'Could not finish.'))}>
+            <Button
+              disabled={busy}
+              onClick={() => quietly(call(() => axios.post(`${base}finish-pick/`, {}), 'Could not finish.'))}
+            >
               Finish picking
             </Button>
           )}

@@ -17,7 +17,10 @@ const PickingPage = () => {
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-semibold">Picking</h2>
-      <QueryState query={query} empty={<EmptyState title="Nothing to pick" description="Confirmed orders show up here." />}>
+      <QueryState
+        query={query}
+        empty={<EmptyState title="Nothing to pick" description="Confirmed orders show up here." />}
+      >
         {(orders) => (
           <ul className="space-y-2">
             {orders.map((order) => (
