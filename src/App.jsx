@@ -26,6 +26,8 @@ import SyncExceptionsPage from './pages/SyncExceptionsPage';
 import SuppliersListPage from './pages/SuppliersListPage';
 import SupplierPovPage from './pages/SupplierPovPage';
 import TeamPage from './components/TeamPage';
+import CustomersPage from './pages/b2b/CustomersPage';
+import PriceListsPage from './pages/b2b/PriceListsPage';
 
 const App = () => (
   <ErrorBoundary>
@@ -60,6 +62,8 @@ const App = () => (
           <Route path="branches" element={<BranchesPage />} />
           <Route path="waste" element={<PriceChangesPage />} />
           <Route path="sync-exceptions" element={<SyncExceptionsPage />} />
+          <Route path="b2b/customers" element={<CustomersPage />} />
+          <Route path="b2b/price-lists" element={<PriceListsPage />} />
           <Route path="team" element={<TeamPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

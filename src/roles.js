@@ -33,6 +33,12 @@ const ITEMS = {
   branches: { to: '/dashboard/branches', label: 'Branches' },
   waste: { to: '/dashboard/waste', label: 'Waste' },
   syncExceptions: { to: '/dashboard/sync-exceptions', label: 'Sync exceptions' },
+  // B2B office (G46a): staff only, so in no role's list below.
+  tradeCustomers: { to: '/dashboard/b2b/customers', label: 'Trade customers' },
+  priceLists: { to: '/dashboard/b2b/price-lists', label: 'Price lists' },
+  tradeOrders: { to: '/dashboard/b2b/orders', label: 'Trade orders' },
+  invoices: { to: '/dashboard/b2b/invoices', label: 'Invoices' },
+  creditNotes: { to: '/dashboard/b2b/credit-notes', label: 'Credit notes' },
   team: { to: '/dashboard/team', label: 'Team' },
   settings: { to: '/dashboard/settings', label: 'Settings' },
 };

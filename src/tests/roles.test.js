@@ -41,6 +41,14 @@ describe('roles', () => {
     for (const { value } of ROLES) expect(canOpen(value, '/dashboard/sync-exceptions'), value).toBe(false);
   });
 
+  it('keeps the B2B office screens for staff (G46a)', () => {
+    const paths = ['customers', 'price-lists', 'orders', 'invoices', 'credit-notes'].map((p) => `/dashboard/b2b/${p}`);
+    for (const path of paths) {
+      expect(canOpen('', path), path).toBe(true);
+      for (const { value } of ROLES) expect(canOpen(value, path), `${value} ${path}`).toBe(false);
+    }
+  });
+
   it('opens everything for users without a role', () => {
     expect(canOpen('', '/dashboard/team')).toBe(true);
     expect(canOpen(undefined, '/dashboard/pos')).toBe(true);
