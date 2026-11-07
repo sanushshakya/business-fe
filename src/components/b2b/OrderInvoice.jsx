@@ -1,7 +1,6 @@
 import React from 'react';
 import { Badge, Button, Card } from '@/components/ui';
 import { formatMoney } from '../../utils/money';
-import { openPdf } from '../../utils/pdf';
 
 const EMAIL_LABELS = {
   not_sent: 'not sent',
@@ -12,7 +11,7 @@ const EMAIL_LABELS = {
 };
 
 /** An order's invoice (G43): make the draft from what was picked, issue it, open the PDF. */
-const OrderInvoice = ({ invoice, onCreate, onIssue, busy = false }) => (
+const OrderInvoice = ({ invoice, onCreate, onIssue, onPdf, busy = false }) => (
   <Card className="space-y-2 p-4">
     <h3 className="font-medium">Invoice</h3>
     {!invoice && (
@@ -31,7 +30,7 @@ const OrderInvoice = ({ invoice, onCreate, onIssue, busy = false }) => (
             Issue invoice
           </Button>
         )}
-        <Button variant="secondary" onClick={() => openPdf(`/wholesale/invoices/${invoice.id}/pdf/`)}>
+        <Button variant="secondary" onClick={() => onPdf(invoice)}>
           Open PDF
         </Button>
       </div>

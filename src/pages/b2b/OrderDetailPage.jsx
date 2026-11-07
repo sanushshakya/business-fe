@@ -5,6 +5,7 @@ import { Badge, Button, Card, Input } from '@/components/ui';
 import axios from '../../utils/axios';
 import { apiErrorMessage } from '../../utils/http';
 import { formatMoney } from '../../utils/money';
+import { openPdf } from '../../utils/pdf';
 import OrderLines from '../../components/b2b/OrderLines';
 import OrderInvoice from '../../components/b2b/OrderInvoice';
 import ReturnForm from '../../components/b2b/ReturnForm';
@@ -130,6 +131,11 @@ const OrderDetailPage = () => {
           busy={step.isLoading}
           onCreate={() => run('/wholesale/invoices/', { order: data.id })}
           onIssue={(target) => run(`/wholesale/invoices/${target.id}/issue/`)}
+          onPdf={(target) =>
+            openPdf(`/wholesale/invoices/${target.id}/pdf/`).catch((failure) =>
+              setError(apiErrorMessage(failure, 'Could not open the invoice.'))
+            )
+          }
         />
       )}
       {RETURNABLE.includes(data.status) && (
@@ -137,7 +143,9 @@ const OrderDetailPage = () => {
           lines={data.lines.filter((line) => line.picked_quantity || Number(line.picked_weight_kg))}
           returns={returns.data ?? []}
           busy={step.isLoading}
-          onSubmit={(body) => step.mutateAsync({ path: `${url}returns/`, body })}
+          onSubmit={(body) =>
+            axios.post(`${url}returns/`, body).then(() => queryClient.invalidateQueries({ queryKey: ['list'] }))
+          }
           onCredit={(customerReturn) => run('/wholesale/credit-notes/', { customer_return: customerReturn.id })}
         />
       )}

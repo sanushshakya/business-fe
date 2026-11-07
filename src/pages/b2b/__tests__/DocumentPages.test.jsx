@@ -58,6 +58,8 @@ describe('InvoicesPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rebuild Draft #40' }));
     await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/wholesale/invoices/40/refresh/', {}));
     fireEvent.click(screen.getByRole('button', { name: 'Delete Draft #40' }));
+    expect(axios.delete).not.toHaveBeenCalled(); // a second click confirms
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete Draft #40' }));
     await waitFor(() => expect(axios.delete).toHaveBeenCalledWith('/wholesale/invoices/40/'));
     fireEvent.click(screen.getByRole('button', { name: 'Resend INV-000001' }));
     await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/wholesale/invoices/41/email/', {}));

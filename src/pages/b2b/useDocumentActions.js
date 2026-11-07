@@ -9,7 +9,7 @@ export default function useDocumentActions(base) {
   const queryClient = useQueryClient();
   const [error, setError] = React.useState(null);
   const change = useMutation({
-    mutationFn: ({ method, path }) => (method === 'delete' ? axios.delete(path) : axios.post(path, {})),
+    mutationFn: ({ method, path, body = {} }) => (method === 'delete' ? axios.delete(path) : axios.post(path, body)),
     onSuccess: () => {
       setError(null);
       queryClient.invalidateQueries({ queryKey: ['list'] });
@@ -27,10 +27,7 @@ export default function useDocumentActions(base) {
     onDelete: (doc) => act('delete', `${base}${doc.id}/`),
     onPdf: (doc) =>
       openPdf(`${base}${doc.id}/pdf/`).catch((failure) => setError(apiErrorMessage(failure, 'Could not open it.'))),
-    post: (path, body) =>
-      axios
-        .post(path, body)
-        .then(() => queryClient.invalidateQueries({ queryKey: ['list'] }))
-        .catch((failure) => setError(apiErrorMessage(failure, 'That did not work.'))),
+    // Through the same mutation, so `busy` covers it (no double submit) and errors clear on success.
+    post: (path, body) => change.mutateAsync({ method: 'post', path, body }).catch(() => {}),
   };
 }

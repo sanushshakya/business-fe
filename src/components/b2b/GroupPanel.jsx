@@ -1,10 +1,22 @@
 import React from 'react';
 import { Button, Card, Input } from '@/components/ui';
 
-/** Customer groups (G39): add one, or delete one (its customers keep trading, with no group). */
-const GroupPanel = ({ groups, onAdd, onDelete, busy = false }) => {
+/** Customer groups (G39): add, rename, or delete one (its customers keep trading, with no group). */
+const GroupPanel = ({ groups, onAdd, onRename, onDelete, busy = false }) => {
   const [name, setName] = React.useState('');
   const [confirming, setConfirming] = React.useState(null);
+  const [renaming, setRenaming] = React.useState(null); // {id, name} while a group is being renamed
+
+  const rename = async (event) => {
+    event.preventDefault();
+    if (!renaming?.name.trim()) return;
+    try {
+      await onRename(renaming.id, renaming.name.trim());
+      setRenaming(null);
+    } catch {
+      // the page shows the error; keep what was typed
+    }
+  };
 
   const add = async (event) => {
     event.preventDefault();
@@ -23,7 +35,27 @@ const GroupPanel = ({ groups, onAdd, onDelete, busy = false }) => {
       <ul className="space-y-1 text-sm">
         {groups.map((group) => (
           <li key={group.id} className="flex items-center justify-between gap-2">
-            <span>{group.name}</span>
+            {renaming?.id === group.id ? (
+              <form onSubmit={rename} className="flex gap-1">
+                <Input
+                  aria-label={`New name for ${group.name}`}
+                  value={renaming.name}
+                  onChange={(e) => setRenaming({ id: group.id, name: e.target.value })}
+                />
+                <Button type="submit" disabled={busy}>
+                  Save
+                </Button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="text-left"
+                onClick={() => setRenaming({ id: group.id, name: group.name })}
+                aria-label={`Rename ${group.name}`}
+              >
+                {group.name}
+              </button>
+            )}
             {confirming === group.id ? (
               <span className="flex gap-2">
                 <Button

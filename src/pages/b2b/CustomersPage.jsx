@@ -85,6 +85,9 @@ const CustomersPage = () => {
             groups={groups.data ?? []}
             busy={groupChange.isLoading}
             onAdd={(name) => groupChange.mutateAsync({ method: 'post', url: GROUPS, body: { name } })}
+            onRename={(groupId, name) =>
+              groupChange.mutateAsync({ method: 'patch', url: `${GROUPS}${groupId}/`, body: { name } })
+            }
             onDelete={(group) =>
               groupChange.mutateAsync({ method: 'delete', url: `${GROUPS}${group.id}/` }).catch(() => {})
             }

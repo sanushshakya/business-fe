@@ -115,6 +115,15 @@ describe('CustomersPage', () => {
     expect(within(dialog).getByLabelText('VAT number').value).toBe('FR1');
   });
 
+  it('renames a group', async () => {
+    axios.patch.mockResolvedValue({ data: { id: 3, name: 'Fake Bistros' } });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Rename Fake Restaurants' }));
+    fireEvent.change(screen.getByLabelText('New name for Fake Restaurants'), { target: { value: 'Fake Bistros' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(axios.patch).toHaveBeenCalledWith('/wholesale/groups/3/', { name: 'Fake Bistros' }));
+  });
+
   it('adds and deletes a group', async () => {
     axios.post.mockResolvedValue({ data: { id: 4, name: 'Fake Cafes' } });
     axios.delete.mockResolvedValue({});

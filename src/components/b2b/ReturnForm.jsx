@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Card, Input, Select } from '@/components/ui';
+import { Link } from 'react-router-dom';
 import { apiErrorMessage } from '../../utils/http';
 
 export const REASONS = [
@@ -9,6 +10,8 @@ export const REASONS = [
   ['out_of_date', 'Out of date (waste)'],
 ];
 
+const UNITS = /^[1-9]\d*$/;
+const KG = /^\d+(\.\d{1,3})?$/;
 const loose = (line) => line.quantity == null; // ordered by kg
 const catchWeight = (line) => line.quantity != null && line.picked_weight_kg != null;
 
@@ -24,14 +27,25 @@ const ReturnForm = ({ lines, returns = [], onSubmit, onCredit, busy = false }) =
 
   const submit = async (event) => {
     event.preventDefault();
-    const requested = lines
-      .filter((line) => (loose(line) ? rows[line.id]?.kg : rows[line.id]?.units))
-      .map((line) => {
-        const row = rows[line.id];
-        if (loose(line)) return { line: line.id, weight_kg: row.kg.trim(), reason: row.reason };
-        const body = { line: line.id, quantity: Number(row.units), reason: row.reason };
-        return catchWeight(line) ? { ...body, weight_kg: row.kg.trim() } : body;
-      });
+    const typed = lines.filter((line) => rows[line.id]?.units.trim() || rows[line.id]?.kg.trim());
+    const problem = typed.find((line) => {
+      const { units, kg } = rows[line.id];
+      if (loose(line)) return !KG.test(kg.trim());
+      if (!UNITS.test(units.trim())) return true;
+      return catchWeight(line) && !KG.test(kg.trim()); // pieces go back with their kg
+    });
+    if (problem) {
+      setError(
+        `${problem.product_name}: ${loose(problem) || catchWeight(problem) ? 'give whole pieces and kg (3 dp)' : 'give whole units'}.`
+      );
+      return;
+    }
+    const requested = typed.map((line) => {
+      const row = rows[line.id];
+      if (loose(line)) return { line: line.id, weight_kg: row.kg.trim(), reason: row.reason };
+      const body = { line: line.id, quantity: Number(row.units.trim()), reason: row.reason };
+      return catchWeight(line) ? { ...body, weight_kg: row.kg.trim() } : body;
+    });
     if (!requested.length) return;
     try {
       await onSubmit({ lines: requested });
@@ -52,7 +66,9 @@ const ReturnForm = ({ lines, returns = [], onSubmit, onCredit, busy = false }) =
               <span className="font-mono">{item.number_display}</span>
               <span>{item.kind === 'door' ? 'refused at the door' : 'returned later'}</span>
               {item.credit_note ? (
-                <span className="text-gray-500">credit note drawn up</span>
+                <Link to="/dashboard/b2b/credit-notes" className="text-primary underline">
+                  Credit note: issue or open it on Credit notes
+                </Link>
               ) : (
                 <Button variant="secondary" disabled={busy} onClick={() => onCredit(item)}>
                   Draft credit note

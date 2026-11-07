@@ -10,7 +10,7 @@ import OrderEntryPage from '../OrderEntryPage';
 import OrdersPage from '../OrdersPage';
 
 vi.mock('../../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
-vi.mock('../../../utils/pdf', () => ({ openPdf: vi.fn(), default: vi.fn() }));
+vi.mock('../../../utils/pdf', () => ({ openPdf: vi.fn(() => Promise.resolve()), default: vi.fn() }));
 
 const page = (results) => ({ data: { results, next: null } });
 const ADDRESS = {
@@ -177,6 +177,25 @@ describe('Trade order pages', () => {
     await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/wholesale/invoices/40/issue/', {}));
     fireEvent.click(screen.getByRole('button', { name: 'Open PDF' }));
     expect(openPdf).toHaveBeenCalledWith('/wholesale/invoices/40/pdf/');
+  });
+
+  it('says so when the invoice PDF cannot be opened', async () => {
+    openPdf.mockRejectedValueOnce({ response: { status: 403, data: { detail: 'You do not have permission.' } } });
+    current = order({ status: 'delivered', lines: [{ ...LINE, picked_quantity: 5 }] });
+    invoices = [{ id: 40, status: 'issued', number_display: 'INV-000001', gross_total: '10.00', email_status: 'sent' }];
+    renderAt('/dashboard/b2b/orders/12');
+    fireEvent.click(await screen.findByRole('button', { name: 'Open PDF' }));
+    expect(await screen.findByText('You do not have permission.')).toBeTruthy();
+  });
+
+  it('refuses a return amount that is not whole units, without sending it', async () => {
+    current = order({ status: 'delivered', lines: [{ ...LINE, picked_quantity: 5 }] });
+    renderAt('/dashboard/b2b/orders/12');
+    const form = (await screen.findByRole('button', { name: 'Record return' })).closest('form');
+    fireEvent.change(within(form).getByLabelText('Return Fake Rice'), { target: { value: 'abc' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Record return' }));
+    expect(await within(form).findByText('Fake Rice: give whole units.')).toBeTruthy();
+    expect(axios.post).not.toHaveBeenCalledWith('/wholesale/orders/12/returns/', expect.anything());
   });
 
   it('records a return and drafts its credit note', async () => {

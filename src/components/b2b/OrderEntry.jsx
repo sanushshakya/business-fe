@@ -88,8 +88,8 @@ const OrderEntry = ({ customers, products, onResolve, onSave, today, error = nul
     pendingFocus.current = 'search';
   };
 
-  const addTop = () => {
-    const top = suggestions[0];
+  const addTop = (chosen) => {
+    const top = chosen ?? suggestions[0];
     if (!top) return;
     if (!lines.some((line) => line.product === top.id))
       setLines((current) => [...current, { product: top.id, amount: '' }]);
@@ -101,10 +101,15 @@ const OrderEntry = ({ customers, products, onResolve, onSave, today, error = nul
     setLines((current) => current.map((line) => (line.product === productId ? { ...line, amount } : line)));
   const remove = (productId) => setLines((current) => current.filter((line) => line.product !== productId));
 
-  const valid = lines.filter((line) => line.amount !== '' && !amountProblem(byId[line.product], line.amount));
+  // Catch-weight with no nominal kg can't be estimated: left out of the lookup (the server refuses it at confirm).
+  const noNominal = (product) => kind(product) === 'catch' && !Number(product.nominal_weight_kg);
+  const valid = lines.filter(
+    (line) => line.amount !== '' && !amountProblem(byId[line.product], line.amount) && !noNominal(byId[line.product])
+  );
   const priceKey = JSON.stringify([customer?.id, deliveryDate, valid.map((l) => [l.product, l.amount])]);
 
   React.useEffect(() => {
+    setPrices({}); // never show a price for another amount, customer or date while the new one is fetched
     if (!customer || !valid.length) return undefined;
     let stale = false;
     const timer = setTimeout(() => {
@@ -129,6 +134,7 @@ const OrderEntry = ({ customers, products, onResolve, onSave, today, error = nul
 
   const problems = [
     !customer && 'Choose the customer.',
+    !deliveryDate && 'Choose the delivery date.',
     customer && !addresses.length && 'No delivery address.',
     customer && addresses.length > 0 && !address && 'Choose the delivery address.',
     !lines.length && 'Add at least one product.',
@@ -176,6 +182,7 @@ const OrderEntry = ({ customers, products, onResolve, onSave, today, error = nul
   };
 
   const priceText = (line) => {
+    if (noNominal(byId[line.product])) return <span className="text-amber-700">No nominal weight</span>;
     const price = prices[line.product];
     if (!price || line.amount === '' || amountProblem(byId[line.product], line.amount)) return null;
     if (price === 'failed') return <span className="text-amber-700">Price not checked</span>;
@@ -259,16 +266,22 @@ const OrderEntry = ({ customers, products, onResolve, onSave, today, error = nul
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey) {
               event.preventDefault();
-              addTop();
+              addTop(null);
             }
           }}
         />
         {suggestions.length > 0 && (
           <ul className="absolute z-10 w-full rounded border bg-white shadow">
             {suggestions.map((product, index) => (
-              <li key={product.id} className={index === 0 ? 'bg-blue-50 px-2 py-1 text-sm' : 'px-2 py-1 text-sm'}>
-                {product.name}
-                {product.plu && <span className="ml-2 text-xs text-gray-500">PLU {product.plu}</span>}
+              <li key={product.id}>
+                <button
+                  type="button"
+                  className={`w-full px-2 py-1 text-left text-sm ${index === 0 ? 'bg-blue-50' : ''}`}
+                  onClick={() => addTop(product)}
+                >
+                  {product.name}
+                  {product.plu && <span className="ml-2 text-xs text-gray-500">PLU {product.plu}</span>}
+                </button>
               </li>
             ))}
           </ul>

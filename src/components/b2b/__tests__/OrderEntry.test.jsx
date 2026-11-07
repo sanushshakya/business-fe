@@ -123,6 +123,33 @@ describe('OrderEntry', () => {
     );
   });
 
+  it('leaves a catch-weight product with no nominal weight out of the lookup', async () => {
+    renderEntry({
+      products: [...PRODUCTS, { id: 7, name: 'Fake Duck', sold_by: 'weight', is_catch_weight: true, plu: '' }],
+    });
+    chooseCustomer();
+    addProduct('duck');
+    fireEvent.change(screen.getByLabelText('Pieces Fake Duck'), { target: { value: '2' } });
+    addProduct('rice');
+    fireEvent.change(screen.getByLabelText('Quantity Fake Rice 5kg'), { target: { value: '1' } });
+    await act(async () => vi.advanceTimersByTime(400));
+    await waitFor(() => expect(onResolve).toHaveBeenLastCalledWith(7, '2026-11-08', [{ product: 4, quantity: '1' }]));
+    expect(screen.getByText('No nominal weight')).toBeTruthy();
+  });
+
+  it('adds a suggestion by clicking it, and never shows an old price for a new amount', async () => {
+    onResolve.mockResolvedValue([{ product: 4, quantity: '1', unit_price: '2.0000', source: 'base' }]);
+    renderEntry();
+    chooseCustomer();
+    fireEvent.change(screen.getByLabelText('Add product'), { target: { value: 'fake' } });
+    fireEvent.click(screen.getByRole('button', { name: /Fake Rice 5kg/ }));
+    fireEvent.change(screen.getByLabelText('Quantity Fake Rice 5kg'), { target: { value: '1' } });
+    await act(async () => vi.advanceTimersByTime(400));
+    expect(await screen.findByText('£2.0000 each')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Quantity Fake Rice 5kg'), { target: { value: '50' } });
+    expect(screen.queryByText('£2.0000 each')).toBeNull(); // cleared until the new answer
+  });
+
   it('checks units and kg as typed', () => {
     renderEntry();
     chooseCustomer();
