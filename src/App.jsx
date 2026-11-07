@@ -28,6 +28,11 @@ import SupplierPovPage from './pages/SupplierPovPage';
 import TeamPage from './components/TeamPage';
 import CustomersPage from './pages/b2b/CustomersPage';
 import PriceListsPage from './pages/b2b/PriceListsPage';
+import OrdersPage from './pages/b2b/OrdersPage';
+import OrderEntryPage from './pages/b2b/OrderEntryPage';
+import OrderDetailPage from './pages/b2b/OrderDetailPage';
+import InvoicesPage from './pages/b2b/InvoicesPage';
+import CreditNotesPage from './pages/b2b/CreditNotesPage';
 
 const App = () => (
   <ErrorBoundary>
@@ -64,6 +69,11 @@ const App = () => (
           <Route path="sync-exceptions" element={<SyncExceptionsPage />} />
           <Route path="b2b/customers" element={<CustomersPage />} />
           <Route path="b2b/price-lists" element={<PriceListsPage />} />
+          <Route path="b2b/orders" element={<OrdersPage />} />
+          <Route path="b2b/orders/new" element={<OrderEntryPage />} />
+          <Route path="b2b/orders/:id" element={<OrderDetailPage />} />
+          <Route path="b2b/invoices" element={<InvoicesPage />} />
+          <Route path="b2b/credit-notes" element={<CreditNotesPage />} />
           <Route path="team" element={<TeamPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
