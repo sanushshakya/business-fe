@@ -100,6 +100,16 @@ describe('PickScreen', () => {
     );
   });
 
+  it('lets the picker type an amount without the scan box taking the focus back', () => {
+    renderScreen();
+    fireEvent.click(screen.getByRole('button', { name: /Fake Lamb/ }));
+    const kg = screen.getByLabelText('Kg');
+    kg.focus();
+    fireEvent.change(kg, { target: { value: '2' } });
+    fireEvent.change(kg, { target: { value: '2.6' } });
+    expect(document.activeElement).toBe(kg);
+  });
+
   it('asks for pieces and kg on a catch-weight line', async () => {
     renderScreen();
     fireEvent.click(screen.getByRole('button', { name: /Fake Chops/ }));

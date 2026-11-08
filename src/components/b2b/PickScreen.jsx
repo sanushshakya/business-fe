@@ -61,9 +61,11 @@ const PickScreen = ({
   const scanRef = React.useRef(null);
   const scanning = React.useRef(false);
 
+  // Back to the scan box when the screen opens, another line is chosen or the swap form closes (and after each
+  // scan, in `send`) — never while an amount is being typed.
   React.useEffect(() => {
     if (!swapping) scanRef.current?.focus();
-  });
+  }, [swapping, selected?.id]);
 
   const send = async () => {
     const scanned = code.trim();
