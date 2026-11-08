@@ -50,7 +50,9 @@ const RunsPage = () => {
             ))}
           </Select>
           <Input type="date" aria-label="Date" value={day} onChange={(e) => setDay(e.target.value)} />
-          <Button onClick={() => setPlanning(true)}>Plan a run</Button>
+          <Button className="whitespace-nowrap" onClick={() => setPlanning(true)}>
+            Plan a run
+          </Button>
         </div>
       </div>
       <QueryState
