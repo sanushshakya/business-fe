@@ -164,6 +164,19 @@ describe('Trade order pages', () => {
     );
   });
 
+  it('drops old credit reasons when a later attempt fails for another reason', async () => {
+    const reasons = [{ code: 'over_limit', message: 'Over the credit limit.' }];
+    axios.post
+      .mockRejectedValueOnce({ response: { status: 400, data: { detail: 'x', code: 'credit_blocked', reasons } } })
+      .mockRejectedValueOnce({ response: { status: 400, data: { detail: 'No trade price for: Fake Rice.' } } });
+    renderAt('/dashboard/b2b/orders/12');
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }));
+    expect(await screen.findByText('Credit hold')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(await screen.findByText('No trade price for: Fake Rice.')).toBeTruthy();
+    expect(screen.queryByText('Credit hold')).toBeNull();
+  });
+
   it('overrides a credit block on a confirmed order', async () => {
     current = order({
       status: 'confirmed',

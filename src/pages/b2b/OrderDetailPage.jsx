@@ -59,6 +59,7 @@ const OrderDetailPage = () => {
         setError(null);
         return;
       }
+      setRefused(null);
       setError(apiErrorMessage(failure, 'That did not work.'));
     },
   });
