@@ -26,6 +26,8 @@ const fromCustomer = (customer) => ({
   status: customer?.status ?? 'active',
   group: customer?.group ?? '',
   payment_terms_days: String(customer?.payment_terms_days ?? 30),
+  credit_limit: customer?.credit_limit ?? '',
+  hold_reason: customer?.hold_reason ?? '',
   invoice_email: customer?.invoice_email ?? '',
   delivery_days: customer?.delivery_days ?? [],
   note: customer?.note ?? '',
@@ -78,6 +80,8 @@ const CustomerForm = ({ customer, groups = [], onSubmit, onCancel, submitting = 
       ...form,
       group: form.group === '' ? null : Number(form.group),
       payment_terms_days: terms === '' ? 30 : Number(terms),
+      credit_limit: form.credit_limit.trim() === '' ? null : form.credit_limit.trim(),
+      hold_reason: form.hold_reason.trim(),
       addresses: withOneFlag(form.addresses, 'is_default'),
       contacts: withOneFlag(form.contacts, 'is_primary'),
     });
@@ -128,6 +132,19 @@ const CustomerForm = ({ customer, groups = [], onSubmit, onCancel, submitting = 
             aria-label="Payment terms (days)"
           />
         </Field>
+        <Field label="Credit limit (£, blank for none)">
+          <Input
+            inputMode="decimal"
+            value={form.credit_limit}
+            onChange={set('credit_limit')}
+            aria-label="Credit limit (£)"
+          />
+        </Field>
+        {form.status === 'on_hold' && (
+          <Field label="Hold reason">
+            <Input value={form.hold_reason} onChange={set('hold_reason')} aria-label="Hold reason" maxLength={255} />
+          </Field>
+        )}
       </div>
       <fieldset>
         <legend className="text-sm text-gray-700">Delivery days</legend>

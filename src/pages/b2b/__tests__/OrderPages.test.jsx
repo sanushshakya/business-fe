@@ -92,6 +92,7 @@ beforeEach(() => {
     if (url.startsWith('/wholesale/invoices/')) return Promise.resolve(page(invoices));
     if (url.startsWith('/wholesale/returns/')) return Promise.resolve(page(returns));
     if (url === '/wholesale/orders/12/') return Promise.resolve({ data: current });
+    if (url === '/auth/me/') return Promise.resolve({ data: { id: 1, is_staff: true } });
     return Promise.resolve(page([current]));
   });
   axios.post.mockResolvedValue({ data: {} });
@@ -142,6 +143,42 @@ describe('Trade order pages', () => {
     renderAt('/dashboard/b2b/orders/12');
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }));
     await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/wholesale/orders/12/confirm/', {}));
+  });
+
+  it('shows a credit block on confirm and lets staff override it with a reason', async () => {
+    const reasons = [
+      { code: 'over_limit', message: 'Over the credit limit: £12.00 owed and on order against £10.00.' },
+    ];
+    axios.post.mockRejectedValueOnce({
+      response: { status: 400, data: { detail: reasons[0].message, code: 'credit_blocked', reasons } },
+    });
+    renderAt('/dashboard/b2b/orders/12');
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }));
+    expect(await screen.findByText('Credit hold')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Override reason'), { target: { value: 'Fake: owner agreed' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Override and confirm' }));
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenLastCalledWith('/wholesale/orders/12/confirm/', {
+        credit_override_reason: 'Fake: owner agreed',
+      })
+    );
+  });
+
+  it('overrides a credit block on a confirmed order', async () => {
+    current = order({
+      status: 'confirmed',
+      credit_blocks: [{ code: 'overdue', message: 'Overdue more than 7 days: INV-000003 (£5.48 due 2026-10-01).' }],
+      credit_override: null,
+    });
+    renderAt('/dashboard/b2b/orders/12');
+    expect(await screen.findByText(/INV-000003/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Override reason'), { target: { value: 'Fake: paid by phone' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Override' }));
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith('/wholesale/orders/12/credit-override/', {
+        reason: 'Fake: paid by phone',
+      })
+    );
   });
 
   it('allocates and cancels a confirmed order (a reason is needed)', async () => {

@@ -9,6 +9,8 @@ import { openPdf } from '../../utils/pdf';
 import OrderLines from '../../components/b2b/OrderLines';
 import OrderInvoice from '../../components/b2b/OrderInvoice';
 import ReturnForm from '../../components/b2b/ReturnForm';
+import CreditPanel from '../../components/b2b/CreditPanel';
+import useMe from '../../hooks/useMe';
 
 const CANCELLABLE = ['draft', 'confirmed', 'picking'];
 const HOLDING = ['confirmed', 'picking'];
@@ -37,16 +39,28 @@ const OrderDetailPage = () => {
   const [error, setError] = React.useState(location.state?.message ?? null);
   const [reason, setReason] = React.useState('');
   const [cancelling, setCancelling] = React.useState(false);
+  // A draft's own amount only counts from confirm (G48), so a refused confirm's reasons are kept here.
+  const [refused, setRefused] = React.useState(null);
+  const me = useMe();
 
   const step = useMutation({
     mutationFn: ({ path, body = {} }) => axios.post(path, body),
     onSuccess: () => {
       setError(null);
+      setRefused(null);
       setCancelling(false);
       queryClient.invalidateQueries({ queryKey: ['order', id] });
       queryClient.invalidateQueries({ queryKey: ['list'] });
     },
-    onError: (failure) => setError(apiErrorMessage(failure, 'That did not work.')),
+    onError: (failure) => {
+      const body = failure?.response?.data;
+      if (body?.code === 'credit_blocked') {
+        setRefused(body.reasons);
+        setError(null);
+        return;
+      }
+      setError(apiErrorMessage(failure, 'That did not work.'));
+    },
   });
   const run = (path, body) => step.mutateAsync({ path, body }).catch(() => {});
 
@@ -58,6 +72,8 @@ const OrderDetailPage = () => {
       </p>
     );
   const data = order.data;
+  const draft = data.status === 'draft';
+  const blocks = (draft ? refused : null) ?? data.credit_blocks ?? [];
 
   return (
     <section className="space-y-4">
@@ -84,6 +100,20 @@ const OrderDetailPage = () => {
         )}
       </Card>
       <OrderLines lines={data.lines} />
+      <CreditPanel
+        blocks={blocks}
+        override={data.credit_override ?? null}
+        isStaff={Boolean(me.data?.is_staff)}
+        busy={step.isLoading}
+        label={draft ? 'Override and confirm' : 'Override'}
+        onOverride={(why) =>
+          step.mutateAsync(
+            draft
+              ? { path: `${url}confirm/`, body: { credit_override_reason: why } }
+              : { path: `${url}credit-override/`, body: { reason: why } }
+          )
+        }
+      />
       {error && (
         <p role="alert" className="text-sm text-red-600">
           {error}
