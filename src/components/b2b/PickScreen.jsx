@@ -8,7 +8,9 @@ const ZONES = [
   ['butchery', 'Butchery'],
 ];
 // A scale label (EAN-13 starting with 2) or a GS1 code: the server reads the product and kg from it.
-const isLabel = (code) => /^2\d{12}$/.test(code) || code.startsWith('(') || code.startsWith(']');
+// Raw GS1 digits (AI 01/02 first, as many scanners send them) count as labels too.
+const isLabel = (code) =>
+  /^2\d{12}$/.test(code) || /^0[12]\d{14}/.test(code) || code.startsWith('(') || code.startsWith(']');
 
 const grams = (kg) => {
   const [whole, fraction = ''] = String(kg ?? '0').split('.');
@@ -67,6 +69,12 @@ const PickScreen = ({
     if (!swapping) scanRef.current?.focus();
   }, [swapping, selected?.id]);
 
+  // A typed amount belongs to one scan of one line: never sent again by accident.
+  React.useEffect(() => {
+    setUnits('');
+    setKg('');
+  }, [selected?.id]);
+
   const send = async () => {
     const scanned = code.trim();
     if (!scanned || !selected || scanning.current) return;
@@ -80,6 +88,8 @@ const PickScreen = ({
     }
     try {
       await onScan(body);
+      setUnits('');
+      setKg('');
     } catch {
       // the page shows why; ready for the next scan
     } finally {

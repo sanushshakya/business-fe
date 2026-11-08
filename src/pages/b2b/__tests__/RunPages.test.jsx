@@ -66,7 +66,7 @@ beforeEach(() => {
     note: '',
     stops: [STOP],
   };
-  axios.get.mockImplementation((url) => {
+  axios.get.mockImplementation((url, config) => {
     if (url.startsWith('/inventory/locations/'))
       return Promise.resolve(
         page([
@@ -92,7 +92,8 @@ beforeEach(() => {
     if (url.startsWith('/wholesale/orders/'))
       return Promise.resolve(page([{ id: 13, number_display: 'SO-000013', customer_name: 'E2E Fake Cafe Ltd' }]));
     if (url === '/wholesale/runs/3/') return Promise.resolve({ data: run });
-    return Promise.resolve(page([run]));
+    const status = config?.params?.status;
+    return Promise.resolve(page([run].filter((item) => !status || item.status === status)));
   });
   axios.post.mockResolvedValue({ data: {} });
   axios.patch.mockResolvedValue({ data: {} });
@@ -159,6 +160,32 @@ describe('Run pages', () => {
     expect(openPdf).toHaveBeenCalledWith('/wholesale/runs/3/stops/61/photo/');
     fireEvent.click(screen.getByRole('button', { name: 'Complete the run' }));
     await waitFor(() => expect(axios.post).toHaveBeenCalledWith('/wholesale/runs/3/complete/', {}));
+  });
+});
+
+describe('Driver page (review)', () => {
+  it('asks only for planned and out runs, and reloads the run after a refused delivery', async () => {
+    run = { ...run, status: 'out' };
+    renderAt('/dashboard/driver');
+    await screen.findByRole('link', { name: /RUN-000003/ });
+    const asked = axios.get.mock.calls
+      .filter(([url]) => url === '/wholesale/runs/')
+      .map(([, config]) => config.params.status);
+    expect(asked.sort()).toEqual(['out', 'planned']);
+  });
+
+  it('shows the stop as delivered when a retry finds it already recorded', async () => {
+    run = { ...run, status: 'out' };
+    renderAt('/dashboard/driver/3');
+    const [card] = await screen.findAllByRole('article');
+    fireEvent.click(within(card).getByRole('button', { name: 'Delivered' }));
+    fireEvent.change(within(card).getByLabelText('Received by'), { target: { value: 'Fake Chef' } });
+    axios.post.mockRejectedValueOnce({
+      response: { status: 400, data: { detail: 'This stop is already delivered.' } },
+    });
+    run = { ...run, stops: [{ ...STOP, status: 'delivered', received_by: 'Fake Chef' }] };
+    fireEvent.click(within(card).getByRole('button', { name: 'Record delivery' }));
+    expect(await screen.findByText(/Delivered · Fake Chef/)).toBeTruthy();
   });
 });
 

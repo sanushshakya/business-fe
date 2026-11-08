@@ -110,6 +110,24 @@ describe('PickScreen', () => {
     expect(document.activeElement).toBe(kg);
   });
 
+  it('clears the typed amount after a scan and when another line is chosen', async () => {
+    renderScreen();
+    fireEvent.change(screen.getByLabelText('Quantity'), { target: { value: '5' } });
+    scan('RICE-1');
+    await waitFor(() => expect(screen.getByLabelText('Quantity').value).toBe(''));
+    fireEvent.change(screen.getByLabelText('Quantity'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: /Fake Chops/ }));
+    expect(screen.getByLabelText('Pieces').value).toBe('');
+  });
+
+  it('sends raw GS1 digits as a label', async () => {
+    renderScreen();
+    scan('0105012345678900310300125010LOT7');
+    await waitFor(() =>
+      expect(handlers.onScan).toHaveBeenCalledWith({ line: 31, barcode: '0105012345678900310300125010LOT7' })
+    );
+  });
+
   it('asks for pieces and kg on a catch-weight line', async () => {
     renderScreen();
     fireEvent.click(screen.getByRole('button', { name: /Fake Chops/ }));

@@ -6,12 +6,20 @@ import { apiErrorMessage } from '../../utils/http';
 import DriverStop from '../../components/b2b/DriverStop';
 import EmptyState from '../../components/EmptyState';
 import QueryState from '../../components/QueryState';
-import useApiList from '../../hooks/useApiList';
+import usePagedList from '../../hooks/usePagedList';
 
 /** The driver's phone (G46b): their runs (the server lists only theirs), then each stop to deliver. */
 const DriverPage = () => {
   const { id } = useParams();
-  const runs = useApiList('/wholesale/runs/', { enabled: !id });
+  // Only what is still to drive (the server lists only the driver's own runs): a phone never walks the history.
+  const out = usePagedList('/wholesale/runs/', { params: { status: 'out' }, pageSize: 50 });
+  const planned = usePagedList('/wholesale/runs/', { params: { status: 'planned' }, pageSize: 50 });
+  const runs = {
+    ...out,
+    isLoading: out.isLoading || planned.isLoading,
+    isError: out.isError || planned.isError,
+    data: [...(out.data?.results ?? []), ...(planned.data?.results ?? [])],
+  };
   const run = useQuery({
     queryKey: ['run', id],
     queryFn: () => axios.get(`/wholesale/runs/${id}/`).then(({ data }) => data),
@@ -26,17 +34,18 @@ const DriverPage = () => {
     try {
       await axios.post(`/wholesale/runs/${id}/stops/${stop.id}/${path}/`, body);
       setErrors((current) => ({ ...current, [stop.id]: null }));
-      await queryClient.invalidateQueries({ queryKey: ['run', id] });
     } catch (failure) {
       setErrors((current) => ({ ...current, [stop.id]: apiErrorMessage(failure, 'Not recorded: try again.') }));
       throw failure;
     } finally {
       setBusy(null);
+      // Also after a failure: a lost answer may still have been recorded (then the stop shows as done).
+      queryClient.invalidateQueries({ queryKey: ['run', id] });
     }
   };
 
   if (!id) {
-    const mine = (runs.data ?? []).filter((item) => item.status === 'out' || item.status === 'planned');
+    const mine = runs.data;
     return (
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">My deliveries</h2>
