@@ -11,6 +11,7 @@ export const ROLES = [
   { value: 'freight', label: 'Freight manager' },
   { value: 'supplier', label: 'Supplier manager' },
   { value: 'stock', label: 'Stock controller' },
+  { value: 'driver', label: 'Delivery driver' },
 ];
 
 const ITEMS = {
@@ -33,6 +34,16 @@ const ITEMS = {
   branches: { to: '/dashboard/branches', label: 'Branches' },
   waste: { to: '/dashboard/waste', label: 'Waste' },
   syncExceptions: { to: '/dashboard/sync-exceptions', label: 'Sync exceptions' },
+  // B2B office (G46a): staff only, so in no role's list below.
+  tradeCustomers: { to: '/dashboard/b2b/customers', label: 'Trade customers' },
+  priceLists: { to: '/dashboard/b2b/price-lists', label: 'Price lists' },
+  tradeOrders: { to: '/dashboard/b2b/orders', label: 'Trade orders' },
+  invoices: { to: '/dashboard/b2b/invoices', label: 'Invoices' },
+  creditNotes: { to: '/dashboard/b2b/credit-notes', label: 'Credit notes' },
+  // B2B warehouse and road (G46b). `nested`: the screens under it (an order, a run) open too.
+  picking: { to: '/dashboard/b2b/picking', label: 'Picking', nested: true },
+  runs: { to: '/dashboard/b2b/runs', label: 'Delivery runs', nested: true },
+  driver: { to: '/dashboard/driver', label: 'My deliveries', nested: true },
   team: { to: '/dashboard/team', label: 'Team' },
   settings: { to: '/dashboard/settings', label: 'Settings' },
 };
@@ -53,7 +64,9 @@ const ROLE_ITEMS = {
     ITEMS.writeOffs,
     ITEMS.yieldWaste,
     ITEMS.waste,
+    ITEMS.picking,
   ],
+  driver: [ITEMS.driver],
 };
 
 /** Where an operator lands after signing in, and where they are sent from a screen that is not theirs. */
@@ -63,10 +76,15 @@ export const ROLE_HOME = {
   freight: '/dashboard/pov/freight',
   supplier: '/dashboard/pov/supplier',
   stock: '/dashboard',
+  driver: '/dashboard/driver',
 };
 
 export const navItemsFor = (role) => ROLE_ITEMS[role] ?? ALL;
 
 const normalise = (path) => path.replace(/\/$/, '') || '/';
 
-export const canOpen = (role, path) => !role || navItemsFor(role).some((item) => item.to === normalise(path));
+export const canOpen = (role, path) =>
+  !role ||
+  navItemsFor(role).some(
+    (item) => item.to === normalise(path) || (item.nested && normalise(path).startsWith(`${item.to}/`))
+  );

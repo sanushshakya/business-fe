@@ -26,6 +26,18 @@ import SyncExceptionsPage from './pages/SyncExceptionsPage';
 import SuppliersListPage from './pages/SuppliersListPage';
 import SupplierPovPage from './pages/SupplierPovPage';
 import TeamPage from './components/TeamPage';
+import CustomersPage from './pages/b2b/CustomersPage';
+import PriceListsPage from './pages/b2b/PriceListsPage';
+import OrdersPage from './pages/b2b/OrdersPage';
+import OrderEntryPage from './pages/b2b/OrderEntryPage';
+import OrderDetailPage from './pages/b2b/OrderDetailPage';
+import InvoicesPage from './pages/b2b/InvoicesPage';
+import CreditNotesPage from './pages/b2b/CreditNotesPage';
+import PickingPage from './pages/b2b/PickingPage';
+import PickPage from './pages/b2b/PickPage';
+import RunsPage from './pages/b2b/RunsPage';
+import RunPage from './pages/b2b/RunPage';
+import DriverPage from './pages/b2b/DriverPage';
 
 const App = () => (
   <ErrorBoundary>
@@ -60,6 +72,19 @@ const App = () => (
           <Route path="branches" element={<BranchesPage />} />
           <Route path="waste" element={<PriceChangesPage />} />
           <Route path="sync-exceptions" element={<SyncExceptionsPage />} />
+          <Route path="b2b/customers" element={<CustomersPage />} />
+          <Route path="b2b/price-lists" element={<PriceListsPage />} />
+          <Route path="b2b/orders" element={<OrdersPage />} />
+          <Route path="b2b/orders/new" element={<OrderEntryPage />} />
+          <Route path="b2b/orders/:id" element={<OrderDetailPage />} />
+          <Route path="b2b/invoices" element={<InvoicesPage />} />
+          <Route path="b2b/credit-notes" element={<CreditNotesPage />} />
+          <Route path="b2b/picking" element={<PickingPage />} />
+          <Route path="b2b/picking/:id" element={<PickPage />} />
+          <Route path="b2b/runs" element={<RunsPage />} />
+          <Route path="b2b/runs/:id" element={<RunPage />} />
+          <Route path="driver" element={<DriverPage />} />
+          <Route path="driver/:id" element={<DriverPage />} />
           <Route path="team" element={<TeamPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

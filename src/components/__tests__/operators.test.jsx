@@ -165,6 +165,7 @@ describe('MainLayout for operators', () => {
       'Write-offs',
       'Yield & waste',
       'Waste',
+      'Picking', // G46b
     ]);
   });
 
@@ -220,6 +221,7 @@ describe('OperatorsPanel', () => {
       'Freight manager',
       'Supplier manager',
       'Stock controller',
+      'Delivery driver', // G46b
     ]);
   });
 
