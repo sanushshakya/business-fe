@@ -49,6 +49,11 @@ describe('roles', () => {
     }
   });
 
+  it('keeps the accounts for staff (G54)', () => {
+    expect(canOpen('', '/dashboard/accounts')).toBe(true);
+    for (const { value } of ROLES) expect(canOpen(value, '/dashboard/accounts'), value).toBe(false);
+  });
+
   it('gives the stock role picking (G46b), its pick screens, and no runs', () => {
     expect(canOpen('stock', '/dashboard/b2b/picking')).toBe(true);
     expect(canOpen('stock', '/dashboard/b2b/picking/12')).toBe(true);
