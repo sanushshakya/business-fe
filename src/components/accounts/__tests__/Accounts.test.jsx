@@ -19,6 +19,7 @@ const BOXES = {
   box7: '6500',
   box8: '0',
   box9: '0',
+  suspense: '0.00',
   filed: null,
 };
 
@@ -27,6 +28,7 @@ describe('money', () => {
     expect(money('1234.5')).toBe('£1,234.50');
     expect(money('-10.00')).toBe('−£10.00');
     expect(pounds('12345')).toBe('£12,345');
+    expect(pounds('-12')).toBe('−£12');
   });
 });
 
@@ -106,6 +108,11 @@ describe('reports', () => {
 });
 
 describe('VatReturn', () => {
+  it('warns when Suspense moved in the period', () => {
+    render(<VatReturn data={{ ...BOXES, suspense: '-3.00' }} isStaff onFile={vi.fn()} />);
+    expect(screen.getByRole('status').textContent).toMatch(/−£3.00 went through Suspense/);
+  });
+
   it('shows the nine boxes and the direction of box 5', () => {
     render(<VatReturn data={BOXES} isStaff onFile={vi.fn()} />);
     expect(screen.getAllByText('£1,234.56', { selector: 'td' })).toHaveLength(2); // boxes 1 and 3

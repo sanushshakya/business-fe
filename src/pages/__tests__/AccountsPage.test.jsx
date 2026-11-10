@@ -74,6 +74,21 @@ describe('AccountsPage', () => {
     expect(await screen.findByText('These months are in a return filed already.')).toBeTruthy();
   });
 
+  it('forgets a half-confirmed filing and an old error when the period changes', async () => {
+    axios.post.mockRejectedValueOnce({ response: { status: 400, data: { detail: 'Fake refusal.' } } });
+    renderPage();
+    fireEvent.click(screen.getByRole('tab', { name: 'VAT return' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Last quarter' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark as filed' }));
+    fireEvent.click(screen.getByRole('button', { name: /Yes, mark as filed/ }));
+    expect(await screen.findByText('Fake refusal.')).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark as filed' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Last month' }));
+    expect(screen.queryByText('Fake refusal.')).toBeNull();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Mark as filed' })).toBeTruthy());
+    expect(screen.queryByRole('button', { name: /Yes, mark as filed/ })).toBeNull();
+  });
+
   it('offers filing to staff only', async () => {
     staff = false;
     renderPage();

@@ -53,9 +53,16 @@ const VatReturn = ({ data, isStaff, onFile, busy = false }) => {
           ))}
         </Tbody>
       </Table>
+      {!data.filed && Number(data.suspense) !== 0 && (
+        <p role="status" className="text-sm text-amber-700">
+          {money(data.suspense)} went through Suspense in this period (e.g. till sales with no VAT recorded): it is in
+          no box. Check it with your accountant before filing.
+        </p>
+      )}
       {data.filed ? (
         <Card className="p-4 text-sm">
-          Filed on {new Date(data.filed.filed_at).toLocaleString('en-GB')}; its months are locked.
+          Filed on {new Date(data.filed.filed_at).toLocaleString('en-GB', { timeZone: 'Europe/London' })}; its months
+          are locked.
         </Card>
       ) : (
         isStaff && (

@@ -49,20 +49,31 @@ const AccountsPage = () => {
             role="tab"
             aria-selected={tab === key}
             variant={tab === key ? 'primary' : 'secondary'}
-            onClick={() => setTab(key)}
+            onClick={() => {
+              setTab(key);
+              setError(null);
+            }}
           >
             {label}
           </Button>
         ))}
       </div>
-      <PeriodPicker start={from} end={to} today={today} onChange={(start, end) => setRange([start, end])} />
+      <PeriodPicker
+        start={from}
+        end={to}
+        today={today}
+        onChange={(start, end) => {
+          setRange([start, end]);
+          setError(null);
+        }}
+      />
       {(tab === 'bs' || tab === 'tb') && <p className="text-sm text-gray-600">As at the end of {to}.</p>}
       {error && (
         <p role="alert" className="text-sm text-red-600">
           {error}
         </p>
       )}
-      {report.isLoading && <p className="text-sm text-gray-500">Loading…</p>}
+      {report.isInitialLoading && <p className="text-sm text-gray-500">Loading…</p>}
       {report.isError && (
         <p role="alert" className="text-sm text-red-600">
           {apiErrorMessage(report.error, 'Could not load the report.')}
@@ -73,6 +84,7 @@ const AccountsPage = () => {
       {report.data && tab === 'tb' && <TrialBalanceTable data={report.data} />}
       {report.data && tab === 'vat' && (
         <VatReturn
+          key={`${from}:${to}`}
           data={report.data}
           isStaff={Boolean(me.data?.is_staff)}
           busy={file.isLoading}

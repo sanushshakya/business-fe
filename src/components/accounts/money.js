@@ -11,4 +11,7 @@ export const money = (value) => {
 };
 
 /** Whole pounds (VAT boxes 6–9): £1,234. */
-export const pounds = (value) => `£${Number(value).toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
+export const pounds = (value) => {
+  const whole = Number(value);
+  return `${whole < 0 ? '−' : ''}£${Math.abs(whole).toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
+};
