@@ -33,6 +33,7 @@ import OrderEntryPage from './pages/b2b/OrderEntryPage';
 import OrderDetailPage from './pages/b2b/OrderDetailPage';
 import InvoicesPage from './pages/b2b/InvoicesPage';
 import CreditNotesPage from './pages/b2b/CreditNotesPage';
+import AccountsPage from './pages/AccountsPage';
 import PickingPage from './pages/b2b/PickingPage';
 import PickPage from './pages/b2b/PickPage';
 import RunsPage from './pages/b2b/RunsPage';
@@ -79,6 +80,7 @@ const App = () => (
           <Route path="b2b/orders/:id" element={<OrderDetailPage />} />
           <Route path="b2b/invoices" element={<InvoicesPage />} />
           <Route path="b2b/credit-notes" element={<CreditNotesPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
           <Route path="b2b/picking" element={<PickingPage />} />
           <Route path="b2b/picking/:id" element={<PickPage />} />
           <Route path="b2b/runs" element={<RunsPage />} />
