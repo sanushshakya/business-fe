@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 import { generateSW } from 'workbox-build';
 
 const API_TARGET = process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000';
-const API_PREFIXES = ['auth', 'tenants', 'inventory', 'sales', 'demand', 'calendar', 'logistics', 'pricing', 'sync', 'common', 'wholesale', 'accounting', 'promotions'];
+const API_PREFIXES = ['auth', 'tenants', 'inventory', 'sales', 'demand', 'calendar', 'logistics', 'pricing', 'sync', 'common', 'wholesale', 'accounting', 'promotions', 'reports'];
 
 /**
  * Generates the service worker once the bundle has been written to dist/.
