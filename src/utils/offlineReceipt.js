@@ -4,8 +4,10 @@
  * The receipt of a sale made offline (G27): the basket priced from the till's cached catalogue, with VAT worked out
  * like the server's `vat.services.split_inclusive` — in whole pence, half-up, per line, then summed by rate. It is
  * what the customer is given; the server prices the sale again when it is sent (G28) and records any difference.
+ * Promotions (G58) come off each line before its VAT is worked out, as on the server.
  */
 import { divideHalfUp, toUnits } from './barcodes/decimal';
+import { basketPromotions } from './promotions';
 
 const pounds = (cents) => {
   const sign = cents < 0 ? '-' : '';
@@ -25,8 +27,8 @@ export const rateFor = (vatRates, code, day) =>
     .filter((row) => row.code === code && row.valid_from <= day)
     .sort((a, b) => b.valid_from.localeCompare(a.valid_from))[0]?.rate ?? null;
 
-const itemFor = (line, product, rate, index) => {
-  const lineCents = line.unitCents * line.quantity;
+const itemFor = (line, product, rate, index, discountCents = 0) => {
+  const lineCents = line.unitCents * line.quantity - discountCents;
   const weighed = line.weightKg !== undefined && line.weightKg !== null;
   return {
     id: `offline-${index + 1}`,
@@ -39,6 +41,7 @@ const itemFor = (line, product, rate, index) => {
     price_per_kg: weighed ? (line.pricePerKg ?? null) : null,
     label_price: line.labelPrice ?? null,
     line_total: pounds(lineCents),
+    discount: pounds(discountCents),
     vat_code: product?.vat_code ?? '',
     vat_rate: rate,
     vat_amount: rate === null ? null : pounds(vatOfLine(lineCents, rate)),
@@ -48,7 +51,7 @@ const itemFor = (line, product, rate, index) => {
 
 /**
  * A sale-shaped object for `Receipt` (and to keep with the queued sale). `payment` is
- * `{payment_method, amount_tendered?, card_auth_code?}`.
+ * `{payment_method, amount_tendered?, card_auth_code?}`; `promotions` are those in force here today.
  */
 export function offlineReceipt({
   lines,
@@ -61,11 +64,14 @@ export function offlineReceipt({
   branchName = '',
   tillNumber = null,
   cashierName = null,
+  promotions = [],
 }) {
   const byId = Object.fromEntries((products ?? []).map((product) => [product.id, product]));
+  const promo = basketPromotions(lines, products, promotions);
   const built = lines.map((line, index) => {
     const product = byId[line.product];
-    return itemFor(line, product, product ? rateFor(vatRates, product.vat_code, ukDate) : null, index);
+    const rate = product ? rateFor(vatRates, product.vat_code, ukDate) : null;
+    return itemFor(line, product, rate, index, promo.discounts[line.key ?? line.product] ?? 0);
   });
   const totalCents = built.reduce((sum, item) => sum + item.lineCents, 0);
   const groups = new Map();
@@ -103,5 +109,13 @@ export function offlineReceipt({
         gross: pounds(group.gross),
       })),
     vat_recorded: built.every((item) => item.vat_rate !== null),
+    promotions: promo.applied.map((a) => ({
+      promotion: a.promotion,
+      name: a.name,
+      kind: a.kind,
+      times: a.times,
+      saving: pounds(a.savingCents),
+    })),
+    total_saving: pounds(promo.savingCents),
   };
 }

@@ -6,6 +6,7 @@ import { lineKey } from '../../hooks/useCart';
 /**
  * The basket: one row per product with a quantity stepper, and one row per scanned label (weight × £/kg or the label's
  * price, no stepper) or typed weight. `lines` come from `useCart`; `onQuantity`/`onRemove` get the line's `lineKey`.
+ * Promotions (G58): `discounts` (pence by `lineKey`) and `applied` (`basketPromotions`); `totalCents` is after them.
  */
 // A scanned label's line: the label's price when it has one, else weight × £/kg, else (a GS1 label with only the
 // product number) the product's own price. A typed weight says so.
@@ -19,7 +20,7 @@ const labelDetail = (line) => {
   return `${formatCents(line.unitCents)} each`;
 };
 
-const Cart = ({ lines = [], totalCents = 0, onQuantity, onRemove }) => (
+const Cart = ({ lines = [], totalCents = 0, discounts = {}, applied = [], onQuantity, onRemove }) => (
   <div>
     {lines.length === 0 ? (
       <p className="py-6 text-center text-sm text-gray-500">Basket is empty. Tap a product to add it.</p>
@@ -57,7 +58,12 @@ const Cart = ({ lines = [], totalCents = 0, onQuantity, onRemove }) => (
                 </Button>
               </div>
             )}
-            <p className="w-20 text-right">{formatCents(line.unitCents * line.quantity)}</p>
+            <div className="w-20 text-right">
+              <p>{formatCents(line.unitCents * line.quantity)}</p>
+              {discounts[lineKey(line)] > 0 && (
+                <p className="text-xs text-green-700">−{formatCents(discounts[lineKey(line)])}</p>
+              )}
+            </div>
             <Button
               variant="secondary"
               className="px-2 py-1"
@@ -66,6 +72,19 @@ const Cart = ({ lines = [], totalCents = 0, onQuantity, onRemove }) => (
             >
               ×
             </Button>
+          </li>
+        ))}
+      </ul>
+    )}
+    {applied.length > 0 && (
+      <ul aria-label="Promotions" className="mt-3 space-y-1 border-t border-gray-200 pt-2 text-sm text-green-700">
+        {applied.map((a) => (
+          <li key={a.promotion} className="flex justify-between">
+            <span>
+              {a.name}
+              {a.times > 1 ? ` ×${a.times}` : ''}
+            </span>
+            <span>−{formatCents(a.savingCents)}</span>
           </li>
         ))}
       </ul>

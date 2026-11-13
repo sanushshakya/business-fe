@@ -182,3 +182,26 @@ export const activePromotions = (promotions, branchId, day) =>
       (p.ends_on === null || p.ends_on === undefined || p.ends_on >= day) &&
       (!p.branches?.length || p.branches.includes(branchId))
   );
+
+/**
+ * The basket's promotions (G58): `lines` are `useCart` lines, `products` the catalogue's, `promotions` those in force
+ * (`activePromotions`). Returns the engine's answer keyed by `lineKey`, plus `savingCents`. Online the server prices
+ * the sale again; offline this is what is charged.
+ */
+export function basketPromotions(lines, products, promotions) {
+  if (!promotions?.length || !lines.length) return { discounts: {}, applied: [], savingCents: 0 };
+  const categories = new Map((products ?? []).map((product) => [product.id, product.category ?? null]));
+  const result = applyPromotions(
+    lines.map((line) => ({
+      key: line.key ?? line.product,
+      product: line.product,
+      category: categories.get(line.product) ?? null,
+      quantity: line.quantity,
+      grossCents: line.unitCents * line.quantity,
+      weighed: line.weightKg !== undefined && line.weightKg !== null,
+      label: Boolean(line.barcode),
+    })),
+    promotions
+  );
+  return { ...result, savingCents: result.applied.reduce((total, a) => total + a.savingCents, 0) };
+}

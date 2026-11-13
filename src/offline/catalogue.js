@@ -76,6 +76,7 @@ async function apply(db, body) {
       tills: body.tills,
       branches: body.branches,
       settings: body.settings,
+      promotions: body.promotions ?? [],
     },
   });
   return { applied: true, needsFull: false };

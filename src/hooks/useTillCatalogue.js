@@ -35,6 +35,7 @@ const asMeta = (data, refreshedAt) =>
     tills: data.tills,
     branches: data.branches,
     settings: data.settings,
+    promotions: data.promotions ?? [],
   };
 
 /**
@@ -109,6 +110,7 @@ export default function useTillCatalogue() {
     tills: current?.tills ?? [],
     branches: current?.branches ?? [],
     settings: current?.settings ?? null,
+    promotions: current?.promotions ?? [],
     refreshedAt: current?.refreshedAt ?? null,
     refresh,
     isRefreshing: query.isFetching,
