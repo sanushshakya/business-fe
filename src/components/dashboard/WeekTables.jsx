@@ -1,13 +1,14 @@
 import React from 'react';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
-import { formatCents, toCents } from '../../utils/money';
+import { toCents } from '../../utils/money';
+import { money as pounds } from '../accounts/money';
 
 const CHANNELS = { till: 'Till', trade: 'Trade', online: 'Online' };
 
 /** Pence change from last week; `null` when there is nothing to compare. */
 const change = (now, before) => toCents(now ?? '0') - toCents(before ?? '0');
-const signed = (cents) => `${cents > 0 ? '+' : cents < 0 ? '−' : ''}${formatCents(Math.abs(cents))}`;
-const money = (value) => (value === null || value === undefined ? '—' : formatCents(toCents(value)));
+const signed = (cents) => `${cents > 0 ? '+' : ''}${pounds(cents / 100)}`; // pounds() puts − on a negative
+const money = (value) => (value === null || value === undefined ? '—' : pounds(value)); // −£3.60, never £-3.60
 const percent = (value) => (value === null || value === undefined ? '—' : `${value}%`);
 
 /** This week's rows joined with last week's by `key`, in this week's order then any only last week had. */
@@ -77,7 +78,7 @@ export const SalesTable = ({ current, previous, totals, previousTotals }) => {
   );
 };
 
-/** Write-offs by location: known cost against last week. */
+/** What went to waste by location (write-offs, damaged returns, butchery waste): its cost against last week. */
 export const WasteTable = ({ current, previous, totals, previousTotals }) => {
   const rows = joinWeeks(current, previous, (r) => String(r.location));
   return (
@@ -85,7 +86,6 @@ export const WasteTable = ({ current, previous, totals, previousTotals }) => {
       <Thead>
         <Tr>
           <Th>Location</Th>
-          <Th>Write-offs</Th>
           <Th>Cost</Th>
           <Th>Last week</Th>
           <Th>Change</Th>
@@ -96,16 +96,14 @@ export const WasteTable = ({ current, previous, totals, previousTotals }) => {
         {rows.map(({ key, row, before }) => (
           <Tr key={key}>
             <Td>{placeName({ row, before })}</Td>
-            <Td>{row?.count ?? 0}</Td>
             <Td>{money(row?.cost ?? '0')}</Td>
             <Td>{money(before?.cost ?? '0')}</Td>
             <ChangeCell now={row?.cost} before={before?.cost} />
-            <Td>{row?.uncosted ? row.uncosted : '—'}</Td>
+            <Td>{uncostedText(row)}</Td>
           </Tr>
         ))}
         <Tr className="font-semibold">
           <Td>Total</Td>
-          <Td />
           <Td>{money(totals.waste_cost)}</Td>
           <Td>{money(previousTotals.waste_cost)}</Td>
           <ChangeCell now={totals.waste_cost} before={previousTotals.waste_cost} />

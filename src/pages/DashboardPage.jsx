@@ -7,6 +7,7 @@ import { ukToday } from '../utils/dateUtils';
 import { SalesTable, StockTable, WasteTable } from '../components/dashboard/WeekTables';
 
 const shift = (day, days) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return ukToday(); // a cleared date box: back to this week
   const date = new Date(`${day}T12:00:00Z`); // midday UTC: no clock change moves it to another day
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
@@ -32,7 +33,13 @@ const DashboardPage = () => {
           <Button variant="secondary" onClick={() => setWeek(shift(week, -7))} aria-label="Previous week">
             ←
           </Button>
-          <Input type="date" aria-label="Week of" value={week} onChange={(e) => setWeek(e.target.value)} />
+          <Input
+            type="date"
+            aria-label="Week of"
+            value={week}
+            max={ukToday()}
+            onChange={(e) => e.target.value && setWeek(e.target.value)}
+          />
           <Button variant="secondary" onClick={() => setWeek(shift(week, 7))} aria-label="Next week">
             →
           </Button>
@@ -48,8 +55,14 @@ const DashboardPage = () => {
         <>
           <p className="text-sm text-gray-600">
             {`Week from ${data.week_start} to ${data.end} (${data.days} day${data.days === 1 ? '' : 's'}), against ` +
-              `${data.previous_start} to ${data.previous_end}. Money ex VAT; margin over sales whose stock had a cost.`}
+              `${data.previous_start} to ${data.previous_end}.`}
           </p>
+          <ul className="list-disc pl-5 text-xs text-gray-500">
+            <li>Money is ex VAT. Margin is over sales whose stock had a landed cost; the rest is “uncosted”.</li>
+            <li>Costs are each batch’s cost today, so correcting a cost changes past weeks too.</li>
+            <li>Till sales count on the day they reached the server (an offline sale, when it synced).</li>
+            <li>Online sales are the shop’s prices before vouchers or refunds, and have no cost yet.</li>
+          </ul>
           <div className="space-y-2">
             <h3 className="font-semibold">Sales and margin</h3>
             <SalesTable

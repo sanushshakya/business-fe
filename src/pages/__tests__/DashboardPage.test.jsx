@@ -51,7 +51,16 @@ const REPORT = {
       sale({ net: '10.50', costed_net: '10.50', cost: '7.50', margin: '3.00', margin_percent: '28.57' }),
       sale({ channel: 'online', ...place(null, 'Online shop'), net: '5.80', uncosted_net: '5.80' }),
     ],
-    waste: [{ ...place(1, 'Fake North', 3, 'SHOP-1'), count: 2, units: 1, kg: '0.250', cost: '3.00', uncosted: 0 }],
+    waste: [
+      {
+        ...place(1, 'Fake North', 3, 'SHOP-1'),
+        units: 1,
+        kg: '0.250',
+        cost: '3.00',
+        uncosted_units: 0,
+        uncosted_kg: '0.000',
+      },
+    ],
     stock: [{ ...place(1, 'Fake North', 3, 'SHOP-1'), value: '60.00', uncosted_units: 5, uncosted_kg: '0.000' }],
     totals: totals({
       net: '16.30',
@@ -68,6 +77,7 @@ const REPORT = {
     sales: [
       sale({ net: '2.00', costed_net: '2.00', cost: '1.50', margin: '0.50', margin_percent: '25.00' }),
       sale({ channel: 'trade', ...place(null, 'No branch', 9, 'WH-1'), net: '4.00' }),
+      sale({ ...place(2, 'Fake South'), net: '-3.60', costed_net: '-3.60', cost: '-1.00', margin: '-2.60' }),
     ],
     waste: [],
     stock: [{ ...place(1, 'Fake North', 3, 'SHOP-1'), value: '67.50', uncosted_units: 0, uncosted_kg: '0.000' }],
@@ -98,6 +108,9 @@ describe('DashboardPage', () => {
     const trade = within(sales).getByText('No branch · WH-1').closest('tr'); // only last week had trade sales
     expect(trade).toHaveTextContent('£0.00£4.00−£4.00');
     expect(within(sales).getByText('Total').closest('tr')).toHaveTextContent('£16.30£6.00+£10.30');
+    const south = within(sales).getByText('Fake South').closest('tr'); // credits beat sales last week
+    expect(south).toHaveTextContent('£0.00−£3.60+£3.60');
+    expect(south).not.toHaveTextContent('£-');
     const stock = screen.getByRole('table', { name: 'Stock value' });
     expect(within(stock).getByText('Fake North · SHOP-1').closest('tr')).toHaveTextContent('£60.00£67.50−£7.505 units');
     expect(screen.getByRole('table', { name: 'Waste' })).toHaveTextContent('£3.00');
@@ -110,6 +123,17 @@ describe('DashboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Previous week' }));
     await waitFor(() =>
       expect(axios.get).toHaveBeenLastCalledWith('/reports/dashboard/', { params: { week: '2026-02-25' } })
+    );
+  });
+
+  it('goes back to this week when the date is cleared', async () => {
+    renderPage();
+    await screen.findByRole('table', { name: 'Sales and margin' });
+    fireEvent.change(screen.getByLabelText('Week of'), { target: { value: '' } });
+    expect(screen.getByLabelText('Week of')).toHaveValue('2026-03-04');
+    fireEvent.click(screen.getByRole('button', { name: 'Next week' }));
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenLastCalledWith('/reports/dashboard/', { params: { week: '2026-03-11' } })
     );
   });
 
