@@ -27,6 +27,7 @@ import { tokenUserId } from '../utils/jwt';
 import { offlineReceipt } from '../utils/offlineReceipt';
 import { readScan } from '../utils/barcodes';
 import { ukToday } from '../utils/dateUtils';
+import { activePromotions, basketPromotions } from '../utils/promotions';
 import { useOffline } from '../offline/OfflineProvider';
 
 const SESSIONS = '/sales/sessions/';
@@ -109,6 +110,12 @@ const PosPage = () => {
   const askedStorage = React.useRef(false);
 
   const branchNames = Object.fromEntries(catalogue.branches.map((b) => [b.id, b.name]));
+  // Promotions in force at this till's branch today (G58): shown in the basket and charged offline; online the
+  // server prices the sale again and its answer is what the receipt shows.
+  const tillBranch = catalogue.tills.find((t) => String(t.id) === String(tillId))?.branch;
+  const promotions = activePromotions(catalogue.promotions, tillBranch, ukToday());
+  const basket = basketPromotions(cart.lines, catalogue.products, promotions);
+  const toPayCents = cart.totalCents - basket.savingCents;
   const tillOptions = catalogue.tills
     .filter((t) => t.is_active)
     .map((t) => ({ id: t.id, label: `${branchNames[t.branch] ?? 'Branch'} – Till ${t.number}` }));
@@ -296,6 +303,7 @@ const PosPage = () => {
       branchName: current.branch_name,
       tillNumber: current.till_number,
       cashierName: me.data?.name || null,
+      promotions,
     });
     if (!printed.vat_recorded) {
       const missing = printed.items.filter((item) => item.vat_rate === null).map((item) => item.product_name);
@@ -508,7 +516,9 @@ const PosPage = () => {
             <h3 className="font-semibold">Basket</h3>
             <Cart
               lines={cart.lines}
-              totalCents={cart.totalCents}
+              totalCents={toPayCents}
+              discounts={basket.discounts}
+              applied={basket.applied}
               onQuantity={(...args) => !locked() && cart.setQuantity(...args)}
               onRemove={(...args) => !locked() && cart.remove(...args)}
             />
@@ -524,12 +534,7 @@ const PosPage = () => {
               onScan={scanCard}
               onClear={clearCard}
             />
-            <PaymentPanel
-              totalCents={cart.totalCents}
-              onCharge={charge}
-              submitting={charging}
-              offline={sellingOffline}
-            />
+            <PaymentPanel totalCents={toPayCents} onCharge={charge} submitting={charging} offline={sellingOffline} />
             {offlineProblem && (
               <p role="alert" className="text-sm text-red-600">
                 {offlineProblem}

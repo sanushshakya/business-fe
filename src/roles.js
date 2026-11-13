@@ -40,6 +40,8 @@ const ITEMS = {
   tradeOrders: { to: '/dashboard/b2b/orders', label: 'Trade orders' },
   invoices: { to: '/dashboard/b2b/invoices', label: 'Invoices' },
   creditNotes: { to: '/dashboard/b2b/credit-notes', label: 'Credit notes' },
+  // Till promotions (G58): staff only, so in no role's list below.
+  promotions: { to: '/dashboard/promotions', label: 'Promotions' },
   // The books (G54): staff only, so in no role's list below.
   accounts: { to: '/dashboard/accounts', label: 'Accounts' },
   // B2B warehouse and road (G46b). `nested`: the screens under it (an order, a run) open too.

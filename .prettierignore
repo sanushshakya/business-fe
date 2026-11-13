@@ -1,2 +1,3 @@
 # Shared byte-for-byte with business-iq (G17 checksum test); never reformat.
 src/utils/barcodes/barcode_fixtures.json
+src/utils/promotion_fixtures.json

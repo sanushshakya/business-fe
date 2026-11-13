@@ -592,6 +592,40 @@ describe('selling offline (G27)', () => {
     expect(await screen.findByText('Receipt HS-T01-QK-000004')).toBeInTheDocument();
   });
 
+  it('applies the cached promotions offline and queues the discounted lines (G58)', async () => {
+    online = false;
+    const deal = {
+      id: 8,
+      name: 'Fake 2 for £20',
+      kind: 'multi_buy',
+      priority: 0,
+      stacks: false,
+      buy_quantity: 2,
+      deal_price: '20.00',
+      products: [1],
+      categories: [],
+      groups: [],
+      starts_on: '2000-01-01',
+      ends_on: null,
+    };
+    catalogue = makeCatalogue({ promotions: [deal, { ...deal, id: 9, branches: [2] }] }); // the second: elsewhere
+    renderPage();
+    await addRice();
+    fireEvent.click(screen.getByRole('button', { name: 'Increase Rice' }));
+    expect(screen.getByTestId('cart-total')).toHaveTextContent('£20.00');
+    expect(screen.getByText('Fake 2 for £20')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Exact' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Charge £20.00' }));
+    await screen.findByText('Receipt HS-T01-QK-000001');
+    const [{ sale }] = offlineSales.queue.mock.calls[0];
+    expect([sale.receipt.total, sale.receipt.items[0].line_total, sale.receipt.total_saving]).toEqual([
+      '20.00',
+      '20.00',
+      '5.00',
+    ]);
+    expect(screen.getByText('You saved £5.00')).toBeInTheDocument();
+  });
+
   it('lets out-of-stock products be sold offline', async () => {
     online = false;
     catalogue = makeCatalogue({ products: [{ ...PRODUCTS[0], stock_quantity: 0 }, PRODUCTS[1]] });

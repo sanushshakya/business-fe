@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, Button } from '@/components/ui';
-import { formatMoney, weightTimesPrice } from '../../utils/money';
+import { formatCents, formatMoney, toCents, weightTimesPrice } from '../../utils/money';
 import { vatLetter } from '../../utils/vat';
 import VatSummary from './VatSummary';
 
@@ -12,6 +12,7 @@ const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
   const voided = sale.status === 'voided';
   // Sales from before VAT was recorded have no summary (or only part of one).
   const vatRows = sale.vat_summary ?? [];
+  const promotions = sale.promotions ?? []; // G58; older sales and receipts have none
   return (
     <div>
       <div className="print-area space-y-2 text-sm">
@@ -45,6 +46,11 @@ const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
                   </span>
                 </td>
                 <td className="py-1 text-right">
+                  {Number(item.discount) > 0 && (
+                    <span className="block text-xs text-gray-500">
+                      {formatCents(toCents(item.line_total) + toCents(item.discount))} − {formatMoney(item.discount)}
+                    </span>
+                  )}
                   {formatMoney(item.line_total)}
                   <span className="ml-1 inline-block w-3 text-xs text-gray-500">{vatLetter(item.vat_code)}</span>
                 </td>
@@ -52,6 +58,20 @@ const Receipt = ({ sale, loyalty = null, onPrint = () => window.print() }) => {
             ))}
           </tbody>
         </table>
+        {promotions.length > 0 && (
+          <div className="space-y-1 border-t border-gray-300 pt-2" aria-label="Promotions">
+            {promotions.map((p) => (
+              <div key={`${p.promotion}-${p.name}`} className="flex justify-between">
+                <span>
+                  {p.name}
+                  {p.times > 1 ? ` ×${p.times}` : ''}
+                </span>
+                <span>−{formatMoney(p.saving)}</span>
+              </div>
+            ))}
+            <p className="font-medium">You saved {formatMoney(sale.total_saving)}</p>
+          </div>
+        )}
         <div className="space-y-1 border-t border-gray-300 pt-2">
           <div className="flex justify-between text-base font-semibold">
             <span>Total</span>
