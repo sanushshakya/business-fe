@@ -8,7 +8,7 @@ import { toUnits } from '../barcodes/decimal';
 
 // The promotion fixtures are shared with the backend (business-iq `promotions/promotion_fixtures.json`); both repos
 // pin the same SHA-256, so changing one copy fails here until the other is updated too.
-const FIXTURES_SHA256 = '6d7bdc634267230fd9446c919bdb280dadd7ed62d7751a2830e0a773bf0ca171';
+const FIXTURES_SHA256 = 'e08e018d93ef1b3bf65ef497ed197bfbb7f3f21aaf40185a94a6f835844db40e';
 const FILE = resolve('src/utils/promotion_fixtures.json');
 const BACKEND_COPY = resolve('../config/promotions/promotion_fixtures.json');
 
@@ -61,5 +61,16 @@ describe('activePromotions', () => {
     ];
     expect(activePromotions(all, 7, '2026-06-10').map((p) => p.id)).toEqual([1, 2, 6]);
     expect(activePromotions(undefined, 7, '2026-06-10')).toEqual([]);
+  });
+});
+
+describe('big baskets', () => {
+  it('stay fast: 3 × 10,000 items in a meal deal', () => {
+    const lines = [1, 2, 3].map((product) => ({ key: product, product, quantity: 10000, grossCents: 1000000 }));
+    const deal = { id: 2, name: 'M', kind: 'meal_deal', priority: 0, deal_price: '2.50', groups: [[1], [2], [3]] };
+    const started = performance.now();
+    const result = applyPromotions(lines, [deal]);
+    expect(performance.now() - started).toBeLessThan(1500);
+    expect(result.discounts).toEqual({ 1: 170000, 2: 170000, 3: 160000 }); // 17p, 17p, 16p a deal
   });
 });

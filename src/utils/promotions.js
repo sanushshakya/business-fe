@@ -33,7 +33,8 @@ const unitsOf = (lines) => {
   return units;
 };
 
-const byPrice = (units) => [...units].sort((a, b) => b.pence - a.pence || a.order - b.order);
+// Equal prices go by product, then basket order, so the answer does not depend on scan order.
+const byPrice = (units) => [...units].sort((a, b) => b.pence - a.pence || a.product - b.product || a.order - b.order);
 const sum = (units) => units.reduce((total, unit) => total + unit.pence, 0);
 
 /** `saving` pence over `units` by price: `[[unit, pence]]`, summing exactly to `saving`. */
@@ -47,7 +48,12 @@ const spread = (saving, units) => {
   const spare = saving - shares.reduce((acc, s) => acc + s.share, 0);
   const ranked = shares
     .map((_, i) => i)
-    .sort((a, b) => shares[b].rest - shares[a].rest || shares[a].unit.order - shares[b].unit.order);
+    .sort(
+      (a, b) =>
+        shares[b].rest - shares[a].rest ||
+        shares[a].unit.product - shares[b].unit.product ||
+        shares[a].unit.order - shares[b].unit.order
+    );
   const extra = new Set(ranked.slice(0, spare));
   return shares.map((s, i) => [s.unit, s.share + (extra.has(i) ? 1 : 0)]);
 };
@@ -69,23 +75,21 @@ const planSets = (promotion, units) => {
   return sets;
 };
 
+// One item from each group, most expensive first, while a deal saves money. A product is in one group only, so each
+// group's candidates are sorted once and taken in turn.
 const planMealDeals = (promotion, units) => {
-  const taken = new Set();
+  const queues = promotion.groups.map((group) =>
+    byPrice(units.filter((u) => !u.used && !u.weighed && group.includes(u.product)))
+  );
+  const deals = queues.length ? Math.min(...queues.map((queue) => queue.length)) : 0;
   const sets = [];
-  for (;;) {
-    const chosen = [];
-    for (const group of promotion.groups) {
-      const candidate = byPrice(units).find(
-        (u) => !u.used && !u.weighed && !taken.has(u.order) && group.includes(u.product)
-      );
-      if (!candidate) return sets;
-      chosen.push(candidate);
-    }
+  for (let depth = 0; depth < deals; depth += 1) {
+    const chosen = queues.map((queue) => queue[depth]);
     const saving = sum(chosen) - toUnits(promotion.deal_price, 2);
-    if (saving <= 0) return sets;
-    chosen.forEach((u) => taken.add(u.order));
+    if (saving <= 0) break; // later deals are cheaper still
     sets.push([chosen, saving]);
   }
+  return sets;
 };
 
 const percentOf = (pence, percent) => divideHalfUp(pence * toUnits(percent, 2), 10000);
