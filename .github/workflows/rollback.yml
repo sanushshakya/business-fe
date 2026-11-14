@@ -1,0 +1,40 @@
+name: Rollback
+
+# Publishes an earlier web app build again (G60), from the Actions tab: "previous" (the one live before this one) or
+# a commit SHA whose build is in releases/. No build, just a copy and a CloudFront invalidation (scripts/webapp.sh).
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '"previous", or the commit SHA to go back to'
+        required: true
+        default: previous
+
+concurrency:
+  group: webapp-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  rollback:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Roll back
+        env:
+          BUCKET: ${{ vars.WEBAPP_BUCKET }}
+          DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+          TARGET: ${{ inputs.target }}   # through the environment, never pasted into the script
+          SUMMARY_FILE: ${{ github.step_summary }}
+        run: bash scripts/webapp.sh rollback "$TARGET"

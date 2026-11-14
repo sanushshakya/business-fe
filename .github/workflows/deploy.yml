@@ -1,0 +1,92 @@
+name: Deploy
+
+# Tests, builds and publishes the web app to S3 + CloudFront (G60). Every build is kept under releases/<sha>/ in the
+# bucket and copied to live/ (scripts/webapp.sh); undo with the Rollback workflow. The app calls the API on its own
+# origin (VITE_API_URL is empty): CloudFront sends the API paths and /ws/ to the backend.
+# Until AWS is configured the deploy job skips itself with a warning. Runbook: the workspace's docs/runbooks/deploy.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: webapp-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run
+      - run: npm run lint
+
+  deploy:
+    name: Build and publish
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      id-token: write   # assume the AWS role with OIDC (no stored AWS keys)
+    steps:
+      - name: Check deployment is configured
+        id: config
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          WEBAPP_BUCKET: ${{ vars.WEBAPP_BUCKET }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          missing=""
+          for name in AWS_REGION AWS_ROLE_ARN WEBAPP_BUCKET CLOUDFRONT_DISTRIBUTION_ID; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Deployment skipped::AWS is not configured. Missing:$missing."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.config.outputs.configured == 'true'
+      - uses: actions/setup-node@v6
+        if: steps.config.outputs.configured == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Build
+        if: steps.config.outputs.configured == 'true'
+        env:
+          VITE_API_URL: ''
+        run: |
+          npm ci
+          npm run build
+
+      - name: Configure AWS credentials
+        if: steps.config.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Upload and publish
+        if: steps.config.outputs.configured == 'true'
+        env:
+          BUCKET: ${{ vars.WEBAPP_BUCKET }}
+          DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+          SUMMARY_FILE: ${{ github.step_summary }}
+        run: bash scripts/webapp.sh release "$GITHUB_SHA" dist
