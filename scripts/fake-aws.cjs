@@ -59,7 +59,13 @@ function run() {
   const [service, command] = argv;
   if (service === 's3' && command === 'cp') return cp();
   if (service === 's3api' && command === 'head-object') {
-    return `${option('--bucket')}/${option('--key')}` in state.objects ? 0 : 254;
+    if (state.headError) {
+      process.stderr.write('An error occurred (403) when calling the HeadObject operation: Forbidden\n');
+      return 254;
+    }
+    if (`${option('--bucket')}/${option('--key')}` in state.objects) return 0;
+    process.stderr.write('An error occurred (404) when calling the HeadObject operation: Not Found\n');
+    return 254;
   }
   if (service === 'cloudfront' && command === 'create-invalidation') {
     const id = `I${(state.invalidations || []).length + 1}`;

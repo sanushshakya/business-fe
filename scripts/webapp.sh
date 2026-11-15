@@ -5,7 +5,7 @@
 #   webapp.sh release <sha> <dist dir>   upload the build to releases/<sha>/, then publish it
 #   webapp.sh rollback previous|<sha>    publish an earlier release again (no build)
 #
-# Environment: BUCKET, DISTRIBUTION_ID, SUMMARY_FILE (optional, markdown appended).
+# Environment: BUCKET, DISTRIBUTION_ID, SUMMARY_FILE (optional, markdown appended; defaults to GITHUB_STEP_SUMMARY).
 #
 # Layout: every build stays under releases/<sha>/; CloudFront serves live/. Publishing copies the release's hashed
 # assets/ first (cached a year, immutable) and then index.html, sw.js and the rest (no-cache), so a new index.html
@@ -19,10 +19,18 @@ IMMUTABLE='public, max-age=31536000, immutable'
 NO_CACHE='no-cache'
 
 fail() { echo "::error title=${1}::${2}" >&2; exit 1; }
-summary() { if [ -n "${SUMMARY_FILE:-}" ]; then echo "$*" >> "$SUMMARY_FILE"; fi; }
-check_sha() { [[ "$1" =~ ^[0-9a-f]{7,40}$ ]] || fail "Bad release" "'$1' is not a commit SHA."; }
+SUMMARY_FILE=${SUMMARY_FILE:-${GITHUB_STEP_SUMMARY:-}}
+summary() { if [ -n "$SUMMARY_FILE" ]; then echo "$*" >> "$SUMMARY_FILE"; fi; }
+check_sha() { [[ "$1" =~ ^[0-9a-f]{40}$ ]] || fail "Bad release" "'$1' is not a full 40-character commit SHA."; }
 
-exists() { aws s3api head-object --bucket "$BUCKET" --key "$1" --output json > /dev/null 2>&1; }
+# 0 = the object exists, 1 = it does not (404); any other error fails the run, so a passing S3 problem is never
+# taken for "missing" (which would rewrite releases/HISTORY without its earlier lines).
+exists() {
+  local out
+  if out=$(aws s3api head-object --bucket "$BUCKET" --key "$1" --output json 2>&1); then return 0; fi
+  if grep -qE '\(404\)|Not Found' <<< "$out"; then return 1; fi
+  fail "S3 check failed" "Could not check s3://$BUCKET/$1: $(tail -n 1 <<< "$out")"
+}
 
 read_object() {  # prints the object's text, or nothing if it does not exist
   local tmp

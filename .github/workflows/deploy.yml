@@ -88,5 +88,4 @@ jobs:
         env:
           BUCKET: ${{ vars.WEBAPP_BUCKET }}
           DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
-          SUMMARY_FILE: ${{ github.step_summary }}
         run: bash scripts/webapp.sh release "$GITHUB_SHA" dist

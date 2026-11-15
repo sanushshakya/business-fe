@@ -29,7 +29,7 @@ function build(name, { assets = [`index-${name}.js`] } = {}) {
   return dist;
 }
 
-function run(...args) {
+function runWith(env, ...args) {
   return spawnSync('bash', [SCRIPT, ...args], {
     encoding: 'utf8',
     env: {
@@ -38,9 +38,12 @@ function run(...args) {
       BUCKET: 'web-bucket',
       DISTRIBUTION_ID: 'E123',
       SUMMARY_FILE: path.join(dir, 'summary.md'),
+      ...env,
     },
   });
 }
+
+const run = (...args) => runWith({}, ...args);
 
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'webapp-'));
@@ -109,6 +112,31 @@ describe.skipIf(!hasJq)('webapp.sh', () => {
     const result = run('rollback', 'latest; rm -rf /');
     expect(result.stderr).toContain('::error title=Bad release::');
     expect(state().calls ?? []).toEqual([]);
+  });
+
+  it('refuses a short commit SHA', () => {
+    run('release', A, build('one'));
+    const result = run('rollback', A.slice(0, 7));
+    expect(result.stderr).toContain('full 40-character');
+    expect(object('live/index.html').body).toContain('one');
+  });
+
+  it('stops on an S3 error instead of taking it for a missing file', () => {
+    run('release', A, build('one'));
+    const history = object('releases/HISTORY').body;
+    fs.writeFileSync(statePath, JSON.stringify({ ...state(), headError: true }));
+    const result = run('release', B, build('two'));
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('::error title=S3 check failed::');
+    fs.writeFileSync(statePath, JSON.stringify({ ...state(), headError: false }));
+    expect(object('releases/HISTORY').body).toBe(history);
+  });
+
+  it('writes the summary to GITHUB_STEP_SUMMARY when SUMMARY_FILE is not set', () => {
+    const summary = path.join(dir, 'step-summary.md');
+    const result = runWith({ SUMMARY_FILE: '', GITHUB_STEP_SUMMARY: summary }, 'release', A, build('one'));
+    expect(result.status, result.stderr).toBe(0);
+    expect(fs.readFileSync(summary, 'utf8')).toContain(`Live web app: \`${A}\``);
   });
 
   it('says so when there is nothing to roll back to', () => {

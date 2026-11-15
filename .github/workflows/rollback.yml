@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: '"previous", or the commit SHA to go back to'
+        description: '"previous", or the full 40-character commit SHA to go back to'
         required: true
         default: previous
 
@@ -36,5 +36,4 @@ jobs:
           BUCKET: ${{ vars.WEBAPP_BUCKET }}
           DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
           TARGET: ${{ inputs.target }}   # through the environment, never pasted into the script
-          SUMMARY_FILE: ${{ github.step_summary }}
         run: bash scripts/webapp.sh rollback "$TARGET"
