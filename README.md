@@ -89,6 +89,23 @@ src/
 
 Tests sit next to the code in `__tests__/` folders and run on Vitest with Testing Library and jest-dom (set up in `src/setupTests.js`). `src/tests/modules.test.js` imports every module in `src/` as a smoke test, so a broken import fails the suite. RxDB tests use the in-memory storage; HTTP is mocked at `utils/axios` or the axios adapter.
 
+## Deploy and rollback (G60)
+
+- **Deploy** (`.github/workflows/deploy.yml`) runs on a push to `main`, or by hand. It tests and lints,
+  builds with an empty `VITE_API_URL` (CloudFront serves the API from the same domain), and runs
+  `scripts/webapp.sh release <sha> dist`.
+- **What a release does:** keeps the build under `releases/<sha>/` in the web app bucket, copies it to `live/`
+  (assets first, then `index.html`), and invalidates CloudFront.
+- **Caching:** hashed assets are cached for a year (immutable); everything else is `no-cache`. Old assets stay
+  in `live/`, so a tab still open on an older build keeps working.
+- **Rollback** (`.github/workflows/rollback.yml`, manual): `scripts/webapp.sh rollback previous|<sha>` copies
+  that release back to `live/`.
+- **Settings:** environment `production`; secret `AWS_ROLE_ARN` (stack output `FrontendDeployRoleArn`); variables
+  `AWS_REGION`, `WEBAPP_BUCKET` (`WebAppBucket`) and `CLOUDFRONT_DISTRIBUTION_ID` (`DistributionId`).
+- **More:** the workspace runbook `docs/runbooks/deploy.md`.
+- **Tests:** `src/tests/webappScript.test.js` runs the script against a stand-in `aws` CLI
+  (`scripts/fake-aws.cjs`).
+
 ## Backend behaviours to know about
 
 - Creating branches, and listing or creating invitations, is staff-only. The seeded demo owner is not `is_staff`, so those return 403 until you make them staff.
