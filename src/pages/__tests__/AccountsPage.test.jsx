@@ -1,11 +1,12 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from '../../utils/axios';
 import AccountsPage from '../AccountsPage';
 
-vi.mock('../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('../../utils/axios', () => ({ default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() } }));
 vi.mock('../../utils/dateUtils', () => ({ ukToday: () => '2026-11-10' }));
 
 const BOXES = {
@@ -23,12 +24,41 @@ const BOXES = {
 };
 let staff;
 
-const renderPage = () =>
+const renderPage = (path = '/dashboard/accounts') =>
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <AccountsPage />
-    </QueryClientProvider>
+    <MemoryRouter initialEntries={[path]}>
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <AccountsPage />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
+
+const OBLIGATION = {
+  periodKey: '26C3',
+  start: '2026-07-01',
+  end: '2026-09-30',
+  due: '2026-11-07',
+  status: 'O',
+  filed_in_iq: false,
+};
+
+const withHmrc = () => {
+  const plain = axios.get.getMockImplementation();
+  axios.get.mockImplementation((url, options) => {
+    if (url === '/accounting/hmrc/')
+      return Promise.resolve({
+        data: { environment: 'sandbox', connected: true, vrn: '123456789', connected_at: null },
+      });
+    if (url === '/accounting/hmrc/returns/') return Promise.resolve({ data: [] });
+    return plain(url, options);
+  });
+  axios.post.mockImplementation((url) => {
+    if (url === '/accounting/hmrc/obligations/') return Promise.resolve({ data: [OBLIGATION] });
+    if (url === '/accounting/hmrc/returns/')
+      return Promise.resolve({ data: { id: 1, status: 'accepted', form_bundle_number: '256660290587' } });
+    return Promise.reject(new Error(url));
+  });
+};
 
 beforeEach(() => {
   staff = true;
@@ -95,5 +125,39 @@ describe('AccountsPage', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'VAT return' }));
     await waitFor(() => expect(screen.getByText('Net VAT (to pay)')).toBeTruthy());
     expect(screen.queryByRole('button', { name: 'Mark as filed' })).toBeNull();
+  });
+
+  it('files through HMRC when MTD filing is on: no "Mark as filed", the obligation sets the period', async () => {
+    withHmrc();
+    renderPage();
+    fireEvent.click(screen.getByRole('tab', { name: 'VAT return' }));
+    const period = await screen.findByRole('button', { name: /1 Jul 2026 to 30 Sep 2026/ });
+    expect(screen.queryByRole('button', { name: 'Mark as filed' })).toBeNull();
+    const [, body] = axios.post.mock.calls.find(([url]) => url === '/accounting/hmrc/obligations/');
+    expect(body.client.device_id).toMatch(/^[0-9a-f-]{36}$/);
+    fireEvent.click(period);
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith('/accounting/vat-return/', {
+        params: { from: '2026-07-01', to: '2026-09-30' },
+      })
+    );
+    fireEvent.click(screen.getByRole('checkbox', { name: /true and complete/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit to HMRC' }));
+    fireEvent.click(screen.getByRole('button', { name: /Yes, submit to HMRC/ }));
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        '/accounting/hmrc/returns/',
+        expect.objectContaining({ period_key: '26C3', start: '2026-07-01', end: '2026-09-30', declaration: true })
+      )
+    );
+  });
+
+  it('says so when HMRC sent the browser back connected, or with an error', async () => {
+    withHmrc();
+    const { unmount } = renderPage('/dashboard/accounts?hmrc=connected');
+    expect((await screen.findByRole('status')).textContent).toMatch(/Connected to HMRC/);
+    unmount();
+    renderPage('/dashboard/accounts?hmrc=error&reason=denied');
+    expect((await screen.findAllByRole('alert'))[0].textContent).toMatch(/not granted/);
   });
 });

@@ -131,6 +131,12 @@ describe('VatReturn', () => {
     expect(screen.queryByRole('button', { name: 'Mark as filed' })).toBeNull();
   });
 
+  it('leaves filing to HMRC when MTD filing is on', () => {
+    render(<VatReturn data={BOXES} isStaff hmrcOn onFile={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Mark as filed' })).toBeNull();
+    expect(screen.getByText(/Submit to HMRC below/)).toBeTruthy();
+  });
+
   it('shows the filed figures, not the current ones', () => {
     const filed = { ...BOXES, box1: '999.99', filed_at: '2026-10-05T09:00:00Z', id: 3 };
     render(<VatReturn data={{ ...BOXES, filed }} isStaff onFile={vi.fn()} />);

@@ -16,9 +16,10 @@ const BOXES = [
 
 /**
  * The nine-box VAT return (G54) for the period. Staff mark it filed (a second click confirms): the server stores the
- * boxes as they are and locks those months. Shows the filed return when there is one.
+ * boxes as they are and locks those months. Shows the filed return when there is one. With MTD filing on (`hmrcOn`,
+ * G56) the return goes through HMRC instead, so "Mark as filed" is not offered.
  */
-const VatReturn = ({ data, isStaff, onFile, busy = false }) => {
+const VatReturn = ({ data, isStaff, onFile, busy = false, hmrcOn = false }) => {
   const [confirming, setConfirming] = React.useState(false);
   const shown = data.filed ?? data;
   const file = () => {
@@ -64,6 +65,10 @@ const VatReturn = ({ data, isStaff, onFile, busy = false }) => {
           Filed on {new Date(data.filed.filed_at).toLocaleString('en-GB', { timeZone: 'Europe/London' })}; its months
           are locked.
         </Card>
+      ) : hmrcOn ? (
+        <p className="text-sm text-gray-600">
+          These are the figures for the period: Submit to HMRC below to file them.
+        </p>
       ) : (
         isStaff && (
           <div className="flex flex-wrap items-center gap-2 text-sm">

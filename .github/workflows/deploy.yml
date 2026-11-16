@@ -72,6 +72,7 @@ jobs:
         if: steps.config.outputs.configured == 'true'
         env:
           VITE_API_URL: ''
+          VITE_APP_VERSION: ${{ github.sha }}   # HMRC's Gov-Vendor-Version (G56)
         run: |
           npm ci
           npm run build
