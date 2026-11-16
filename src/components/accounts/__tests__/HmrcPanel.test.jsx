@@ -18,6 +18,8 @@ const panel = (props = {}) =>
       onPick={vi.fn()}
       onSubmit={vi.fn()}
       onCheck={vi.fn()}
+      onResolve={vi.fn()}
+      period={{ start: '2026-07-01', end: '2026-09-30' }}
       {...props}
     />
   );
@@ -95,5 +97,49 @@ describe('HmrcPanel', () => {
     panel({ isStaff: false });
     expect(screen.queryByRole('button', { name: 'Submit to HMRC' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Disconnect' })).toBeNull();
+  });
+
+  it('forgets the picked period when the dates are changed by hand', () => {
+    const { rerender } = panel();
+    fireEvent.click(screen.getByRole('button', { name: /1 Jul 2026 to 30 Sep 2026/ }));
+    expect(screen.getByRole('button', { name: 'Submit to HMRC' })).toBeTruthy();
+    rerender(
+      <HmrcPanel
+        status={CONNECTED}
+        obligations={[OPEN]}
+        submissions={[]}
+        isStaff
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onPick={vi.fn()}
+        onSubmit={vi.fn()}
+        onCheck={vi.fn()}
+        onResolve={vi.fn()}
+        period={{ start: '2026-07-01', end: '2026-08-31' }}
+      />
+    );
+    expect(screen.queryByRole('button', { name: 'Submit to HMRC' })).toBeNull();
+  });
+
+  it('resolves an attempt HMRC holds with other figures, with a reason', () => {
+    const onResolve = vi.fn();
+    const differs = {
+      id: 7,
+      period_key: '26C3',
+      status: 'unknown',
+      error_code: 'FIGURES_DIFFER',
+      error_message: 'HMRC holds a return for this period with other figures.',
+      submitted_at: '2026-11-16T09:30:40Z',
+    };
+    panel({ submissions: [differs], onResolve });
+    const record = screen.getByRole('button', { name: "Record HMRC's figures" });
+    expect(record.disabled).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: /Reason/ }), {
+      target: { value: 'Old attempt reached HMRC' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: "Record HMRC's figures" }));
+    expect(onResolve).toHaveBeenCalledWith(7, 'record_hmrc', 'Old attempt reached HMRC');
+    fireEvent.click(screen.getByRole('button', { name: 'Close this attempt' }));
+    expect(onResolve).toHaveBeenCalledWith(7, 'close', 'Old attempt reached HMRC');
   });
 });

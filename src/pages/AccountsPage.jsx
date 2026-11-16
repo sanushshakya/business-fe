@@ -71,6 +71,7 @@ const AccountsPage = () => {
     queryFn: () => axios.post('/accounting/hmrc/obligations/', { client: clientInfo() }).then(({ data }) => data),
     enabled: onVat && connected,
     retry: false,
+    refetchOnWindowFocus: false, // each read reaches HMRC (and may refresh the token)
   });
   const submissions = useQuery({
     queryKey: ['hmrc', 'returns'],
@@ -109,6 +110,15 @@ const AccountsPage = () => {
       hmrcDone();
     },
   });
+  const resolve = useMutation({
+    mutationFn: ({ id, action, reason }) =>
+      axios.post(`/accounting/hmrc/returns/${id}/resolve/`, { action, reason, client: clientInfo() }),
+    onSuccess: () => {
+      setHmrcError(null);
+      hmrcDone();
+    },
+    onError: (failure) => setHmrcError(hmrcMessage(failure, 'Could not resolve the attempt.')),
+  });
   const check = useMutation({
     mutationFn: (id) => axios.post(`/accounting/hmrc/returns/${id}/check/`, { client: clientInfo() }),
     onSuccess: () => {
@@ -139,6 +149,7 @@ const AccountsPage = () => {
             onClick={() => {
               setTab(key);
               setError(null);
+              setNotice(null);
             }}
           >
             {label}
@@ -190,7 +201,9 @@ const AccountsPage = () => {
           obligations={obligations.data ?? []}
           submissions={submissions.data ?? []}
           isStaff={Boolean(me.data?.is_staff)}
-          busy={connect.isLoading || disconnect.isLoading || submit.isLoading || check.isLoading}
+          key={(submissions.data ?? []).length}
+          period={{ start: from, end: to }}
+          busy={connect.isLoading || disconnect.isLoading || submit.isLoading || check.isLoading || resolve.isLoading}
           error={
             hmrcError || (obligations.isError ? hmrcMessage(obligations.error, 'Could not read HMRC periods.') : null)
           }
@@ -199,6 +212,7 @@ const AccountsPage = () => {
           onPick={(start, end) => setRange([start, end])}
           onSubmit={(periodKey, start, end) => submit.mutate({ periodKey, start, end })}
           onCheck={(id) => check.mutate(id)}
+          onResolve={(id, action, reason) => resolve.mutate({ id, action, reason })}
         />
       )}
     </section>

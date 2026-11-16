@@ -19,7 +19,31 @@ const STATUS = {
   sending: 'Sending',
 };
 
-const Submission = ({ row, isStaff, busy, onCheck }) => (
+const Resolve = ({ row, busy, onResolve }) => {
+  const [reason, setReason] = React.useState('');
+  const ready = !busy && reason.trim().length > 0;
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2">
+      <label className="flex items-center gap-1">
+        Reason
+        <input
+          className="rounded border border-gray-300 px-2 py-1"
+          value={reason}
+          maxLength={300}
+          onChange={(event) => setReason(event.target.value)}
+        />
+      </label>
+      <Button disabled={!ready} onClick={() => onResolve(row.id, 'record_hmrc', reason.trim())}>
+        Record HMRC&apos;s figures
+      </Button>
+      <Button variant="secondary" disabled={!ready} onClick={() => onResolve(row.id, 'close', reason.trim())}>
+        Close this attempt
+      </Button>
+    </div>
+  );
+};
+
+const Submission = ({ row, isStaff, busy, onCheck, onResolve }) => (
   <li className="border-t border-gray-200 py-2 first:border-t-0">
     <span className="font-medium">{row.period_key}</span> · {STATUS[row.status] ?? row.status} ·{' '}
     <span className="text-gray-600">{when(row.submitted_at)}</span>
@@ -28,20 +52,24 @@ const Submission = ({ row, isStaff, busy, onCheck }) => (
         Form bundle {row.form_bundle_number}
         {row.processing_date && `, processed ${when(row.processing_date)}`}
         {row.charge_ref_number && `, charge reference ${row.charge_ref_number}`}. Its months are locked.
+        {row.error_code === 'RECORDED_FROM_HMRC' && ` ${row.error_message}`}
       </p>
     )}
     {row.status === 'rejected' && row.error_message && <p className="text-red-700">{row.error_message}</p>}
     {row.status === 'unknown' && (
-      <p className="flex flex-wrap items-center gap-2 text-amber-800">
-        {row.error_code === 'FIGURES_DIFFER'
-          ? row.error_message
-          : 'HMRC may or may not have this return. Nothing is locked until HMRC confirms it.'}
-        {isStaff && (
-          <Button variant="secondary" disabled={busy} onClick={() => onCheck(row.id)}>
-            Check with HMRC
-          </Button>
-        )}
-      </p>
+      <div className="text-amber-800">
+        <p className="flex flex-wrap items-center gap-2">
+          {['FIGURES_DIFFER', 'NOT_RECORDED'].includes(row.error_code)
+            ? row.error_message
+            : 'HMRC may or may not have this return. Nothing is locked until HMRC confirms it.'}
+          {isStaff && (
+            <Button variant="secondary" disabled={busy} onClick={() => onCheck(row.id)}>
+              Check with HMRC
+            </Button>
+          )}
+        </p>
+        {isStaff && row.error_code === 'FIGURES_DIFFER' && <Resolve row={row} busy={busy} onResolve={onResolve} />}
+      </div>
     )}
   </li>
 );
@@ -62,11 +90,15 @@ const HmrcPanel = ({
   onPick,
   onSubmit,
   onCheck,
+  onResolve,
+  period = null,
 }) => {
   const [picked, setPicked] = React.useState(null);
   const [declared, setDeclared] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const open = obligations.filter((row) => row.status === 'O' && !row.filed_in_iq);
+  // The boxes shown are the page's period: a pick only counts while the period is still exactly the obligation's.
+  const chosen = picked && (!period || (period.start === picked.start && period.end === picked.end)) ? picked : null;
 
   const pick = (row) => {
     setPicked(row);
@@ -80,7 +112,7 @@ const HmrcPanel = ({
       return;
     }
     setConfirming(false);
-    onSubmit(picked.periodKey, picked.start, picked.end);
+    onSubmit(chosen.periodKey, chosen.start, chosen.end);
   };
 
   return (
@@ -120,8 +152,8 @@ const HmrcPanel = ({
             {open.map((row) => (
               <li key={row.periodKey} className="flex items-center gap-2">
                 <Button
-                  variant={picked?.periodKey === row.periodKey ? 'primary' : 'secondary'}
-                  aria-pressed={picked?.periodKey === row.periodKey}
+                  variant={chosen?.periodKey === row.periodKey ? 'primary' : 'secondary'}
+                  aria-pressed={chosen?.periodKey === row.periodKey}
                   onClick={() => pick(row)}
                 >
                   {day(row.start)} to {day(row.end)}
@@ -130,7 +162,7 @@ const HmrcPanel = ({
               </li>
             ))}
           </ul>
-          {picked && isStaff && (
+          {chosen && isStaff && (
             <div className="space-y-2">
               <label className="flex items-start gap-2">
                 <input
@@ -148,7 +180,7 @@ const HmrcPanel = ({
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 <Button disabled={busy || !declared} onClick={submit}>
-                  {confirming ? `Yes, submit to HMRC for ${day(picked.start)} to ${day(picked.end)}` : 'Submit to HMRC'}
+                  {confirming ? `Yes, submit to HMRC for ${day(chosen.start)} to ${day(chosen.end)}` : 'Submit to HMRC'}
                 </Button>
                 {confirming && (
                   <Button variant="secondary" onClick={() => setConfirming(false)}>
@@ -165,7 +197,14 @@ const HmrcPanel = ({
           <p className="font-medium">Submissions</p>
           <ul>
             {submissions.map((row) => (
-              <Submission key={row.id} row={row} isStaff={isStaff} busy={busy} onCheck={onCheck} />
+              <Submission
+                key={row.id}
+                row={row}
+                isStaff={isStaff}
+                busy={busy}
+                onCheck={onCheck}
+                onResolve={onResolve}
+              />
             ))}
           </ul>
         </div>

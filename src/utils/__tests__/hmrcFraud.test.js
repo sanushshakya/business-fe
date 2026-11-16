@@ -31,6 +31,11 @@ describe('hmrcFraud', () => {
     expect(info.web_version).toBeTruthy();
   });
 
+  it('rounds a zoomed scaling factor to 3 places', () => {
+    vi.spyOn(window, 'devicePixelRatio', 'get').mockReturnValue(1.100000023841858);
+    expect(clientInfo().screens[0].scaling_factor).toBe(1.1);
+  });
+
   it('still works when storage is blocked', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');

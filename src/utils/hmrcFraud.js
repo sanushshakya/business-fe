@@ -45,7 +45,8 @@ export const clientInfo = () => {
       {
         width: Math.max(1, Math.round(screen?.width || 1)),
         height: Math.max(1, Math.round(screen?.height || 1)),
-        scaling_factor: window.devicePixelRatio || 1,
+        // 110% zoom reports 1.100000023841858: three places are plenty.
+        scaling_factor: Math.round((window.devicePixelRatio || 1) * 1000) / 1000 || 1,
         colour_depth: Math.max(1, screen?.colorDepth || 24),
       },
     ],
