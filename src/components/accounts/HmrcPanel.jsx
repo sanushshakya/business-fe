@@ -19,9 +19,24 @@ const STATUS = {
   sending: 'Sending',
 };
 
+const CONFIRM = {
+  record_hmrc: "Yes, record HMRC's figures and lock the months",
+  close: 'Yes, close this attempt',
+};
+
+/** Staff settle an attempt with no clear answer: record what HMRC holds, or close it. Both need a second click. */
 const Resolve = ({ row, busy, onResolve }) => {
   const [reason, setReason] = React.useState('');
+  const [confirming, setConfirming] = React.useState(null);
   const ready = !busy && reason.trim().length > 0;
+  const act = (action) => {
+    if (confirming !== action) {
+      setConfirming(action);
+      return;
+    }
+    setConfirming(null);
+    onResolve(row.id, action, reason.trim());
+  };
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2">
       <label className="flex items-center gap-1">
@@ -30,15 +45,23 @@ const Resolve = ({ row, busy, onResolve }) => {
           className="rounded border border-gray-300 px-2 py-1"
           value={reason}
           maxLength={300}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={(event) => {
+            setReason(event.target.value);
+            setConfirming(null);
+          }}
         />
       </label>
-      <Button disabled={!ready} onClick={() => onResolve(row.id, 'record_hmrc', reason.trim())}>
-        Record HMRC&apos;s figures
+      <Button disabled={!ready} onClick={() => act('record_hmrc')}>
+        {confirming === 'record_hmrc' ? CONFIRM.record_hmrc : "Record HMRC's figures"}
       </Button>
-      <Button variant="secondary" disabled={!ready} onClick={() => onResolve(row.id, 'close', reason.trim())}>
-        Close this attempt
+      <Button variant="secondary" disabled={!ready} onClick={() => act('close')}>
+        {confirming === 'close' ? CONFIRM.close : 'Close this attempt'}
       </Button>
+      {confirming && (
+        <Button variant="secondary" onClick={() => setConfirming(null)}>
+          Not yet
+        </Button>
+      )}
     </div>
   );
 };
@@ -68,7 +91,7 @@ const Submission = ({ row, isStaff, busy, onCheck, onResolve }) => (
             </Button>
           )}
         </p>
-        {isStaff && row.error_code === 'FIGURES_DIFFER' && <Resolve row={row} busy={busy} onResolve={onResolve} />}
+        {isStaff && <Resolve row={row} busy={busy} onResolve={onResolve} />}
       </div>
     )}
   </li>

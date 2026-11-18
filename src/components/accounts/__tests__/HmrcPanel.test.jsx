@@ -121,7 +121,7 @@ describe('HmrcPanel', () => {
     expect(screen.queryByRole('button', { name: 'Submit to HMRC' })).toBeNull();
   });
 
-  it('resolves an attempt HMRC holds with other figures, with a reason', () => {
+  it('resolves an attempt HMRC holds with other figures, with a reason and a second click', () => {
     const onResolve = vi.fn();
     const differs = {
       id: 7,
@@ -132,14 +132,39 @@ describe('HmrcPanel', () => {
       submitted_at: '2026-11-16T09:30:40Z',
     };
     panel({ submissions: [differs], onResolve });
-    const record = screen.getByRole('button', { name: "Record HMRC's figures" });
-    expect(record.disabled).toBe(true);
+    expect(screen.getByRole('button', { name: "Record HMRC's figures" }).disabled).toBe(true);
     fireEvent.change(screen.getByRole('textbox', { name: /Reason/ }), {
       target: { value: 'Old attempt reached HMRC' },
     });
     fireEvent.click(screen.getByRole('button', { name: "Record HMRC's figures" }));
+    expect(onResolve).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: "Yes, record HMRC's figures and lock the months" }));
     expect(onResolve).toHaveBeenCalledWith(7, 'record_hmrc', 'Old attempt reached HMRC');
     fireEvent.click(screen.getByRole('button', { name: 'Close this attempt' }));
+    expect(onResolve).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Not yet' }));
+    expect(screen.queryByRole('button', { name: 'Yes, close this attempt' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Close this attempt' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, close this attempt' }));
     expect(onResolve).toHaveBeenCalledWith(7, 'close', 'Old attempt reached HMRC');
+  });
+
+  it('offers a way out of every attempt with no clear answer', () => {
+    const onResolve = vi.fn();
+    for (const [id, code] of [
+      [8, 'INTERRUPTED'],
+      [9, 'NOT_RECORDED'],
+      [10, ''],
+    ]) {
+      const { unmount } = panel({
+        submissions: [{ id, period_key: '26C3', status: 'unknown', error_code: code, error_message: 'x' }],
+        onResolve,
+      });
+      fireEvent.change(screen.getByRole('textbox', { name: /Reason/ }), { target: { value: 'Handled by phone' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Close this attempt' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Yes, close this attempt' }));
+      expect(onResolve).toHaveBeenLastCalledWith(id, 'close', 'Handled by phone');
+      unmount();
+    }
   });
 });
