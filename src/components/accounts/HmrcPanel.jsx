@@ -68,7 +68,8 @@ const Resolve = ({ row, busy, onResolve }) => {
 
 const Submission = ({ row, isStaff, busy, onCheck, onResolve }) => (
   <li className="border-t border-gray-200 py-2 first:border-t-0">
-    <span className="font-medium">{row.period_key}</span> · {STATUS[row.status] ?? row.status} ·{' '}
+    <span className="font-medium">{row.period_key}</span> ·{' '}
+    {row.error_code === 'CLOSED' ? 'Closed by staff' : (STATUS[row.status] ?? row.status)} ·{' '}
     <span className="text-gray-600">{when(row.submitted_at)}</span>
     {row.status === 'accepted' && (
       <p>

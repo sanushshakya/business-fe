@@ -167,4 +167,15 @@ describe('HmrcPanel', () => {
       unmount();
     }
   });
+
+  it('labels an attempt staff closed as closed, not refused by HMRC', () => {
+    panel({
+      submissions: [
+        { id: 11, period_key: '26C3', status: 'rejected', error_code: 'CLOSED', error_message: 'Closed by staff: x' },
+        { id: 12, period_key: '26C2', status: 'rejected', error_code: 'INVALID_REQUEST', error_message: 'Bad' },
+      ],
+    });
+    expect(screen.getByText(/· Closed by staff ·/)).toBeTruthy();
+    expect(screen.getByText(/· Refused by HMRC ·/)).toBeTruthy();
+  });
 });
